@@ -52,5 +52,9 @@ sudo nixos-rebuild switch --flake .#amd      # en la PC AMD
 - **zsh**: oh-my-zsh via home-manager; NO añadir alias `z` (pisa la función de
   zoxide y rompe el salto de directorios). Highlight/autosuggest son nativos
   de home-manager, NO plugins de omz.
-- **Caelestia/caelestia-cli**: inputs de flake, no paquetes de nixpkgs.
+- **Caelestia**: se arma en `flake.nix` (`caelestiaShell`) usando el
+  **quickshell precompilado de nixpkgs** (wrapper `qsPrebuilt` que replica el
+  passthru `withModules` de outfoxxed). NO usar `caelestia.packages.*`: eso
+  compila quickshell-git desde fuente (~1h local, sin caché binaria). El CLI
+  va incluido vía `withCli = true`.
 - El alias `update` reconstruye el host local automáticamente.

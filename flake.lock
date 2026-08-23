@@ -3,7 +3,9 @@
     "caelestia": {
       "inputs": {
         "caelestia-cli": "caelestia-cli",
-        "m3shapes": "m3shapes",
+        "m3shapes": [
+          "m3shapes"
+        ],
         "nixpkgs": "nixpkgs",
         "quickshell": "quickshell"
       },
@@ -69,7 +71,7 @@
         "caelestia-cli": [
           "caelestia-cli"
         ],
-        "m3shapes": "m3shapes_2",
+        "m3shapes": "m3shapes",
         "nixpkgs": [
           "caelestia-cli",
           "nixpkgs"
@@ -131,17 +133,16 @@
     "m3shapes_2": {
       "flake": false,
       "locked": {
-        "lastModified": 1781017666,
-        "narHash": "sha256-kfHyzZaPHgqZML48OA+5JwBOsLdQJ2ci/aGPShvUB4Y=",
+        "lastModified": 1784792878,
+        "narHash": "sha256-z96z6/zJv/E/edTNe2Xne8jJrCb73wPL2r33NaNnnJc=",
         "owner": "soramanew",
         "repo": "m3shapes",
-        "rev": "bdc327b29f95394a732baf3c9b19658ba23755b6",
+        "rev": "6875533e1b459cd096e2250f54ceaad5290afc49",
         "type": "github"
       },
       "original": {
         "owner": "soramanew",
         "repo": "m3shapes",
-        "rev": "bdc327b29f95394a732baf3c9b19658ba23755b6",
         "type": "github"
       }
     },
@@ -241,6 +242,7 @@
         "caelestia": "caelestia",
         "caelestia-cli": "caelestia-cli_2",
         "home-manager": "home-manager",
+        "m3shapes": "m3shapes_2",
         "nixpkgs": "nixpkgs_3"
       }
     }
