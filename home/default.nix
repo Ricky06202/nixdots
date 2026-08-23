@@ -112,7 +112,7 @@ RUSTEOF
       ls = "ls --color=auto";
       ll = "ls -la";
       nv = "nvim";
-      update = "sudo nixos-rebuild switch --flake /home/ricky/Documentos/Programacion/Publico/nixdots#${hostName}";
+      update = "sudo nixos-rebuild switch --flake /home/ricky/Dev/nixdots#${hostName}";
     } // (lib.optionalAttrs (hostName == "laptop") {
       # NVIDIA PRIME: steam y lutris usan la GPU dedicada automáticamente
       steam = "nvidia-offload steam";
