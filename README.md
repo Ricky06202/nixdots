@@ -39,18 +39,22 @@ sudo nixos-rebuild switch --flake /etc/nixos#amd   # o #laptop
 
 ## Reconstruir (día a día)
 
+Clona el repo donde quieras trabajar (en la máquina de Ricky vive en
+`~/Documentos/Programacion/Publico/nixdots`) y reconstruye desde ahí:
+
 ```bash
 # En el laptop:
-cd /etc/nixos && sudo nixos-rebuild switch --flake .#laptop
+sudo nixos-rebuild switch --flake ~/Documentos/Programacion/Publico/nixdots#laptop
 
 # En la PC AMD:
-cd /etc/nixos && sudo nixos-rebuild switch --flake .#amd
+sudo nixos-rebuild switch --flake ~/Documentos/Programacion/Publico/nixdots#amd
 
 # Actualizar todos los inputs (nixpkgs, home-manager, caelestia):
-sudo nix flake update
+nix flake update && sudo nixos-rebuild switch --flake .#<host>
 ```
 
-Alias listo en zsh: `update` (reconstruye el host local).
+Alias listo en zsh: `update` (reconstruye el host local apuntando al clon).
+`/etc/nixos` ya no es necesario para nada.
 
 ## Estructura
 
