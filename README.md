@@ -16,6 +16,9 @@ Arranca el USB instalador oficial de NixOS y sigue estos pasos (todo desde
 la terminal del ISO):
 
 ```bash
+# 0. Hazte root (el resto de los pasos asume que eres root):
+sudo -i
+
 # 1. Internet (WiFi):
 nmcli dev wifi connect "TU_RED" password "xxx"
 
@@ -47,9 +50,12 @@ nix-shell -p git
 git clone https://github.com/Ricky06202/nixdots /root/nixdots && cd /root/nixdots
 
 # 4. REGENERAR el hardware-configuration.nix del host — detecta Btrfs y los
-#    subvolúmenes montados automáticamente (los UUID del disco son únicos):
+#    subvolúmenes montados automáticamente (los UUID del disco son únicos).
+#    IMPORTANTE: borrar AMBOS archivos antes — la herramienta NO sobrescribe
+#    los existentes (los saltaría con un warning y quedarían los UUID viejos):
+sudo rm hosts/amd/configuration.nix hosts/amd/hardware-configuration.nix
 sudo nixos-generate-config --root /mnt --dir hosts/amd   # o hosts/laptop
-rm hosts/amd/configuration.nix   # genera uno de más; el del repo ya sirve
+rm hosts/amd/configuration.nix   # genera uno genérico; el del repo ya sirve
 
 # 5. Instalar TODO desde el flake:
 sudo nixos-install --flake .#amd   # o .#laptop
@@ -70,7 +76,11 @@ Si ya tienes NixOS funcionando y quieres adoptar esta config:
 ```bash
 git clone https://github.com/Ricky06202/nixdots.git ~/Dev/nixdots
 cd ~/Dev/nixdots
-# regenera tu hardware-configuration.nix si el disco no coincide
+# si tu disco es distinto, regenera el hardware-configuration (la herramienta
+# no sobrescribe: borra primero):
+sudo rm hosts/amd/{configuration,hardware-configuration}.nix
+sudo nixos-generate-config --root / --dir hosts/amd
+rm hosts/amd/configuration.nix
 sudo nixos-rebuild switch --flake ~/Dev/nixdots#amd   # o #laptop
 ```
 
