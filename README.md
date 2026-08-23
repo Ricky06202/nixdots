@@ -5,7 +5,7 @@ Configuración NixOS multi-host de Ricky — un solo flake, dos máquinas.
 | Host | Máquina | GPU |
 |------|---------|-----|
 | `laptop` | Laptop con Intel HD 5500 + NVIDIA 940M | PRIME offload (driver legacy_580) |
-| `amd` | PC con CPU + GPU AMD | amdgpu/Mesa nativos |
+| `amd` | Ryzen 7 5700 (8c) + RX 7600, 32GB DDR4 | amdgpu/Mesa nativos |
 
 Escritorio: Hyprland + Caelestia Shell. Login gráfico con ReGreet (cage).
 Shell: zsh + oh-my-zsh. Home-manager integrado en el flake (sin standalone).

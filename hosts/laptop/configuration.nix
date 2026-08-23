@@ -12,6 +12,9 @@
 
   networking.hostName = "laptop";
 
+  # 7.2GB RAM física: zram agresivo al 50% (~3.6GB comprimidos).
+  zramSwap.memoryPercent = 50;
+
   # Swap en disco (respaldo de RAM). Ruta clásica /swapfile: la instalación
   # original del laptop no usa subvolúmenes Btrfs.
   swapDevices = [ { device = "/swapfile"; size = 8192; } ];

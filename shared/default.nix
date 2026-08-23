@@ -79,10 +79,10 @@
   security.pam.services.login.enableGnomeKeyring = true;
 
   # --- Rendimiento: zram (swap comprimido en RAM) ---
-  # El swapfile de disco es específico por host (ver hosts/<nombre>/):
-  # en Btrfs conviene aislado en el subvolúmen @swap.
+  # El % de RAM y el swapfile de disco son específicos por host
+  # (ver hosts/<nombre>/): laptop 7.2GB → zram 50%; amd 32GB → 25%.
+  # En Btrfs el swapfile conviene aislado en el subvolúmen @swap.
   zramSwap.enable = true;
-  zramSwap.memoryPercent = 50;  # ~8 GB comprimidos, sobra RAM real
   zramSwap.algorithm = "zstd";
   boot.kernel.sysctl."vm.swappiness" = 10;
 
@@ -240,15 +240,6 @@
 
   # Enable CUPS to print documents.
   services.printing.enable = true;
-
-  # IA local (ollama) — corre como daemon, modelos se descargan la primera vez
-  # y luego funcionan offline. La RX 7600 lo acelera via Vulkan.
-  services.ollama = {
-    enable = true;
-    package = pkgs.ollama-vulkan; # usa la GPU AMD (RX 7600)
-    host = "127.0.0.1";
-    port = 11434;
-  };
 
   # Enable sound with pipewire.
   services.pulseaudio.enable = false;
