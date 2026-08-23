@@ -7,54 +7,71 @@ Configuración NixOS multi-host de Ricky — un solo flake, dos máquinas.
 | `laptop` | Laptop con Intel HD 5500 + NVIDIA 940M | PRIME offload (driver legacy_580) |
 | `amd` | PC con CPU + GPU AMD | amdgpu/Mesa nativos |
 
-Escritorio: Hyprland + Caelestia Shell (también GNOME disponible en GDM).
+Escritorio: Hyprland + Caelestia Shell. Login gráfico con ReGreet (cage).
 Shell: zsh + oh-my-zsh. Home-manager integrado en el flake (sin standalone).
 
 ## Instalar desde cero
 
-Arranca el USB instalador oficial de NixOS (canal estable o unstable da igual,
-el flake trae el suyo) y corre:
+Arranca el USB instalador oficial de NixOS y sigue estos pasos (todo desde
+la terminal del ISO):
 
 ```bash
-# Particiona/monta tus discos en /mnt primero (o usa disko en el futuro)
-sudo mount /dev/disk/by-label/NIXOS /mnt   # ejemplo
+# 1. Internet (WiFi):
+nmcli dev wifi connect "TU_RED" password "xxx"
 
-# Instalar directamente desde GitHub SIN clonar ni loguearte:
-sudo nixos-install --flake github:Ricky06202/nixdots#amd
-# o para el laptop:
-sudo nixos-install --flake github:Ricky06202/nixdots#laptop
+# 2. Particionar y montar (ajusta el disco; lo de abajo borra TODO nvme0n1):
+sudo parted /dev/nvme0n1 -- mklabel gpt \
+  mkpart ESP fat32 1MiB 513MiB set 1 esp on \
+  mkpart primary 513MiB 100%
+sudo mkfs.fat -F32 /dev/nvme0n1p1
+sudo mkfs.ext4 /dev/nvme0n1p2
+sudo mount /dev/nvme0n1p2 /mnt
+sudo mkdir -p /mnt/boot && sudo mount /dev/nvme0n1p1 /mnt/boot
+
+# 3. Clonar el repo (el ISO no trae git):
+nix-shell -p git
+git clone https://github.com/Ricky06202/nixdots /root/nixdots && cd /root/nixdots
+
+# 4. REGENERAR el hardware-configuration.nix del host (los UUID del disco son únicos):
+sudo nixos-generate-config --root /mnt --dir hosts/amd   # o hosts/laptop
+rm hosts/amd/configuration.nix   # genera uno de más; el del repo ya sirve
+
+# 5. Instalar TODO desde el flake:
+sudo nixos-install --flake .#amd   # o .#laptop
+
+# 6. Contraseña del usuario (el install solo pide la de root):
+sudo nixos-enter --root /mnt -c 'passwd ricky'
+
+# 7. Reiniciar — el sistema completo ya está configurado (zsh, Hyprland,
+#    Caelestia, Steam, apps, alias update...). Sin pasos post-instalación.
 ```
 
-Si ya tienes NixOS instalado y quieres adoptar esta config:
+Si ya tienes NixOS funcionando y quieres adoptar esta config:
 
 ```bash
-sudo mv /etc/nixos /etc/nixos.bak
-git clone https://github.com/Ricky06202/nixdots.git /etc/nixos
-sudo nixos-rebuild switch --flake /etc/nixos#amd   # o #laptop
+git clone https://github.com/Ricky06202/nixdots.git ~/Dev/nixdots
+cd ~/Dev/nixdots
+# regenera tu hardware-configuration.nix si el disco no coincide
+sudo nixos-rebuild switch --flake ~/Dev/nixdots#amd   # o #laptop
 ```
 
-> OJO: `hardware-configuration.nix` de cada host se generó con la instalación
-> original de esa máquina. Si tu disco es diferente, regenera el tuyo con
-> `nixos-generate-config --dir /tmp` y reemplázalo antes de instalar.
+> OJO: `hardware-configuration.nix` es específico de cada disco. Si el tuyo
+> es distinto, regenera con `nixos-generate-config` antes de instalar.
 
 ## Reconstruir (día a día)
 
-Clona el repo donde quieras trabajar (en la máquina de Ricky vive en
-`~/Documentos/Programacion/Publico/nixdots`) y reconstruye desde ahí:
+En las máquinas de Ricky el repo vive en `~/Dev/nixdots`:
 
 ```bash
-# En el laptop:
-sudo nixos-rebuild switch --flake ~/Documentos/Programacion/Publico/nixdots#laptop
-
-# En la PC AMD:
-sudo nixos-rebuild switch --flake ~/Documentos/Programacion/Publico/nixdots#amd
+sudo nixos-rebuild switch --flake ~/Dev/nixdots#laptop   # laptop
+sudo nixos-rebuild switch --flake ~/Dev/nixdots#amd      # PC AMD
 
 # Actualizar todos los inputs (nixpkgs, home-manager, caelestia):
-nix flake update && sudo nixos-rebuild switch --flake .#<host>
+cd ~/Dev/nixdots && nix flake update && sudo nixos-rebuild switch --flake .#<host>
 ```
 
 Alias listo en zsh: `update` (reconstruye el host local apuntando al clon).
-`/etc/nixos` ya no es necesario para nada.
+`/etc/nixos` ya no existe para nada.
 
 ## Estructura
 
@@ -85,4 +102,6 @@ compartido: una edición beneficia a ambas PCs.
   etc.) para usar la NVIDIA aunque lo lances desde el menú de aplicaciones.
 - **MangoHUD**: conf distinto por host — laptop limita a 30 FPS oculto
   (`no_display`, muestra con `Shift_R+F4`); AMD sin límite.
-- **Caelestia** viene de flakes upstream, no de nixpkgs.
+- **Caelestia** se arma en `flake.nix` con el **quickshell precompilado de
+  nixpkgs** (no se compila el git master de outfoxxed: ~1h local). El CLI va
+  incluido en el mismo paquete. No usar `caelestia.packages.*`.
