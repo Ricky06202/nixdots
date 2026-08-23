@@ -23,6 +23,8 @@ sudo -i
 nmcli dev wifi connect "TU_RED" password "xxx"
 
 # 2. Particionar y montar con Btrfs + subvolúmenes
+#    OJO: borra TODO el disco que elijas. Identifícalo primero por TAMAÑO:
+lsblk    # NVMe = nvme0n1, SATA = sda... usa TU disco en todos los comandos de abajo
 #    (OJO: borra TODO el disco nvme0n1 — ajústalo al tuyo)
 sudo parted /dev/nvme0n1 -- mklabel gpt \
   mkpart ESP fat32 1MiB 513MiB set 1 esp on \
