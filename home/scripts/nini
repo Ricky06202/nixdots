@@ -1,0 +1,719 @@
+#!/usr/bin/env python3
+"""nini — DeepSeek single-shot CLI for Hyprland/NixOS (v3 auto-chain)."""
+import json, os, sys, subprocess, urllib.request, urllib.error, time, uuid
+from pathlib import Path
+
+API_URL = "https://api.deepseek.com/chat/completions"
+MODEL   = "deepseek-chat"
+API_KEY = Path.home() / ".config" / "nini" / "api.key"
+HISTORY = Path.home() / ".config" / "nini" / "history.jsonl"
+MAX_HIST = 20
+MAX_STEPS = 10
+
+# ANSI
+BOLD  = "\033[1m"
+CYAN  = "\033[36m"
+GREEN = "\033[32m"
+RED   = "\033[31m"
+DIM   = "\033[2m"
+YELLOW = "\033[33m"
+RESET = "\033[0m"
+
+# ── Safety: destructive commands ─────────────────────────────────────────────
+DESTRUCTIVE_PATTERNS = [
+    (r"rm\s+(-[a-zA-Z]*r[a-zA-Z]*f[a-zA-Z]*|-[a-zA-Z]*f[a-zA-Z]*r[a-zA-Z]*)\s+/", "rm -rf / detectado. Esto borra TODO el sistema."),
+    (r"rm\s+(-[a-zA-Z]*r[a-zA-Z]*f[a-zA-Z]*|-[a-zA-Z]*f[a-zA-Z]*r[a-zA-Z]*)\s+~", "rm -rf ~ detectado. Esto borra tu home."),
+    (r"rm\s+(-[a-zA-Z]*r[a-zA-Z]*f[a-zA-Z]*|-[a-zA-Z]*f[a-zA-Z]*r[a-zA-Z]*)\s+\*", "rm -rf * detectado. Esto borra todo en el directorio."),
+    (r"dd\s+.*of=/dev/[sh]d", "dd a disco detectado. Puede sobrescribir datos permanentemente."),
+    (r"mkfs\.", "Formateo de disco detectado. Esto borra todo el contenido."),
+    (r":\(\)\s*\{\s*:\|:", "Fork bomb detectado. Esto congelaría el sistema."),
+    (r"chmod\s+-R\s+777\s+/", "chmod 777 en / detectado. Esto rompe permisos del sistema."),
+    (r"chown\s+-R\s+.*\s+/", "chown en / detectado. Esto cambia ownership del sistema."),
+    (r"> /dev/sd", "Sobrescritura de disco detectada."),
+    (r"shutdown", "Comando de apagado detectado."),
+    (r"reboot", "Comando de reinicio detectado."),
+    (r"poweroff", "Comando de apagado detectado."),
+    (r"init\s+0", "Cambio a runlevel 0 (apagado)."),
+    (r"systemctl\s+stop\s+(multi-user|graphical|default)", "Deteniendo target del sistema."),
+]
+
+# ── Safety: heavy commands that can OOM the system ───────────────────────────
+HEAVY_PATTERNS = [
+    ("speedtest", "Speedtest descarga archivos grandes. Usa: curl -s https://ifconfig.me"),
+    ("cloudflare.com/__down", "Cloudflare speed test descarga 100MB+. Puede causar OOM."),
+    ("curl.*bytes=[0-9]{7,}", "Descarga de archivo muy grande detectada."),
+]
+
+MIN_FREE_RAM_MB = 500
+
+def get_free_ram_mb():
+    """Get free RAM in MB."""
+    try:
+        with open("/proc/meminfo") as f:
+            for line in f:
+                if line.startswith("MemAvailable:"):
+                    return int(line.split()[1]) // 1024
+    except Exception:
+        pass
+    return 9999  # assume OK if can't read
+
+def check_heavy_command(cmd):
+    """Check if command is too heavy for the system. Returns (safe, warning)."""
+    import re
+    cmd_lower = cmd.lower()
+
+    # Check destructive patterns first (always block)
+    for pattern, warning in DESTRUCTIVE_PATTERNS:
+        if re.search(pattern, cmd, re.IGNORECASE):
+            return False, f"DESTRUCTIVO: {warning}"
+
+    # Check heavy patterns
+    for pattern, warning in HEAVY_PATTERNS:
+        if warning and re.search(pattern, cmd_lower):
+            return False, warning
+
+    # Check for curl/wget downloading large files (no --limit-rate)
+    if ("curl" in cmd_lower or "wget" in cmd_lower) and "--limit-rate" not in cmd_lower:
+        if any(x in cmd_lower for x in ["__down", "bytes=", "large", "100m", "250m"]):
+            return False, "Descarga grande sin limite de velocidad. Puede causar OOM."
+
+    # Check free RAM
+    free_mb = get_free_ram_mb()
+    if free_mb < MIN_FREE_RAM_MB:
+        return False, f"RAM libre baja: {free_mb}MB (mínimo {MIN_FREE_RAM_MB}MB). Puede causar OOM."
+
+    return True, None
+
+# ── System context ────────────────────────────────────────────────────────────
+def get_system_context():
+    ctx = []
+    try:
+        r = subprocess.run(["df", "-h", "--output=target,size,used,avail,pct", "/",
+                            "/nix", "/home"], capture_output=True, text=True, timeout=5)
+        if r.returncode == 0:
+            ctx.append("Disk:\n" + r.stdout.strip())
+    except Exception: pass
+    try:
+        r = subprocess.run(["free", "-h"], capture_output=True, text=True, timeout=5)
+        if r.returncode == 0:
+            ctx.append("RAM:\n" + r.stdout.strip())
+    except Exception: pass
+    try:
+        with open("/proc/loadavg") as f:
+            ctx.append("Load: " + f.read().strip())
+    except Exception: pass
+    try:
+        r = subprocess.run(["nmcli", "-t", "-f", "active,ssid,signal", "dev", "wifi"],
+                           capture_output=True, text=True, timeout=5)
+        lines = [l for l in r.stdout.strip().split("\n") if l.startswith("yes")]
+        if lines:
+            ctx.append("WiFi: " + lines[0])
+    except Exception: pass
+    try:
+        r = subprocess.run(["systemctl", "list-units", "--type=service", "--state=failed",
+                            "--no-pager", "--no-legend"], capture_output=True, text=True, timeout=5)
+        if r.stdout.strip():
+            ctx.append("FAILED services:\n" + r.stdout.strip()[:300])
+    except Exception: pass
+    try:
+        r = subprocess.run(["bluetoothctl", "info"], capture_output=True, text=True, timeout=5)
+        if "Connected: yes" in r.stdout:
+            for line in r.stdout.split("\n"):
+                if "Name:" in line:
+                    ctx.append("BT connected: " + line.split("Name:")[1].strip())
+                    break
+    except Exception: pass
+    return "\n\n".join(ctx) if ctx else "No system context available."
+
+
+# ── History ───────────────────────────────────────────────────────────────────
+def load_history(n=5):
+    if not HISTORY.exists():
+        return []
+    lines = HISTORY.read_text().strip().split("\n")
+    entries = []
+    for line in lines[-n:]:
+        try:
+            entries.append(json.loads(line))
+        except json.JSONDecodeError:
+            pass
+    return entries
+
+def save_history(prompt, command, exit_code, output_preview=""):
+    entry = {
+        "id": str(uuid.uuid4())[:8],
+        "ts": int(time.time()),
+        "prompt": prompt,
+        "command": command,
+        "exit_code": exit_code,
+        "output": output_preview[:200],
+    }
+    with open(HISTORY, "a") as f:
+        f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+    lines = HISTORY.read_text().strip().split("\n")
+    if len(lines) > MAX_HIST:
+        HISTORY.write_text("\n".join(lines[-MAX_HIST:]) + "\n")
+
+def format_history(ctx_entries):
+    if not ctx_entries:
+        return ""
+    parts = ["Recent history (last commands):"]
+    for e in ctx_entries:
+        status = "OK" if e.get("exit_code", -1) == 0 else f"FAIL({e.get('exit_code')})"
+        cmd = e.get("command", "?")
+        if cmd:
+            parts.append(f"- [{status}] {e.get('prompt')}: {cmd[:80]}")
+    return "\n".join(parts)
+
+
+# ── Detect mode ───────────────────────────────────────────────────────────────
+def detect_mode(user_text):
+    t = user_text.lower()
+    if any(kw in t for kw in ["qué hace", "explica", "qué significa", "define",
+                               "explain", "que hace", "q hace", "que significa"]):
+        return "explain"
+    if any(kw in t for kw in ["en ubuntu", "en debian", "en arch", "en fedora",
+                               "en manjaro", "traduce a ubuntu", "traduce a debian",
+                               "cómo sería en", "como seria en"]):
+        return "translate"
+    if any(kw in t for kw in ["nix", "nixos", "nixpkgs", "nix-env", "rebuild",
+                               "configuration.nix", "flake"]):
+        return "nixos"
+    return "default"
+
+
+# ── System prompt builder ────────────────────────────────────────────────────
+BASE_PROMPT = (
+    "Linux NixOS Hyprland. "
+    "Available commands by category:\n"
+    "System: ls, cat, grep, find, df, du, free, top, htop, ps, kill, pkill, pgrep, mkdir, cp, mv, rm, "
+    "chmod, chown, touch, ln, tar, zip, unzip, wc, sort, uniq, head, tail, xargs, sed, awk, cut, tr, diff, file, stat, tree, uptime, lsblk, lscpu\n"
+    "NixOS: nix, nix-env, nix-shell, nix profile, nix-store, nixos-rebuild, nix flake\n"
+    "Hyprland: hyprctl, hyprpaper, hyprpicker, hyprlock, hypridle\n"
+    "Audio: pactl, wpctl, playerctl, amixer\n"
+    "Network: nmcli, bluetoothctl, ip, ss, ping, curl, wget, dig\n"
+    "Systemd: systemctl, journalctl\n"
+    "Dev: git, python3, node, cargo, rustc, gcc, make, Deno\n"
+    "GUI: grim, slurp, wl-copy, wl-paste, notify-send, brightnessctl, wofi\n"
+    "pacman DOES NOT EXIST here, use nix instead. "
+)
+
+def build_system_prompt(mode, system_ctx, history_ctx):
+    parts = [BASE_PROMPT]
+    mode_hints = {
+        "explain": (
+            "MODE: EXPLAIN. The user wants to understand what a command does. "
+            "Reply with a concise explanation (≤50 words) of what the command does, "
+            "what each flag means, and what the output shows. NO code block, plain text only."
+        ),
+        "translate": (
+            "MODE: TRANSLATE. The user wants to translate a command from another distro (Ubuntu/Debian/Arch/Fedora) to NixOS. "
+            "Reply with the NixOS equivalent command. If there's no direct equivalent, suggest the closest alternative. "
+            "Reply ONLY with the raw bash command in a ```code block."
+        ),
+        "nixos": (
+            "MODE: NIXOS. The user is asking about NixOS specifically. "
+            "For package installation: use 'nix profile install nixpkgs#<name>' for temporary, "
+            "or tell them to add to systemPackages and rebuild. "
+            "For rebuild: 'sudo nixos-rebuild switch --flake /etc/nixos#nixos'. "
+            "Reply ONLY with the raw bash command in a ```code block."
+        ),
+    }
+    if mode in mode_hints:
+        parts.append(mode_hints[mode])
+    else:
+        parts.append(
+            "If the user asks for an action/command: reply ONLY with the raw bash command in a ```code block. "
+            "If the user asks a question: reply with plain text, concise, ≤40 words, no code block. "
+            "If a command needs sudo, include sudo. "
+            "If a command needs a file path, use common sense defaults. "
+        )
+    if system_ctx:
+        parts.append(f"\nSystem state:\n{system_ctx}")
+    if history_ctx:
+        parts.append(f"\n{history_ctx}")
+    return "\n".join(parts)
+
+def build_chain_prompt(user_text, steps_log):
+    """Build the prompt for chain continuation."""
+    parts = [
+        f"Original request: {user_text}",
+        "",
+        "Steps already done:"
+    ]
+    for i, s in enumerate(steps_log, 1):
+        status = "OK" if s["exit_code"] == 0 else f"FAIL({s['exit_code']})"
+        parts.append(f"  Step {i} [{status}]: {s['cmd']}")
+        if s["output"].strip():
+            parts.append(f"    Output: {s['output'].strip()[:300]}")
+    parts.append("")
+    parts.append(
+        "You are chaining commands automatically. "
+        "If the task is COMPLETE or you already have a useful result, reply with exactly: DONE <short summary in Spanish>. "
+        "Do NOT retry the same command with different flags. "
+        "Do NOT keep searching if you already have the answer. "
+        "If you just CREATED a file (cat >, echo >, tee, etc.), the next step MUST be to EXECUTE or VERIFY it. "
+        "If more steps are needed, reply with the NEXT bash command in a ```code block. "
+        "Maximum 10 steps total. Be efficient — combine steps when possible."
+    )
+    return "\n".join(parts)
+
+
+# ── API ───────────────────────────────────────────────────────────────────────
+def ask(system_prompt, user_prompt, max_tokens=150):
+    with open(API_KEY) as f:
+        key = f.read().strip()
+    payload = json.dumps({
+        "model": MODEL,
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user",   "content": user_prompt},
+        ],
+        "max_tokens": max_tokens,
+        "temperature": 0.0,
+    }).encode()
+    req = urllib.request.Request(API_URL, data=payload, headers={
+        "Content-Type":  "application/json",
+        "Authorization": f"Bearer {key}",
+    })
+    try:
+        with urllib.request.urlopen(req, timeout=20) as resp:
+            data = json.loads(resp.read())
+    except urllib.error.HTTPError as e:
+        body = e.read().decode(errors="replace")
+        print(f"{RED}API error {e.code}:{RESET} {body[:200]}")
+        sys.exit(1)
+    except Exception as e:
+        print(f"{RED}Connection error:{RESET} {e}")
+        sys.exit(1)
+    return data["choices"][0]["message"]["content"].strip()
+
+
+# ── Parse ─────────────────────────────────────────────────────────────────────
+def parse(text):
+    """Extract command from AI response."""
+    if "```" in text:
+        parts = text.split("```")
+        if len(parts) >= 3:
+            cmd = parts[1].strip()
+            if cmd and cmd.split()[0] in ("bash", "sh", "cmd", "shell", "zsh"):
+                cmd = " ".join(cmd.split()[1:])
+            if cmd:
+                return ("cmd", cmd)
+    # No code block — check if it looks like a command
+    stripped = text.strip()
+    cmd_starters = ("sudo", "nix", "apt", "dnf", "curl", "wget",
+                    "git", "python", "node", "bash", "mkdir", "cp", "mv", "rm",
+                    "ls", "cat", "echo", "printf", "chmod", "ps", "kill",
+                    "systemctl", "journalctl", "nmcli", "bluetoothctl", "hyprctl",
+                    "df", "du", "free", "find", "grep", "tar", "wc", "sort",
+                    "head", "tail", "ping", "ss", "ip", "wpctl", "pactl")
+    first_word = stripped.split()[0] if stripped.split() else ""
+    if first_word in cmd_starters:
+        return ("cmd", stripped)
+    return ("text", text)
+
+
+# ── Run command (silent mode for chain) ──────────────────────────────────────
+def run_cmd(cmd, silent=False):
+    """Run a bash command. Returns (exit_code, output)."""
+    if not silent:
+        print(f"\n  $ {cmd[:120]}{'...' if len(cmd) > 120 else ''}")
+    r = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=60)
+    output = r.stdout + r.stderr
+    if not silent and output.strip():
+        for line in output.strip()[:500].split("\n"):
+            print(f"  {line}")
+    return r.returncode, output
+
+
+def safe_run_cmd(cmd, silent=False):
+    """Run command with safety check. Returns (exit_code, output, blocked)."""
+    safe, warning = check_heavy_command(cmd)
+    if not safe:
+        is_destructive = warning.startswith("DESTRUCTIVO:")
+        if is_destructive:
+            print(f"\n  {RED}⛔ BLOQUEADO: {warning}{RESET}")
+            print(f"  Comando: {cmd}")
+            return -1, "Comando destructivo bloqueado", True
+        else:
+            print(f"\n  {YELLOW}⚠ ADVERTENCIA: {warning}{RESET}")
+            print(f"  Comando: {cmd}")
+            ans = input(f"  ¿Ejecutar? [y/N] ").strip().lower()
+            if ans not in ("y", "s", "si", "sí"):
+                return -1, "Bloqueado por seguridad", True
+    exit_code, output = run_cmd(cmd, silent=silent)
+    return exit_code, output, False
+
+
+# ── Error recovery (single command mode) ─────────────────────────────────────
+def run_with_recovery(cmd, user_prompt, system_prompt):
+    print(f"\n  $ {cmd}\n")
+    ans = input(f"  ¿Ejecutar? [Y/n] ").strip().lower()
+    if ans not in ("", "y", "s", "si", "sí"):
+        print(f"  Cancelado.")
+        return None
+
+    r = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=60)
+    output = r.stdout + r.stderr
+    if r.returncode != 0 and output.strip():
+        print(f"{RED}  Exit code: {r.returncode}{RESET}")
+        for line in output.strip()[:500].split("\n"):
+            print(f"  {line}")
+        fix_prompt = (
+            f"The command failed with exit code {r.returncode}.\n"
+            f"Command: {cmd}\n"
+            f"Error output: {output.strip()[:500]}\n"
+            f"Original request: {user_prompt}\n"
+            f"Suggest a fix. Reply ONLY with the corrected bash command in a ```code block."
+        )
+        print(f"\n  Intentando corregir...")
+        raw_fix = ask(system_prompt, fix_prompt, max_tokens=150)
+        kind, fixed_cmd = parse(raw_fix)
+        if kind == "cmd" and fixed_cmd != cmd:
+            print(f"\n  Fix: {fixed_cmd}\n")
+            ans2 = input(f"  ¿Ejecutar el fix? [Y/n] ").strip().lower()
+            if ans2 in ("", "y", "s", "si", "sí"):
+                r2 = subprocess.run(fixed_cmd, shell=True, capture_output=True, text=True, timeout=60)
+                out2 = (r2.stdout + r2.stderr).strip()[:500]
+                if out2:
+                    for line in out2.split("\n"):
+                        print(f"  {line}")
+                return r2.returncode
+        return r.returncode
+    else:
+        if output.strip():
+            for line in output.strip()[:500].split("\n"):
+                print(f"  {line}")
+    return r.returncode
+
+
+# ── Auto-chain engine ────────────────────────────────────────────────────────
+def auto_chain(user_text, system_prompt, max_steps=MAX_STEPS):
+    """Run up to max_steps commands automatically."""
+    steps_log = []
+    current_prompt = user_text
+
+    print(f"  Chain: máx {max_steps} pasos\n")
+
+    for step in range(1, max_steps + 1):
+        print(f"── Paso {step}/{max_steps} ──")
+
+        # Ask AI for next step
+        raw = ask(system_prompt, current_prompt, max_tokens=150)
+        kind, content = parse(raw)
+
+        # Check if DONE
+        if kind == "text" and content.upper().startswith("DONE"):
+            summary = content[4:].strip() if len(content) > 4 else "Tarea completada."
+            print(f"\n{GREEN}✅ {summary}{RESET}")
+            return steps_log, summary
+
+        if kind != "cmd":
+            # AI answered with text, task might be done
+            print(f"\n{GREEN}✅ {content}{RESET}")
+            return steps_log, content
+
+        # Check command exists
+        cmd_name = content.split()[0]
+        if cmd_name and cmd_name not in ("sudo", "nohup", "time", "env", "bash"):
+            if not subprocess.run(["which", cmd_name], capture_output=True).returncode == 0:
+                print(f"{RED}⚠ '{cmd_name}' no está instalado. Deteniendo.{RESET}")
+                break
+
+        # Execute with safety check
+        exit_code, output, blocked = safe_run_cmd(content, silent=False)
+        if blocked:
+            break
+
+        # Log step
+        steps_log.append({
+            "step": step,
+            "cmd": content,
+            "exit_code": exit_code,
+            "output": output,
+        })
+
+        # If command failed, try recovery
+        if exit_code != 0 and output.strip():
+            print(f"{RED}  Exit code: {exit_code}{RESET}")
+            fix_prompt = (
+                f"Command failed (exit {exit_code}):\n{content}\n"
+                f"Error: {output.strip()[:300]}\n"
+                f"Suggest a fix in a ```code block, or reply DONE if unrecoverable."
+            )
+            raw_fix = ask(system_prompt, fix_prompt, max_tokens=150)
+            kind_fix, fixed_cmd = parse(raw_fix)
+            if kind_fix == "cmd" and fixed_cmd != content:
+                print(f"  Fix: {fixed_cmd}")
+                exit_code2, output2, _ = safe_run_cmd(fixed_cmd, silent=False)
+                steps_log[-1]["fix"] = fixed_cmd
+                steps_log[-1]["fix_exit"] = exit_code2
+
+        # Build next prompt with context
+        current_prompt = build_chain_prompt(user_text, steps_log)
+
+    # Reached max steps
+    print(f"\n{YELLOW}⚠ Máximo de pasos alcanzado ({max_steps}){RESET}")
+    return steps_log, f"Ejecutados {len(steps_log)} pasos."
+
+
+# ── Main ──────────────────────────────────────────────────────────────────────
+HELP_TEXT = f"""{BOLD}nini{RESET} v3 — DeepSeek CLI para NixOS/Hyprland
+
+{BOLD}Uso:{RESET}
+  nini <pregunta u orden>
+  echo "texto" | nini <procesar>    (pipe)
+  nini --dry-run <orden>             (mostrar sin ejecutar)
+  nini --no-chain <orden>            (sin auto-chain)
+  nini --steps N <orden>             (máx N pasos, default 10)
+  nini help                          (esta ayuda)
+
+{BOLD}Modos (automáticos):{RESET}
+  Explain    — "qué hace systemctl list-units"
+  Translate  — "en ubuntu sería apt install firefox"
+  NixOS      — "instala firefox"
+  Default    — genera un comando bash (auto-chain activo)
+
+{BOLD}Auto-chain:{RESET}
+  nini detecta si tu tarea necesita varios pasos
+  y los ejecuta automáticamente (máx 10 pasos).
+  Al final muestra un resumen de todo lo que hizo.
+
+{BOLD}Ejemplos:{RESET}
+  nini ¿cuánto espacio tengo en disco?
+  nini instala firefox
+  nini qué procesos usan más RAM
+  nini conecta los audífonos AZ09
+  nini qué hace "systemctl list-units --type=service"
+  nini en ubuntu sería "apt install neovim"
+  nini --dry-run borra /tmp/ viejos
+  cat log.txt | nini resume esto
+  nini organiza mis descargas (auto-chain)
+"""
+
+
+def main():
+    # --help
+    if len(sys.argv) < 2 or sys.argv[1] in ("--help", "-h", "help"):
+        print(HELP_TEXT)
+        sys.exit(0)
+
+    # API key check
+    if not API_KEY.is_file():
+        print(f"{RED}Error:{RESET} API key no encontrada.")
+        print(f"  Crea el archivo: {API_KEY}")
+        print(f"  Contenido: tu API key de DeepSeek (una línea)")
+        sys.exit(1)
+
+    # Parse flags
+    dry_run = False
+    no_chain = False
+    max_steps = MAX_STEPS
+    args = sys.argv[1:]
+
+    if "--dry-run" in args:
+        dry_run = True
+        args.remove("--dry-run")
+    if "--no-chain" in args:
+        no_chain = True
+        args.remove("--no-chain")
+    if "--steps" in args:
+        idx = args.index("--steps")
+        if idx + 1 < len(args):
+            try:
+                max_steps = min(int(args[idx + 1]), MAX_STEPS)
+            except ValueError:
+                max_steps = MAX_STEPS
+            args.pop(idx + 1)
+        args.pop(idx)
+
+    # Pipe support
+    pipe_input = ""
+    if not sys.stdin.isatty():
+        pipe_input = sys.stdin.read().strip()
+
+    if not args and not pipe_input:
+        print(HELP_TEXT)
+        sys.exit(0)
+
+    user_text = " ".join(args)
+    if pipe_input:
+        user_text = f"Input from pipe:\n{pipe_input}\n\nUser request: {user_text}"
+
+    # Detect mode
+    mode = detect_mode(user_text)
+
+    # System context
+    sys_ctx = get_system_context()
+
+    # History
+    hist_entries = load_history(n=5)
+    hist_ctx = format_history(hist_entries)
+
+    # Build system prompt
+    system_prompt = build_system_prompt(mode, sys_ctx, hist_ctx)
+
+    # ── Explain / Translate / NixOS modes → single shot (no chain) ──
+    if mode in ("explain", "translate", "nixos") or no_chain:
+        tokens = 300
+        raw = ask(system_prompt, user_text, max_tokens=tokens)
+        kind, content = parse(raw)
+
+        if kind == "cmd":
+            if dry_run:
+                print(f"\n  Dry run: {content}\n")
+                sys.exit(0)
+            cmd_name = content.split()[0]
+            if cmd_name and cmd_name not in ("sudo", "nohup", "time", "env", "bash"):
+                if not subprocess.run(["which", cmd_name], capture_output=True).returncode == 0:
+                    print(f"{RED}⚠ '{cmd_name}' no está instalado.{RESET}")
+                    print(f"  Instálalo con: nix profile install nixpkgs#{cmd_name}")
+                    sys.exit(1)
+            exit_code = run_with_recovery(content, user_text, system_prompt)
+            save_history(user_text, content, exit_code or 0)
+        else:
+            print(f"\n{content}\n")
+            save_history(user_text, "[text response]", 0, content[:100])
+        return
+
+    # ── Default mode → auto-chain ──
+    # First, check if AI thinks this is a question (text) or action (cmd)
+    raw = ask(system_prompt, user_text, max_tokens=300)
+    kind, content = parse(raw)
+
+    if kind == "text":
+        # It's a question, just answer
+        print(f"\n{content}\n")
+        save_history(user_text, "[text response]", 0, content[:100])
+        return
+
+    # It's a command — run auto-chain
+    if dry_run:
+        print(f"\n  Dry run (step 1): {content}\n")
+        # Show what chain would do
+        steps_preview = [content]
+        preview_prompt = build_chain_prompt(user_text, [{"step": 1, "cmd": content, "exit_code": 0, "output": ""}])
+        for _ in range(min(max_steps - 1, 4)):  # Preview up to 5 steps
+            raw_p = ask(system_prompt, preview_prompt, max_tokens=150)
+            kind_p, content_p = parse(raw_p)
+            if kind_p == "text" and content_p.upper().startswith("DONE"):
+                break
+            if kind_p == "cmd":
+                steps_preview.append(content_p)
+                preview_prompt = build_chain_prompt(user_text, [
+                    {"step": i+1, "cmd": c, "exit_code": 0, "output": ""}
+                    for i, c in enumerate(steps_preview)
+                ])
+        print(f"Secuencia completa ({len(steps_preview)} pasos):")
+        for i, s in enumerate(steps_preview, 1):
+            print(f"  {i}. {s}")
+        print()
+        return
+
+    # Execute first command with safety check
+    print(f"\n── Paso 1/{max_steps} ──")
+    exit_code, output, blocked = safe_run_cmd(content, silent=False)
+    if blocked:
+        save_history(user_text, content, -1)
+        return
+
+    steps_log = [{
+        "step": 1,
+        "cmd": content,
+        "exit_code": exit_code,
+        "output": output,
+    }]
+
+    # If first command failed, try recovery
+    if exit_code != 0 and output.strip():
+        print(f"{RED}  Exit code: {exit_code}{RESET}")
+        fix_prompt = (
+            f"Command failed (exit {exit_code}):\n{content}\n"
+            f"Error: {output.strip()[:300]}\n"
+            f"Suggest a fix in a ```code block, or reply DONE if unrecoverable."
+        )
+        raw_fix = ask(system_prompt, fix_prompt, max_tokens=150)
+        kind_fix, fixed_cmd = parse(raw_fix)
+        if kind_fix == "cmd" and fixed_cmd != content:
+            print(f"  Fix: {fixed_cmd}")
+            exit_code2, output2, _ = safe_run_cmd(fixed_cmd, silent=False)
+            steps_log[-1]["fix"] = fixed_cmd
+            steps_log[-1]["fix_exit"] = exit_code2
+
+    # Chain continuation
+    current_prompt = build_chain_prompt(user_text, steps_log)
+
+    for step in range(2, max_steps + 1):
+        print(f"\n── Paso {step}/{max_steps} ──")
+
+        raw = ask(system_prompt, current_prompt, max_tokens=150)
+        kind, content = parse(raw)
+
+        # Check if DONE
+        if kind == "text":
+            summary = content
+            if content.upper().startswith("DONE"):
+                summary = content[4:].strip() if len(content) > 4 else "Tarea completada."
+            print(f"\n{GREEN}✅ {summary}{RESET}")
+            save_history(user_text, f"[{len(steps_log)} steps]", 0, summary[:100])
+            return
+
+        if kind != "cmd":
+            print(f"\n{GREEN}✅ {content}{RESET}")
+            save_history(user_text, f"[{len(steps_log)} steps]", 0, content[:100])
+            return
+
+        # Check command exists
+        cmd_name = content.split()[0]
+        if cmd_name and cmd_name not in ("sudo", "nohup", "time", "env", "bash"):
+            if not subprocess.run(["which", cmd_name], capture_output=True).returncode == 0:
+                print(f"{RED}⚠ '{cmd_name}' no está instalado. Deteniendo.{RESET}")
+                break
+
+        # Prevent duplicate commands (same base command)
+        base_cmd = content.split()[0] if content.split() else ""
+        prev_bases = [s["cmd"].split()[0] for s in steps_log if s["cmd"].split()]
+        if base_cmd in prev_bases and "--" not in content:
+            print(f"\n{GREEN}✅ (respuesta ya obtenida en pasos anteriores){RESET}")
+            save_history(user_text, f"[{len(steps_log)} steps, dedup]", 0)
+            return
+
+        # Execute with safety check
+        exit_code, output, blocked = safe_run_cmd(content, silent=False)
+        if blocked:
+            break
+
+        steps_log.append({
+            "step": step,
+            "cmd": content,
+            "exit_code": exit_code,
+            "output": output,
+        })
+
+        # Recovery on failure
+        if exit_code != 0 and output.strip():
+            print(f"{RED}  Exit code: {exit_code}{RESET}")
+            fix_prompt = (
+                f"Command failed (exit {exit_code}):\n{content}\n"
+                f"Error: {output.strip()[:300]}\n"
+                f"Suggest a fix in a ```code block, or reply DONE if unrecoverable."
+            )
+            raw_fix = ask(system_prompt, fix_prompt, max_tokens=150)
+            kind_fix, fixed_cmd = parse(raw_fix)
+            if kind_fix == "cmd" and fixed_cmd != content:
+                print(f"  Fix: {fixed_cmd}")
+                exit_code2, output2, _ = safe_run_cmd(fixed_cmd, silent=False)
+                steps_log[-1]["fix"] = fixed_cmd
+                steps_log[-1]["fix_exit"] = exit_code2
+
+        # Update chain prompt
+        current_prompt = build_chain_prompt(user_text, steps_log)
+
+    # Max steps reached
+    print(f"\n{YELLOW}⚠ Máximo de pasos alcanzado ({max_steps}){RESET}")
+    save_history(user_text, f"[{len(steps_log)} steps, max reached]", 0)
+
+
+if __name__ == "__main__":
+    main()

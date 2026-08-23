@@ -1,0 +1,88 @@
+window {
+  background-image: url("/etc/nwg-hello/background.jpg");
+  background-size: cover;
+  background-position: center;
+  background-color: #0e1117;
+}
+
+#welcome-label {
+  font-size: 64px;
+  font-weight: bold;
+  color: #fff;
+  margin-top: 80px;
+}
+
+#clock-label {
+  font-family: monospace;
+  font-size: 32px;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+#date-label {
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 20px;
+}
+
+#form-wrapper {
+  background-color: rgba(14, 17, 23, 0.75);
+  border: 1px solid rgba(100, 200, 255, 0.12);
+  border-radius: 24px;
+  padding: 32px;
+}
+
+entry {
+  background-color: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(100, 200, 255, 0.15);
+  border-radius: 14px;
+  padding: 14px 18px;
+  color: #fff;
+  font-size: 14px;
+}
+
+entry:focus {
+  border-color: rgba(100, 200, 255, 0.5);
+}
+
+button {
+  background: rgba(100, 200, 255, 0.15);
+  border: 1px solid rgba(100, 200, 255, 0.3);
+  border-radius: 14px;
+  padding: 14px;
+  color: #fff;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+button:hover {
+  background-color: rgba(100, 200, 255, 0.25);
+}
+
+button:active {
+  background-color: rgba(100, 200, 255, 0.35);
+}
+
+#power-button {
+  border-radius: 50%;
+  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 10px;
+  min-width: 40px;
+  min-height: 40px;
+}
+
+#power-button:hover {
+  background-color: rgba(255, 100, 100, 0.2);
+  border-color: rgba(255, 100, 100, 0.4);
+}
+
+#form-combo {
+  border-radius: 14px;
+  padding: 10px;
+  color: #fff;
+}
+
+#form-label {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 13px;
+}
