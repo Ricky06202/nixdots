@@ -12,6 +12,10 @@
 
   networking.hostName = "laptop";
 
+  # Swap en disco (respaldo de RAM). Ruta clásica /swapfile: la instalación
+  # original del laptop no usa subvolúmenes Btrfs.
+  swapDevices = [ { device = "/swapfile"; size = 8192; } ];
+
   # --- NVIDIA 940M (Maxwell) + PRIME offload ---
   services.xserver.videoDrivers = [ "nvidia" ];
   hardware.nvidia = {

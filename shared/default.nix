@@ -78,15 +78,13 @@
   services.gnome.gnome-keyring.enable = true;
   security.pam.services.login.enableGnomeKeyring = true;
 
-  # --- Rendimiento: zram (swap comprimido en RAM) + swapfile (8 GB) ---
-  # PC AMD con 16GB RAM: menos agresivo, la RAM real alcanza.
+  # --- Rendimiento: zram (swap comprimido en RAM) ---
+  # El swapfile de disco es específico por host (ver hosts/<nombre>/):
+  # en Btrfs conviene aislado en el subvolúmen @swap.
   zramSwap.enable = true;
   zramSwap.memoryPercent = 50;  # ~8 GB comprimidos, sobra RAM real
   zramSwap.algorithm = "zstd";
   boot.kernel.sysctl."vm.swappiness" = 10;
-  swapDevices = [
-    { device = "/swapfile"; size = 8192; }   # 8 GB de swap en disco como respaldo
-  ];
 
   # Set your time zone.
   time.timeZone = "America/Panama";

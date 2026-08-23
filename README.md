@@ -19,20 +19,35 @@ la terminal del ISO):
 # 1. Internet (WiFi):
 nmcli dev wifi connect "TU_RED" password "xxx"
 
-# 2. Particionar y montar (ajusta el disco; lo de abajo borra TODO nvme0n1):
+# 2. Particionar y montar con Btrfs + subvolúmenes
+#    (OJO: borra TODO el disco nvme0n1 — ajústalo al tuyo)
 sudo parted /dev/nvme0n1 -- mklabel gpt \
   mkpart ESP fat32 1MiB 513MiB set 1 esp on \
   mkpart primary 513MiB 100%
 sudo mkfs.fat -F32 /dev/nvme0n1p1
-sudo mkfs.ext4 /dev/nvme0n1p2
+sudo mkfs.btrfs -L nixos /dev/nvme0n1p2
+
+# Crear subvolúmenes: @ raíz, @home, @nix (nix store), @swap (swap sin CoW)
 sudo mount /dev/nvme0n1p2 /mnt
-sudo mkdir -p /mnt/boot && sudo mount /dev/nvme0n1p1 /mnt/boot
+sudo btrfs subvolume create /mnt/@
+sudo btrfs subvolume create /mnt/@home
+sudo btrfs subvolume create /mnt/@nix
+sudo btrfs subvolume create /mnt/@swap
+sudo umount /mnt
+
+# Montar con compresión zstd (~30-40% menos espacio) y noatime:
+sudo mount -o compress=zstd,noatime,subvol=@ /dev/nvme0n1p2 /mnt
+sudo mkdir -p /mnt/{boot,home,nix,swap}
+sudo mount -o compress=zstd,noatime,subvol=@home /dev/nvme0n1p2 /mnt/home
+sudo mount -o compress=zstd,noatime,subvol=@nix   /dev/nvme0n1p2 /mnt/nix
+sudo mount -o compress=zstd,noatime,subvol=@swap  /dev/nvme0n1p2 /mnt/swap
 
 # 3. Clonar el repo (el ISO no trae git):
 nix-shell -p git
 git clone https://github.com/Ricky06202/nixdots /root/nixdots && cd /root/nixdots
 
-# 4. REGENERAR el hardware-configuration.nix del host (los UUID del disco son únicos):
+# 4. REGENERAR el hardware-configuration.nix del host — detecta Btrfs y los
+#    subvolúmenes montados automáticamente (los UUID del disco son únicos):
 sudo nixos-generate-config --root /mnt --dir hosts/amd   # o hosts/laptop
 rm hosts/amd/configuration.nix   # genera uno de más; el del repo ya sirve
 
@@ -44,6 +59,10 @@ sudo nixos-enter --root /mnt -c 'passwd ricky'
 
 # 7. Reiniciar — el sistema completo ya está configurado (zsh, Hyprland,
 #    Caelestia, Steam, apps, alias update...). Sin pasos post-instalación.
+#
+# Nota Btrfs: el swap de disco (host amd) se crea solo en /swap/swapfile
+# (subvol @swap); NixOS le aplica chattr +C automáticamente. Los snapshots
+# futuros de @ nunca chocarán con el swap.
 ```
 
 Si ya tienes NixOS funcionando y quieres adoptar esta config:
