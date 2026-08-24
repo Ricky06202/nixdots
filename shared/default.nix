@@ -300,6 +300,41 @@
   # Allow unfree packages
   nixpkgs.config.allowUnfree = true;
 
+  # nix-ld: permite correr binarios dinámicos "tal cual vienen de internet"
+  # (Electron/npm run dev, node_modules/.bin, AppImages sin parchear) que
+  # buscan /lib64/ld-linux-x86-64.so.2 — NixOS no lo trae por diseño.
+  # `libraries` = las .so típicas que Electron/Chromium pide al arrancar;
+  # si algo sigue quejándose de una lib faltante, se añade aquí.
+  programs.nix-ld = {
+    enable = true;
+    libraries = with pkgs; [
+      stdenv.cc.cc.lib
+      zlib
+      glib
+      gtk3
+      nss
+      nspr
+      atk
+      at-spi2-atk
+      cups
+      dbus
+      libdrm
+      libgbm
+      pango
+      cairo
+      alsa-lib
+      mesa
+      xorg.libX11
+      xorg.libXcomposite
+      xorg.libXdamage
+      xorg.libXext
+      xorg.libXfixes
+      xorg.libXrandr
+      xorg.libxcb
+      xorg.libxkbfile
+    ];
+  };
+
   # Fuentes: registrar en fontconfig para que fc-list las encuentre.
   fonts.packages = with pkgs; [
     nerd-fonts.iosevka-term
