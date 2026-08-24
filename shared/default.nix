@@ -380,6 +380,16 @@
   # List packages installed in system profile. To search, run:
   # $ nix search wget
   environment.systemPackages = with pkgs; [
+    # Launcher generico para juegos nativos de Lutris en NixOS:
+    # Lutris inyecta su propio LD_LIBRARY_PATH (gamemode/runtime) y con esa
+    # variable definida el loader de nix-ld ignora sus rutas por defecto,
+    # asi que al binario le faltan TODAS las libs del sistema (exit 127).
+    # Uso en Lutris: exe = nixld-exec, args = /ruta/al/binario [args del juego]
+    (pkgs.writeShellScriptBin "nixld-exec" ''
+      export LD_LIBRARY_PATH="''${LD_LIBRARY_PATH:+''${LD_LIBRARY_PATH}:}/run/current-system/sw/share/nix-ld/lib"
+      exec "$@"
+    '')
+    vulkan-tools       # vulkaninfo: Lutris lo consulta para listar GPUs
     opencode          # asistente de IA (este)
     neovim            # editor
     brave             # navegador principal (Chromium, bloqueador built-in, ligero)
