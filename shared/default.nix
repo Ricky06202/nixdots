@@ -329,6 +329,17 @@
       vulkan-loader      # render wgpu (veloren usa Vulkan)
       libGL              # fallback OpenGL
       udev               # gamepads/input del cliente
+      # Albion Online launcher (QtWebEngine): kerberos + stack de fuentes/X11
+      krb5.lib           # libgssapi_krb5 (red del launcher)
+      libxtst            # input sintético X11
+      freetype
+      expat
+      fontconfig.lib     # fuentes (el default es .bin sin libs)
+      libxrender
+      libxau
+      libxdmcp
+      libxcursor
+      libxi
       libx11
       libxcomposite
       libxdamage
