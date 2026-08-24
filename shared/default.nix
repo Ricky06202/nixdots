@@ -324,6 +324,11 @@
       cairo
       alsa-lib
       mesa
+      wayland            # apps GUI nativas wayland (airshipper/winit)
+      libxkbcommon       # input de teclado para winit/wgpu
+      vulkan-loader      # render wgpu (veloren usa Vulkan)
+      libGL              # fallback OpenGL
+      udev               # gamepads/input del cliente
       libx11
       libxcomposite
       libxdamage
