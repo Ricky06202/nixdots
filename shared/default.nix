@@ -366,7 +366,6 @@
   environment.systemPackages = with pkgs; [
     opencode          # asistente de IA (este)
     neovim            # editor
-    vivaldi           # navegador (guarda claves/sync)
     brave             # navegador principal (Chromium, bloqueador built-in, ligero)
     chromium          # navegador Chromium puro (compatibilidad web sin capas extra)
     karere            # whatsapp (whatsapp-for-linux se retiró de nixpkgs)
