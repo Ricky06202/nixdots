@@ -53,6 +53,26 @@
   # thermald: daemon térmico de Intel — baja frecuencia del CPU antes de sobrecalentarse.
   services.thermald.enable = true;
 
+  # Tope de turbo: los apagones instantáneos de este equipo son ThermTrips por
+  # PICOS de carga (ej: pantalla de carga de Minecraft con muchos mods) que
+  # suben la unión a ~105°C en segundos — ni el ventilador ni thermald llegan
+  # a tiempo (trip de hardware, sin rastro en el journal). Limitar max_perf_pct
+  # recorta la cabeza térmica del turbo para que esos picos meseten bajo el
+  # punto de disparo. Costo: ~10% menos rendimiento pico, imperceptible en uso
+  # real. Si algún día hace falta el turbo completo: subir este valor a 100.
+  systemd.services.cpu-turbo-cap = {
+    description = "Limita el turbo del CPU para evitar trips térmicos por picos";
+    wantedBy = [ "multi-user.target" ];
+    after = [ "multi-user.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+    };
+    script = ''
+      echo 80 > /sys/devices/system/cpu/intel_pstate/max_perf_pct
+    '';
+  };
+
   # `calor`: temperatura CPU + estado del ventilador en una línea.
   # Compatible con `watch -n 2 calor`. RPM reales solo en modo automático
   # (el tacómetro calla en manual); en manual se muestra duty % + estimación.
