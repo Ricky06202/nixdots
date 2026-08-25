@@ -53,6 +53,29 @@
   # thermald: daemon térmico de Intel — baja frecuencia del CPU antes de sobrecalentarse.
   services.thermald.enable = true;
 
+  # `calor`: temperatura CPU + estado del ventilador en una línea.
+  # Compatible con `watch -n 2 calor`. RPM reales solo en modo automático
+  # (el tacómetro calla en manual); en manual se muestra duty % + estimación.
+  environment.systemPackages = [
+    (pkgs.writeShellScriptBin "calor" ''
+      Z=$(grep -l x86_pkg_temp /sys/class/thermal/thermal_zone*/type 2>/dev/null | head -1 | sed 's|/type||')
+      T=$(( $(cat "$Z/temp" 2>/dev/null || echo 0) / 1000 ))
+      H=$(grep -l '^asus$' /sys/class/hwmon/hwmon*/name 2>/dev/null | head -1 | sed 's|/name||')
+      E=$(cat "$H/pwm1_enable" 2>/dev/null)
+      if [ "$E" = "2" ]; then
+        R=$(cat "$H/fan1_input" 2>/dev/null || echo "?")
+        echo "CPU ''${T}°C | ventilador: automático (''${R} RPM)"
+      elif [ "$E" = "1" ]; then
+        D=$(cat "$H/pwm1" 2>/dev/null || echo 0)
+        P=$(( D * 100 / 255 ))
+        R=$(( 2400 + D * 11 ))
+        echo "CPU ''${T}°C | ventilador: ''${P}% (~''${R} RPM est.)"
+      else
+        echo "CPU ''${T}°C | ventilador: ¿hwmon no encontrado?"
+      fi
+    '')
+  ];
+
   # Curva de ventilador propia: la automática del EC es floja en este modelo
   # (se queda en ~4200 RPM aunque el CPU pase de 90°C, casi provoca apagones).
   # Umbral/escalones tomados de asus-fan-control (soporte oficial X555LB,
