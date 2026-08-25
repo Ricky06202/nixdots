@@ -53,15 +53,15 @@
   # thermald: daemon térmico de Intel — baja frecuencia del CPU antes de sobrecalentarse.
   services.thermald.enable = true;
 
-  # Watchdog de ventilador: la curva automática del EC de este modelo es floja
+  # Curva de ventilador propia: la automática del EC es floja en este modelo
   # (se queda en ~4200 RPM aunque el CPU pase de 90°C, casi provoca apagones).
-  # Este servicio toma control manual del ventilador (~90%) cuando el CPU pasa
-  # el umbral HOT y devuelve el control a la EC cuando baja de COOL.
-  # Nota: en modo manual este hwmon deja de reportar RPM — el control funciona,
-  # solo el tacómetro calla. El índice hwmon cambia entre arranques: se resuelve
-  # dinámicamente buscando el hwmon "asus".
+  # Umbral/escalones tomados de asus-fan-control (soporte oficial X555LB,
+  # PR #156). Por debajo de 55°C se devuelve el control a la EC (silencio en
+  # reposo + tacómetro visible); arriba, control manual por rangos de duty.
+  # Validado empíricamente: pwm manual a 255 bajó la CPU de 92°→82°C en juego.
+  # Nota: en modo manual este hwmon no reporta RPM (solo calla el tacómetro).
   systemd.services.fan-watchdog = {
-    description = "Fuerza el ventilador cuando el CPU se sobrecalienta";
+    description = "Curva de ventilador personalizada para ASUS X555LB";
     wantedBy = [ "multi-user.target" ];
     after = [ "multi-user.target" ];
     serviceConfig = {
@@ -71,11 +71,6 @@
     };
     path = [ pkgs.coreutils ];
     script = ''
-      HOT=85000    # millicelsius: umbral para tomar control manual
-      COOL=75000   # millicelsius: umbral con histéresis para devolver auto
-      HIGH=230     # duty ~90% (255 sería tope)
-      MANUAL=0
-
       find_hwmon() {
         for d in /sys/class/hwmon/hwmon*; do
           if [ -f "$d/name" ] && grep -q '^asus$' "$d/name" && [ -f "$d/pwm1_enable" ]; then
@@ -91,21 +86,42 @@
           | head -1 | sed 's|/type||'
       }
 
-      H=$(find_hwmon) || exit 1
-      echo "fan-watchdog: vigilando $H"
+      # temperatura -> duty pwm (0-255). Vacío = devolver modo automático.
+      duty_para() {
+        T=$1
+        if   [ "$T" -gt 80000 ]; then echo 255
+        elif [ "$T" -gt 76000 ]; then echo 230
+        elif [ "$T" -gt 72000 ]; then echo 200
+        elif [ "$T" -gt 68000 ]; then echo 180
+        elif [ "$T" -gt 65000 ]; then echo 160
+        elif [ "$T" -gt 62000 ]; then echo 140
+        elif [ "$T" -gt 60000 ]; then echo 120
+        elif [ "$T" -gt 55000 ]; then echo 100
+        else echo ""
+        fi
+      }
 
+      H=$(find_hwmon) || exit 1
+      echo "fan-watchdog: curva activa, hwmon en $H"
+
+      MANUAL=0
       while true; do
         Z=$(find_zone)
         T=$(cat "$Z/temp" 2>/dev/null || echo 0)
-        if [ "$T" -ge "$HOT" ] && [ "$MANUAL" -eq 0 ]; then
-          echo 1 > "$H/pwm1_enable" 2>/dev/null
-          echo "$HIGH" > "$H/pwm1" 2>/dev/null
-          MANUAL=1
-          echo "fan-watchdog: MANUAL ON ($((T / 1000))°C)"
-        elif [ "$T" -le "$COOL" ] && [ "$MANUAL" -eq 1 ] && [ "$T" -gt 0 ]; then
-          echo 2 > "$H/pwm1_enable" 2>/dev/null
-          MANUAL=0
-          echo "fan-watchdog: automático restaurado ($((T / 1000))°C)"
+        D=$(duty_para "$T")
+        if [ -z "$D" ]; then
+          if [ "$MANUAL" -eq 1 ]; then
+            echo 2 > "$H/pwm1_enable" 2>/dev/null
+            MANUAL=0
+            echo "fan-watchdog: automático ($((T / 1000))°C)"
+          fi
+        else
+          if [ "$MANUAL" -eq 0 ]; then
+            echo 1 > "$H/pwm1_enable" 2>/dev/null
+            MANUAL=1
+            echo "fan-watchdog: curva manual ON ($((T / 1000))°C)"
+          fi
+          echo "$D" > "$H/pwm1" 2>/dev/null
         fi
         sleep 3
       done
