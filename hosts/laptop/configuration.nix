@@ -53,6 +53,65 @@
   # thermald: daemon térmico de Intel — baja frecuencia del CPU antes de sobrecalentarse.
   services.thermald.enable = true;
 
+  # Watchdog de ventilador: la curva automática del EC de este modelo es floja
+  # (se queda en ~4200 RPM aunque el CPU pase de 90°C, casi provoca apagones).
+  # Este servicio toma control manual del ventilador (~90%) cuando el CPU pasa
+  # el umbral HOT y devuelve el control a la EC cuando baja de COOL.
+  # Nota: en modo manual este hwmon deja de reportar RPM — el control funciona,
+  # solo el tacómetro calla. El índice hwmon cambia entre arranques: se resuelve
+  # dinámicamente buscando el hwmon "asus".
+  systemd.services.fan-watchdog = {
+    description = "Fuerza el ventilador cuando el CPU se sobrecalienta";
+    wantedBy = [ "multi-user.target" ];
+    after = [ "multi-user.target" ];
+    serviceConfig = {
+      Type = "simple";
+      Restart = "always";
+      RestartSec = 5;
+    };
+    path = [ pkgs.coreutils ];
+    script = ''
+      HOT=85000    # millicelsius: umbral para tomar control manual
+      COOL=75000   # millicelsius: umbral con histéresis para devolver auto
+      HIGH=230     # duty ~90% (255 sería tope)
+      MANUAL=0
+
+      find_hwmon() {
+        for d in /sys/class/hwmon/hwmon*; do
+          if [ -f "$d/name" ] && grep -q '^asus$' "$d/name" && [ -f "$d/pwm1_enable" ]; then
+            echo "$d"
+            return 0
+          fi
+        done
+        return 1
+      }
+
+      find_zone() {
+        grep -l x86_pkg_temp /sys/class/thermal/thermal_zone*/type 2>/dev/null \
+          | head -1 | sed 's|/type||'
+      }
+
+      H=$(find_hwmon) || exit 1
+      echo "fan-watchdog: vigilando $H"
+
+      while true; do
+        Z=$(find_zone)
+        T=$(cat "$Z/temp" 2>/dev/null || echo 0)
+        if [ "$T" -ge "$HOT" ] && [ "$MANUAL" -eq 0 ]; then
+          echo 1 > "$H/pwm1_enable" 2>/dev/null
+          echo "$HIGH" > "$H/pwm1" 2>/dev/null
+          MANUAL=1
+          echo "fan-watchdog: MANUAL ON ($((T / 1000))°C)"
+        elif [ "$T" -le "$COOL" ] && [ "$MANUAL" -eq 1 ] && [ "$T" -gt 0 ]; then
+          echo 2 > "$H/pwm1_enable" 2>/dev/null
+          MANUAL=0
+          echo "fan-watchdog: automático restaurado ($((T / 1000))°C)"
+        fi
+        sleep 3
+      done
+    '';
+  };
+
   # --- Steam con wrapper de PRIME offload ---
   # El cliente Steam lanza con GPU NVIDIA también desde el launcher de
   # escritorio, no solo con el alias de zsh (`nvidia-offload steam`).
