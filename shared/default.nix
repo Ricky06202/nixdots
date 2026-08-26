@@ -401,7 +401,7 @@
           --add-flags "--restore-last-session" \
           --add-flags "--noerrdialogs" \
           --run '
-            # Parchea el Preferences de Brave para que siempre crea que salió
+            # Parchea el Preferences de Brave para que siempre cree que salió
             # limpiamente (sin esto, tras apagones fuerza el diálogo "Restaurar").
             for PREF in \
               "$HOME/.config/BraveSoftware/Brave-Browser/Default/Preferences" \
@@ -409,16 +409,10 @@
               "$HOME/.config/BraveSoftware/Brave-Browser/Local State"
             do
               [ -f "$PREF" ] || continue
-              if command -v jq >/dev/null 2>&1; then
-                cp "$PREF" "$PREF.bak"
-                jq '."profile"."exit_type" = "Normal" | ."profile"."exited_cleanly" = true' \
-                  "$PREF.bak" > "$PREF" && rm -f "$PREF.bak"
-              else
-                sed -i \
-                  -e "s/\"exit_type\":\"Crashed\"/\"exit_type\":\"Normal\"/g" \
-                  -e "s/\"exited_cleanly\":false/\"exited_cleanly\":true/g" \
-                  "$PREF"
-              fi
+              sed -i \
+                -e "s/\"exit_type\":\"Crashed\"/\"exit_type\":\"Normal\"/g" \
+                -e "s/\"exited_cleanly\":false/\"exited_cleanly\":true/g" \
+                "$PREF"
             done
           '
       '';
@@ -429,7 +423,6 @@
     lutris            # gestor de juegos
     wezterm           # terminal
     git
-    jq                # procesador JSON (wrapper de Brave lo necesita)
     grim              # captura de pantalla (wayland)
     slurp             # selector de región para grim
     wl-clipboard      # portapapeles wayland (wl-copy / wl-paste)
