@@ -151,6 +151,37 @@ RUSTEOF
     };
   };
 
+  # Aplicaciones predeterminadas: sin esto, xdg-open agarra al primer .desktop
+  # que se registra (VSCode abre carpetas, PrismLauncher los zip, Brave las imágenes).
+  xdg.mimeApps = {
+    enable = true;
+    defaultApplications = {
+      # Archivos/carpetas
+      "inode/directory" = [ "nemo.desktop" ];
+      # Imágenes → Loupe
+      "image/png" = [ "org.gnome.Loupe.desktop" ];
+      "image/jpeg" = [ "org.gnome.Loupe.desktop" ];
+      "image/gif" = [ "org.gnome.Loupe.desktop" ];
+      "image/webp" = [ "org.gnome.Loupe.desktop" ];
+      "image/svg+xml" = [ "org.gnome.Loupe.desktop" ];
+      # PDFs → Evince
+      "application/pdf" = [ "org.gnome.Evince.desktop" ];
+      # Comprimidos → File Roller (y "Extraer aquí" de Nemo)
+      "application/zip" = [ "org.gnome.FileRoller.desktop" ];
+      "application/x-compressed-tar" = [ "org.gnome.FileRoller.desktop" ];
+      "application/x-tar" = [ "org.gnome.FileRoller.desktop" ];
+      "application/gzip" = [ "org.gnome.FileRoller.desktop" ];
+      "application/x-7z-compressed" = [ "org.gnome.FileRoller.desktop" ];
+      "application/vnd.rar" = [ "org.gnome.FileRoller.desktop" ];
+      # Video/Audio → mpv
+      "video/mp4" = [ "mpv.desktop" ];
+      "video/x-matroska" = [ "mpv.desktop" ];
+      "video/webm" = [ "mpv.desktop" ];
+      "audio/mpeg" = [ "mpv.desktop" ];
+      "audio/mp4" = [ "mpv.desktop" ];
+    };
+  };
+
   # Config de Hyprland (force: sobrescribe los archivos manuales existentes)
   xdg.configFile."hypr/hyprland.lua" = {
     source = ./dotfiles/hypr/hyprland.lua;

@@ -453,6 +453,8 @@
     thunderbird       # cliente de correo
     thunar            # gestor de archivos (GTK, ligero, respaldo)
     nemo-with-extensions  # gestor de archivos principal (con extensiones GVFS: network, MTP, etc.)
+    file-roller       # gestor de comprimidos — la extensión "Extraer aquí" de Nemo lo necesita
+    loupe             # visor de imágenes (GNOME, ligero, Wayland nativo)
     gvfs              # daemon de red para Nemo (SMB, MTP, network browsing)
     bitwarden-desktop # gestor de contraseñas (nube, encriptado, 2FA)
     obs-studio        # OBS COMPLETO con obs-browser (overlays de Twitch, alertas) — la PC AMD lo aguanta
