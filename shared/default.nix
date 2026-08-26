@@ -232,6 +232,21 @@
     };
   };
 
+  # Cierre limpio de Brave: al apagar el sistema, envía SIGTERM a Brave y
+  # espera a que se cierre por su cuenta antes de que systemd lo mate con
+  # SIGKILL. Esto evita el diálogo de "sesión caída" tras apagones normales.
+  systemd.services.graceful-brave = {
+    description = "Cierra Brave limpiamente antes de apagar";
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      ExecStart = "/bin/true";
+      ExecStop = "${pkgs.bash}/bin/bash -c 'pkill -TERM -x brave 2>/dev/null; for i in $(seq 1 10); do pgrep -x brave >/dev/null 2>&1 || exit 0; sleep 1; done'";
+      TimeoutStopSec = 15;
+    };
+  };
+
   # Configure keymap in X11
   services.xserver.xkb = {
     layout = "us";
@@ -392,31 +407,7 @@
     vulkan-tools       # vulkaninfo: Lutris lo consulta para listar GPUs
     opencode          # asistente de IA (este)
     neovim            # editor
-    (symlinkJoin {
-      name = "brave";
-      paths = [ brave ];
-      nativeBuildInputs = [ makeWrapper ];
-      postBuild = ''
-        wrapProgram $out/bin/brave \
-          --add-flags "--restore-last-session" \
-          --add-flags "--noerrdialogs" \
-          --run '
-            # Parchea el Preferences de Brave para que siempre cree que salió
-            # limpiamente (sin esto, tras apagones fuerza el diálogo "Restaurar").
-            for PREF in \
-              "$HOME/.config/BraveSoftware/Brave-Browser/Default/Preferences" \
-              "$HOME/.config/BraveSoftware/Brave-Browser/Default/Secure Preferences" \
-              "$HOME/.config/BraveSoftware/Brave-Browser/Local State"
-            do
-              [ -f "$PREF" ] || continue
-              sed -i \
-                -e "s/\"exit_type\":\"Crashed\"/\"exit_type\":\"Normal\"/g" \
-                -e "s/\"exited_cleanly\":false/\"exited_cleanly\":true/g" \
-                "$PREF"
-            done
-          '
-      '';
-    })  # navegador principal (Chromium, bloqueador built-in, wrapper anti-diálogo crash)
+    brave             # navegador principal (Chromium, bloqueador built-in, ligero)
     chromium          # navegador Chromium puro (compatibilidad web sin capas extra)
     karere            # whatsapp (whatsapp-for-linux se retiró de nixpkgs)
     spotify           # música
