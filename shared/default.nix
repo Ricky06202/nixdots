@@ -395,7 +395,7 @@
     (brave.override {
       commandLineArgs = [
         "--restore-last-session"       # restaura pestañas al abrir sin preguntar
-        "--no-session-crashed-bubble"  # suprime el aviso de "cerró mal" tras apagones
+        "--noerrdialogs"               # suprime aviso de sesión caída tras apagones
       ];
     })  # navegador principal (Chromium, bloqueador built-in, ligero)
     chromium          # navegador Chromium puro (compatibilidad web sin capas extra)
