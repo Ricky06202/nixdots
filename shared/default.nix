@@ -429,6 +429,7 @@
     lutris            # gestor de juegos
     wezterm           # terminal
     git
+    jq                # procesador JSON (wrapper de Brave lo necesita)
     grim              # captura de pantalla (wayland)
     slurp             # selector de región para grim
     wl-clipboard      # portapapeles wayland (wl-copy / wl-paste)
