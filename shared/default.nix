@@ -241,7 +241,7 @@
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;
-      ExecStart = "/bin/true";
+      ExecStart = "${pkgs.coreutils}/bin/true";
       ExecStop = "${pkgs.bash}/bin/bash -c 'pkill -TERM -x brave 2>/dev/null; for i in $(seq 1 10); do pgrep -x brave >/dev/null 2>&1 || exit 0; sleep 1; done'";
       TimeoutStopSec = 15;
     };
