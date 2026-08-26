@@ -392,7 +392,12 @@
     vulkan-tools       # vulkaninfo: Lutris lo consulta para listar GPUs
     opencode          # asistente de IA (este)
     neovim            # editor
-    brave             # navegador principal (Chromium, bloqueador built-in, ligero)
+    (brave.override {
+      commandLineArgs = [
+        "--restore-last-session"       # restaura pestañas al abrir sin preguntar
+        "--no-session-crashed-bubble"  # suprime el aviso de "cerró mal" tras apagones
+      ];
+    })  # navegador principal (Chromium, bloqueador built-in, ligero)
     chromium          # navegador Chromium puro (compatibilidad web sin capas extra)
     karere            # whatsapp (whatsapp-for-linux se retiró de nixpkgs)
     spotify           # música
