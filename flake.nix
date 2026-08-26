@@ -1,5 +1,5 @@
 {
-  description = "Config NixOS multi-host de Ricky (laptop + amd)";
+  description = "Config NixOS multi-host de Ricky (laptop + amd + omen)";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -96,5 +96,6 @@
 
       nixosConfigurations.laptop = mkHost "laptop";
       nixosConfigurations.amd = mkHost "amd";
+      nixosConfigurations.omen = mkHost "omen";
     };
 }
