@@ -392,12 +392,37 @@
     vulkan-tools       # vulkaninfo: Lutris lo consulta para listar GPUs
     opencode          # asistente de IA (este)
     neovim            # editor
-    (brave.override {
-      commandLineArgs = [
-        "--restore-last-session"       # restaura pestañas al abrir sin preguntar
-        "--noerrdialogs"               # suprime aviso de sesión caída tras apagones
-      ];
-    })  # navegador principal (Chromium, bloqueador built-in, ligero)
+    (symlinkJoin {
+      name = "brave";
+      paths = [ brave ];
+      nativeBuildInputs = [ makeWrapper ];
+      postBuild = ''
+        wrapProgram $out/bin/brave \
+          --add-flags "--restore-last-session" \
+          --add-flags "--noerrdialogs" \
+          --run '
+            # Parchea el Preferences de Brave para que siempre crea que salió
+            # limpiamente (sin esto, tras apagones fuerza el diálogo "Restaurar").
+            for PREF in \
+              "$HOME/.config/BraveSoftware/Brave-Browser/Default/Preferences" \
+              "$HOME/.config/BraveSoftware/Brave-Browser/Default/Secure Preferences" \
+              "$HOME/.config/BraveSoftware/Brave-Browser/Local State"
+            do
+              [ -f "$PREF" ] || continue
+              if command -v jq >/dev/null 2>&1; then
+                cp "$PREF" "$PREF.bak"
+                jq '."profile"."exit_type" = "Normal" | ."profile"."exited_cleanly" = true' \
+                  "$PREF.bak" > "$PREF" && rm -f "$PREF.bak"
+              else
+                sed -i \
+                  -e "s/\"exit_type\":\"Crashed\"/\"exit_type\":\"Normal\"/g" \
+                  -e "s/\"exited_cleanly\":false/\"exited_cleanly\":true/g" \
+                  "$PREF"
+              fi
+            done
+          '
+      '';
+    })  # navegador principal (Chromium, bloqueador built-in, wrapper anti-diálogo crash)
     chromium          # navegador Chromium puro (compatibilidad web sin capas extra)
     karere            # whatsapp (whatsapp-for-linux se retiró de nixpkgs)
     spotify           # música
