@@ -1,9 +1,9 @@
 # PC AMD — specs reales:
-#   CPU:  AMD Ryzen 7 5700 (8c/16t, Cezanne con iGPU desactivada)
+#   CPU:  AMD Ryzen 5 5500 (6c/12t, Zen 3)
 #   GPU:  ASRock Challenger RX 7600 8GB (RDNA3, amdgpu/Mesa nativos)
-#   MB:   MSI B550M PRO-VDH WIFI (AM4)
-#   RAM:  G.Skill Ripjaws V 32GB DDR4-3200
-#   SSD:  TeamGroup MP44L 1TB NVMe Gen4 (instalación Btrfs, ver README)
+#   MB:   Gigabyte A520M K V2 (AM4)
+#   RAM:  16GB DDR4-3200
+#   SSD:  Crucial P2 500GB NVMe
 
 { pkgs, ... }:
 
@@ -18,13 +18,11 @@
   # Microcode AMD (estabilidad/seguridad del CPU).
   hardware.cpu.amd.updateMicrocode = true;
 
-  # 32GB RAM física: zram al 25% (8GB) alcanza de sobra junto al swapfile.
+  # 16GB RAM física: zram al 25% (4GB) + swapfile 4GB.
   zramSwap.memoryPercent = 25;
 
   # Swap en disco, dentro del subvolúmen @swap (instalación Btrfs):
-  # NOCOW heredado y los futuros snapshots de @ no chocan con el archivo activo.
-  # NixOS le aplica `chattr +C` automáticamente al crearlo.
-  swapDevices = [ { device = "/swap/swapfile"; size = 8192; } ];
+  swapDevices = [ { device = "/swap/swapfile"; size = 4096; } ];
 
   # IA local (ollama) — la RX 7600 lo acelera vía Vulkan.
   services.ollama = {
