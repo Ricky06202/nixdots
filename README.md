@@ -4,16 +4,29 @@ Configuración NixOS multi-host de Ricky — un solo flake, dos máquinas.
 
 | Host | Máquina | GPU |
 |------|---------|-----|
-| `laptop` | Laptop con Intel HD 5500 + NVIDIA 940M | PRIME offload (driver legacy_580) |
-| `amd` | Ryzen 7 5700 (8c) + RX 7600, 32GB DDR4 | amdgpu/Mesa nativos |
+| `laptop` | ASUS X555LB (i5-5200U + NVIDIA 940M) | PRIME offload (driver legacy_580) |
+| `amd` | Ryzen 5 5500 (6c) + RX 7600, 16GB DDR4 | amdgpu/Mesa nativos |
+| `omen` | HP Omen 17t-ck000 (i7-11800H + RTX 3070) | NVIDIA (driver open) |
 
 Escritorio: Hyprland + Caelestia Shell. Login gráfico con ReGreet (cage).
 Shell: zsh + oh-my-zsh. Home-manager integrado en el flake (sin standalone).
 
 ## Instalar desde cero
 
-Arranca el USB instalador oficial de NixOS y sigue estos pasos (todo desde
-la terminal del ISO):
+Arranca el USB instalador oficial de NixOS y ejecuta el instalador interactivo:
+
+```bash
+# Conecta internet primero: nmtui
+# Luego ejecuta el instalador:
+sudo bash -c "$(curl -sL https://raw.githubusercontent.com/Ricky06202/nixdots/main/install.sh)"
+```
+
+El script te guía: selecciona host (laptop/amd/omen), disco, particiona Btrfs,
+clona el repo y ejecuta `nixos-install`. Log completo en `/tmp/nixdots-install.log`.
+
+### Instalación manual (fallback)
+
+Si prefieres hacerlo paso a paso:
 
 ```bash
 # 0. Hazte root (el resto de los pasos asume que eres root):
