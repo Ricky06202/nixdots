@@ -89,6 +89,13 @@
   zramSwap.algorithm = "zstd";
   boot.kernel.sysctl."vm.swappiness" = 10;
 
+  # --- VirtualBox (PROVISIONAL) ---
+  # Necesario para el proyecto de la VM de Windows XP con Sight Survey
+  # (para el abuelo). El módulo instala el paquete y crea el grupo
+  # `vboxusers`; el usuario ricky ya está en ese grupo (ver users).
+  # Para quitarlo: borrar este bloque y el grupo extra de ricky.
+  virtualisation.virtualbox.host.enable = true;
+
   # Set your time zone.
   time.timeZone = "America/Panama";
 
@@ -303,7 +310,7 @@
     isNormalUser = true;
     description = "Ricardo A Sanjur G";
     shell = pkgs.zsh; # shell por defecto: zsh (con plugins de home-manager)
-    extraGroups = [ "networkmanager" "wheel" "input" ];
+    extraGroups = [ "networkmanager" "wheel" "input" "vboxusers" ];
     packages = with pkgs; [
       #  thunderbird
     ];
