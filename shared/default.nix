@@ -74,6 +74,9 @@
   # upower: servicio de batería/power (Caelestia lo usa para detectar la batería).
   services.upower.enable = true;
 
+  # udisks2: montaje automático de USB/unidades extraíbles (Nemo lo usa).
+  services.udisks2.enable = true;
+
   # gnome-keyring: guarda claves SSH/contraseñas en memoria (sin dialogos feos).
   services.gnome.gnome-keyring.enable = true;
   security.pam.services.login.enableGnomeKeyring = true;
