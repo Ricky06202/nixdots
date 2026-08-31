@@ -194,6 +194,22 @@
         "type": "github"
       }
     },
+    "nixpkgs_4": {
+      "locked": {
+        "lastModified": 1788039129,
+        "narHash": "sha256-pa4Q0qErvCvzCaaUph7Sm37RhR4xvPrYI8Lgz6k85+A=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "d2f67949798825fe853f7c5d0492b8bf016d3f88",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
     "quickshell": {
       "inputs": {
         "nixpkgs": [
@@ -243,7 +259,43 @@
         "caelestia-cli": "caelestia-cli_2",
         "home-manager": "home-manager",
         "m3shapes": "m3shapes_2",
-        "nixpkgs": "nixpkgs_3"
+        "nixpkgs": "nixpkgs_3",
+        "spotx-nix": "spotx-nix"
+      }
+    },
+    "spotx-bash": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1787789342,
+        "narHash": "sha256-kfjjHHu/17YatuuTDWzPZowEUdKFnfWe8Bq+FNfdDoY=",
+        "owner": "SpotX-Official",
+        "repo": "SpotX-Bash",
+        "rev": "230b7510ff28cf2b019be362def8c8c804770516",
+        "type": "github"
+      },
+      "original": {
+        "owner": "SpotX-Official",
+        "repo": "SpotX-Bash",
+        "type": "github"
+      }
+    },
+    "spotx-nix": {
+      "inputs": {
+        "nixpkgs": "nixpkgs_4",
+        "spotx-bash": "spotx-bash"
+      },
+      "locked": {
+        "lastModified": 1788124061,
+        "narHash": "sha256-UlLb/AUCxp/ekf6lz2GhktXkshwk+TMTl673Y9QDlDI=",
+        "owner": "SpotX-Official",
+        "repo": "SpotX-Nix",
+        "rev": "c08c6bba2fd978057e87a601deb400b21fc51e87",
+        "type": "github"
+      },
+      "original": {
+        "owner": "SpotX-Official",
+        "repo": "SpotX-Nix",
+        "type": "github"
       }
     }
   },
