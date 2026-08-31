@@ -27,9 +27,12 @@
     caelestia-cli.url = "github:caelestia-dots/cli";
     # Su input caelestia-shell solo se usa en el paquete with-shell (que no
     # usamos); no dispara ninguna compilación de quickshell extra.
+
+    # SpotX-Nix: parchea Spotify para bloquear anuncios (declarativo, NixOS-native).
+    spotx-nix.url = "github:SpotX-Official/SpotX-Nix";
   };
 
-  outputs = { self, nixpkgs, caelestia, m3shapes, caelestia-cli, home-manager }:
+  outputs = { self, nixpkgs, caelestia, m3shapes, caelestia-cli, home-manager, spotx-nix }:
     let
       system = "x86_64-linux";
       pkgs = nixpkgs.legacyPackages.${system};
@@ -75,7 +78,7 @@
 
       mkHost = name: nixpkgs.lib.nixosSystem {
         inherit system;
-        specialArgs = { inherit caelestiaShell; hostName = name; };
+        specialArgs = { inherit caelestiaShell spotx-nix; hostName = name; };
         modules = [
           ./hosts/${name}/configuration.nix
           home-manager.nixosModules.home-manager

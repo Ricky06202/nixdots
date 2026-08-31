@@ -1,7 +1,7 @@
-# Config compartida entre hosts (laptop + amd).
+# Config compartida entre hosts (laptop + amd + omen).
 # Lo específico de cada máquina vive en hosts/<nombre>/configuration.nix.
 
-{ config, pkgs, caelestiaShell, ... }:
+{ config, pkgs, caelestiaShell, spotx-nix, ... }:
 
 {
   # Nix con flakes y nix-command habilitados (necesario para home-manager y caelestia)
@@ -325,6 +325,9 @@
   # Allow unfree packages
   nixpkgs.config.allowUnfree = true;
 
+  # SpotX-Nix overlay: parchea Spotify para bloquear anuncios.
+  nixpkgs.overlays = [ spotx-nix.overlays.default ];
+
   # nix-ld: permite correr binarios dinámicos "tal cual vienen de internet"
   # (Electron/npm run dev, node_modules/.bin, AppImages sin parchear) que
   # buscan /lib64/ld-linux-x86-64.so.2 — NixOS no lo trae por diseño.
@@ -420,7 +423,7 @@
     brave             # navegador principal (Chromium, bloqueador built-in, ligero)
     chromium          # navegador Chromium puro (compatibilidad web sin capas extra)
     karere            # whatsapp (whatsapp-for-linux se retiró de nixpkgs)
-    spotify           # música
+    spotify-spotx     # spotify con anuncios bloqueados (vía SpotX-Nix, flake externo)
     lutris            # gestor de juegos
     wezterm           # terminal
     git
