@@ -77,6 +77,9 @@
   # udisks2: montaje automático de USB/unidades extraíbles (Nemo lo usa).
   services.udisks2.enable = true;
 
+  # flatpak: necesario para Sober (Roblox en Linux). Contenido y reversible.
+  services.flatpak.enable = true;
+
   # gnome-keyring: guarda claves SSH/contraseñas en memoria (sin dialogos feos).
   services.gnome.gnome-keyring.enable = true;
   security.pam.services.login.enableGnomeKeyring = true;
