@@ -425,6 +425,8 @@
     karere            # whatsapp (whatsapp-for-linux se retiró de nixpkgs)
     spotify-spotx     # spotify con anuncios bloqueados (vía SpotX-Nix, flake externo)
     lutris            # gestor de juegos
+    wine              # ejecutar archivos .exe en Linux (vía wine64/wine)
+    winetricks        # instala complementos de wine (DirectX, VC++, etc.)
     wezterm           # terminal
     git
     grim              # captura de pantalla (wayland)
@@ -482,6 +484,9 @@
     thunar            # gestor de archivos (GTK, ligero, respaldo)
     nemo-with-extensions  # gestor de archivos principal (con extensiones GVFS: network, MTP, etc.)
     file-roller       # gestor de comprimidos — la extensión "Extraer aquí" de Nemo lo necesita
+    p7zip             # backends 7z/rar para file-roller (comprimir/extraer zip, rar, 7z...)
+    unrar             # soporte RAR en file-roller
+    zip               # crear archivos zip desde la terminal / file-roller
     loupe             # visor de imágenes (GNOME, ligero, Wayland nativo)
     gvfs              # daemon de red para Nemo (SMB, MTP, network browsing)
     bitwarden-desktop # gestor de contraseñas (nube, encriptado, 2FA)

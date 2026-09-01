@@ -173,6 +173,10 @@ RUSTEOF
       "application/gzip" = [ "org.gnome.FileRoller.desktop" ];
       "application/x-7z-compressed" = [ "org.gnome.FileRoller.desktop" ];
       "application/vnd.rar" = [ "org.gnome.FileRoller.desktop" ];
+      # Ejecutables Windows (.exe) → Wine
+      "application/x-msdownload" = [ "wine.desktop" ];
+      "application/vnd.microsoft.portable-executable" = [ "wine.desktop" ];
+      "application/x-ms-dos-executable" = [ "wine.desktop" ];
       # Video/Audio → mpv
       "video/mp4" = [ "mpv.desktop" ];
       "video/x-matroska" = [ "mpv.desktop" ];
@@ -180,6 +184,21 @@ RUSTEOF
       "audio/mpeg" = [ "mpv.desktop" ];
       "audio/mp4" = [ "mpv.desktop" ];
     };
+  };
+
+  # Acceso directo "Abrir con Wine" para ejecutar .exe con doble clic.
+  xdg.desktopEntries.wine = {
+    name = "Wine";
+    comment = "Ejecuta programas de Windows";
+    exec = "wine %f";
+    icon = "wine";
+    categories = [ "Utility" ];
+    mimeType = [
+      "application/x-msdownload"
+      "application/vnd.microsoft.portable-executable"
+      "application/x-ms-dos-executable"
+    ];
+    terminal = false;
   };
 
   # Config de Hyprland (force: sobrescribe los archivos manuales existentes)
