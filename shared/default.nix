@@ -425,7 +425,7 @@
     karere            # whatsapp (whatsapp-for-linux se retiró de nixpkgs)
     spotify-spotx     # spotify con anuncios bloqueados (vía SpotX-Nix, flake externo)
     lutris            # gestor de juegos
-    wineWowPackages.stableFull  # wine completo (wow64: 32+64 bits) para ejecutar .exe
+    wineWow64Packages.stableFull  # wine completo (wow64: 32+64 bits) para ejecutar .exe
     winetricks        # instala complementos de wine (DirectX, VC++, etc.)
     wezterm           # terminal
     git
