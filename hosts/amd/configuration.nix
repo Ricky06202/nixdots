@@ -1,9 +1,10 @@
 # PC AMD — specs reales:
 #   CPU:  AMD Ryzen 5 5500 (6c/12t, Zen 3)
-#   GPU:  ASRock Challenger RX 7600 8GB (RDNA3, amdgpu/Mesa nativos)
-#   MB:   Gigabyte A520M K V2 (AM4)
-#   RAM:  16GB DDR4-3200
-#   SSD:  Crucial P2 500GB NVMe
+#   GPU:  ASRock Challenger OC RX 7600 8GB (RDNA3, amdgpu/Mesa nativos)
+#   MB:   Gigabyte B550M K (Micro ATX, AM4)
+#   RAM:  2x 16GB DDR4-3200 CL22 Silicon Power (32GB total)
+#   SSD:  ADATA LEGEND 860 500GB NVMe PCIe 4.0
+#   PSU:  MSI MAG A550BN 550W 80+ Bronze
 
 { pkgs, ... }:
 
