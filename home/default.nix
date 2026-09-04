@@ -285,5 +285,12 @@ RUSTEOF
     force = true;
   };
 
+  # Config pública de OpenCode (modelo + compactación). La API key NO va aquí,
+  # se guarda aparte en ~/.local/share/opencode/auth.json (secreto, local).
+  home.file.".config/opencode/opencode.jsonc" = {
+    source = ./dotfiles/opencode/opencode.jsonc;
+    force = true;
+  };
+
   home.stateVersion = "26.05";
 }

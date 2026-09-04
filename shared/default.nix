@@ -421,6 +421,7 @@
       exec "$@"
     '')
     vulkan-tools       # vulkaninfo: Lutris lo consulta para listar GPUs
+    gamescope          # capa de juego: FSR1 universal + FSR3 FG en algunos títulos (útil en amd)
     opencode          # asistente de IA (este)
     neovim            # editor
     brave             # navegador principal (Chromium, bloqueador built-in, ligero)
