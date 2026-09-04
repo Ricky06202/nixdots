@@ -292,13 +292,18 @@ RUSTEOF
     force = true;
   };
 
-  # Skills de OpenCode (tauri-developer, etc.) — públicas, sin secretos.
+  # Skills de OpenCode (tauri-developer, rust-developer, etc.) — públicas, sin secretos.
   home.file.".config/opencode/skills/.keep" = {
     source = ./dotfiles/opencode/skills/.keep;
     force = true;
   };
   home.file.".config/opencode/skills/tauri-developer" = {
     source = ./dotfiles/opencode/skills/tauri-developer;
+    recursive = true;
+    force = true;
+  };
+  home.file.".config/opencode/skills/rust-developer" = {
+    source = ./dotfiles/opencode/skills/rust-developer;
     recursive = true;
     force = true;
   };
