@@ -477,6 +477,7 @@
     cargo-tauri       # CLI de Tauri
     webkitgtk_4_1     # WebView (motor de render de Tauri en Linux)
     librsvg           # renderizado SVG (dependencia de Tauri)
+    gsettings-desktop-schemas # schemas GSettings para diálogos GTK nativos (GtkFileChooser de Tauri/rfd aborta sin ellos)
     prismlauncher     # launcher de Minecraft
     wofi              # lanzador de apps (wayland)
     winetricks        # utilidades wine (complemento de Lutris)
@@ -609,6 +610,11 @@
       "${pkgs.zlib.dev}/share/pkgconfig"
     ];
   };
+
+  # Enlazar los esquemas GSettings (glib/gtk3/gsettings-desktop-schemas) al
+  # directorio accesible vía XDG_DATA_DIRS. Sin esto, los diálogos GTK nativos
+  # de Tauri (rfd → GtkFileChooser) abortan con g_error org.gtk.Settings.*
+  environment.pathsToLink = [ "/share/gsettings-schemas" ];
 
   # this value at the release version of the first install of this system.
   # Before changing this value read the documentation for this option
