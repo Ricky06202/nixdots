@@ -609,6 +609,14 @@
       # zlib instala zlib.pc en share/pkgconfig, no en lib/pkgconfig
       "${pkgs.zlib.dev}/share/pkgconfig"
     ];
+    # GSETTINGS_SCHEMA_DIR: expone los schemas GSettings compilados de gtk3 y
+    # gsettings-desktop-schemas. Sin esto, los diálogos GTK nativos de Tauri
+    # (rfd → GtkFileChooser) abortan con "No GSettings schemas are installed".
+    # (pathsToLink no basta: GLib necesita el dir de schemas compilados directo)
+    GSETTINGS_SCHEMA_DIR = lib.concatStringsSep ":" [
+      "${pkgs.gtk3}/share/gsettings-schemas/${pkgs.gtk3.name}/glib-2.0/schemas"
+      "${pkgs.gsettings-desktop-schemas}/share/gsettings-schemas/${pkgs.gsettings-desktop-schemas.name}/glib-2.0/schemas"
+    ];
   };
 
   # Enlazar los esquemas GSettings (glib/gtk3/gsettings-desktop-schemas) al
