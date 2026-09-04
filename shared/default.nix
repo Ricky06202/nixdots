@@ -1,7 +1,7 @@
 # Config compartida entre hosts (laptop + amd + omen).
 # Lo específico de cada máquina vive en hosts/<nombre>/configuration.nix.
 
-{ config, pkgs, caelestiaShell, spotx-nix, ... }:
+{ config, pkgs, lib, caelestiaShell, spotx-nix, ... }:
 
 {
   # Nix con flakes y nix-command habilitados (necesario para home-manager y caelestia)
@@ -583,6 +583,17 @@
     # MangoHUD: ruta del config + dlsym para OpenGL (juegos 2D/GameMaker)
     MANGOHUD_CONFIGFILE = "/home/ricky/.config/MangoHUD/MangoHUD.conf";
     MANGOHUD_DLSYM = "1";
+    # pkg-config: exponer los .pc de las libs Tauri (glib, gtk3, webkit2gtk,
+    # libsoup3, openssl) para que Cargo encuentre las libs de sistema sin tener
+    # que entrar a un devShell ni exportar nada a mano. Así Tauri compila en
+    # cualquier proyecto en NixOS.
+    PKG_CONFIG_PATH = lib.concatStringsSep ":" [
+      "${pkgs.glib.dev}/lib/pkgconfig"
+      "${pkgs.gtk3.dev}/lib/pkgconfig"
+      "${pkgs.webkitgtk_4_1.dev}/lib/pkgconfig"
+      "${pkgs.libsoup_3.dev}/lib/pkgconfig"
+      "${pkgs.openssl.dev}/lib/pkgconfig"
+    ];
   };
 
   # this value at the release version of the first install of this system.
