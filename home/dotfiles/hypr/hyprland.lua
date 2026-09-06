@@ -27,6 +27,7 @@ hl.config({
         rounding = 8,
         active_opacity = 0.92,
         inactive_opacity = 0.82,
+        fullscreen_opacity = 1,
         blur = {
             enabled = true,
             size = 5,
@@ -63,8 +64,100 @@ local mainMod = "SUPER"
 hl.bind(mainMod .. " + Return", hl.dsp.exec_cmd("wezterm"))
 hl.bind(mainMod .. " + E", hl.dsp.exec_cmd("nemo"))
 hl.bind(mainMod .. " + Q", hl.dsp.window.close())
-hl.bind(mainMod .. " + F", hl.dsp.window.fullscreen({ mode = 1 }))
-hl.bind(mainMod .. " + SHIFT + F", hl.dsp.window.fullscreen({ mode = 0 }))
+-- ===== FULLSCREEN (tres modos, transiciones deterministas) =====
+-- SUPER+F          -> maximizar normal: llena el espacio conservando gaps, bordes,
+--                     rounding y transparencia (modo "no veo bien").
+-- SUPER+SHIFT+F    -> falso fullscreen / concentracion: llena EXACTAMENTE el area
+--                     de trabajo de Caelestia, sin gaps, sin borde, opaca. La app
+--                     cree que esta en fullscreen real (client=2).
+-- SUPER+CONTROL+F  -> fullscreen TRADICIONAL (cubrir toda la pantalla, esconde
+--                     Caelestia). Casi no se usa: por eso va detras de CONTROL.
+-- Siempre se usa action="set" (el toggle esta roto en 0.55/0.56 y desincroniza
+-- internal/client). Cada tecla decide por el estado ACTUAL de la ventana.
+local GAPS_OUT = 10
+local GAPS_IN = 5
+
+-- Addresses de ventanas puestas a fullscreen tradicional a mano: el listener
+-- automatico NO debe reconvertirlas a concentracion.
+local manual_real_fs = {}
+
+local function is_fake_fullscreen(w)
+    return w ~= nil and w.fullscreen == 1 and w.fullscreen_client == 2
+end
+
+-- Sincroniza los gaps globales con la realidad: si hay alguna ventana en falso
+-- fullscreen -> 0; si no -> valores por defecto.
+local function sync_gaps()
+    for _, win in ipairs(hl.get_windows()) do
+        if is_fake_fullscreen(win) then
+            hl.config({ general = { gaps_out = 0, gaps_in = 0 } })
+            return
+        end
+    end
+    hl.config({ general = { gaps_out = GAPS_OUT, gaps_in = GAPS_IN } })
+end
+
+hl.bind(mainMod .. " + F", function()
+    local w = hl.get_active_window()
+    if not w then return end
+    if w.fullscreen == 1 and w.fullscreen_client == 1 then
+        hl.dispatch(hl.dsp.window.fullscreen_state({ internal = 0, client = 0, action = "set" }))
+    else
+        hl.dispatch(hl.dsp.window.fullscreen_state({ internal = 1, client = 1, action = "set" }))
+    end
+    sync_gaps()
+end)
+
+hl.bind(mainMod .. " + SHIFT + F", function()
+    local w = hl.get_active_window()
+    if not w then return end
+    if is_fake_fullscreen(w) then
+        hl.dispatch(hl.dsp.window.fullscreen_state({ internal = 0, client = 0, action = "set" }))
+    else
+        hl.dispatch(hl.dsp.window.fullscreen_state({ internal = 1, client = 2, action = "set" }))
+    end
+    sync_gaps()
+end)
+
+hl.bind(mainMod .. " + CONTROL + F", function()
+    local w = hl.get_active_window()
+    if not w then return end
+    if w.fullscreen == 2 or w.fullscreen == 3 then
+        manual_real_fs[w.address] = nil
+        hl.dispatch(hl.dsp.window.fullscreen_state({ internal = 0, client = 0, action = "set" }))
+    else
+        manual_real_fs[w.address] = true
+        hl.dispatch(hl.dsp.window.fullscreen_state({ internal = 2, client = 2, action = "set" }))
+    end
+    sync_gaps()
+end)
+
+-- Falso fullscreen automatico: si una app pide fullscreen real (cubrir todo),
+-- se convierte a llenar el workarea para no esconder Caelestia. Excepto si la
+-- ventana fue puesta a fullscreen tradicional a mano (manual_real_fs).
+hl.on("window.fullscreen", function(w)
+    if not w then return end
+    local fs = w.fullscreen
+    if fs == 2 or fs == 3 then
+        if not manual_real_fs[w.address] then
+            hl.dispatch(hl.dsp.window.fullscreen_state({ internal = 1, client = 2, action = "set", window = w }))
+        end
+    else
+        manual_real_fs[w.address] = nil
+    end
+    sync_gaps()
+end)
+
+-- Ventanas en falso fullscreen ESTABLE (internal=1 Y client=2): sin borde,
+-- sin rounding, opacas. Definida con nombre para que la reevaluacion de la
+-- regla al cambiar el estado fullscreen sea predecible.
+hl.window_rule({
+    name = "fake-fullscreen-style",
+    match = { float = false, fullscreen_state_internal = 1, fullscreen_state_client = 2 },
+    border_size = 0,
+    rounding = 0,
+    opacity = "1.0 override 1.0 override 1.0 override",
+})
 hl.bind(mainMod .. " + V", hl.dsp.window.float({ action = "toggle" }))
 hl.bind(mainMod .. " + SHIFT + S", hl.dsp.exec_cmd("grim -g \"$(slurp)\" - | wl-copy --type image/png"))
 hl.bind(mainMod .. " + CONTROL + E", hl.dsp.exit())
