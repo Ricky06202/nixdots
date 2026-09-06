@@ -64,19 +64,22 @@ local mainMod = "SUPER"
 hl.bind(mainMod .. " + Return", hl.dsp.exec_cmd("wezterm"))
 hl.bind(mainMod .. " + E", hl.dsp.exec_cmd("nemo"))
 hl.bind(mainMod .. " + Q", hl.dsp.window.close())
--- ===== FULLSCREEN (percepcion por niveles; la app siempre en fullscreen) =====
--- La app SIEMPRE ve fullscreen (client=2). Solo tu percepcion cambia con las teclas:
---   boton de la app   -> IN-PLACE: la ventana se queda en su hueco del layout y la
---                        app cree que esta a pantalla completa (el video llena su ventanita).
---   SUPER+F           -> GRANDE transparente: llena el workarea (respeta Caelestia),
---                        conserva gaps, borde, rounding y transparencia.
---   SUPER+SHIFT+F     -> CONCENTRACION: igual de grande pero opaca, sin gaps, sin borde.
---   SUPER+CONTROL+F   -> TRADICIONAL: cubre TODA la pantalla (Caelestia incluida).
+-- ===== FULLSCREEN (percepcion por niveles) =====
+-- Boton de la app -> IN-PLACE determinista (internal=0 client=2): la ventana se
+--                    queda en su hueco del layout y la app cree que esta a
+--                    pantalla completa (el video llena su ventanita).
+-- SUPER+F          -> GRANDE normal (internal=1 client=1, maximizar): la app NO
+--                     se entera del fullscreen -> el navegador conserva sus tabs.
+--                     Conserva gaps, borde, rounding y transparencia.
+-- SUPER+SHIFT+F    -> CONCENTRACION (internal=1 client=2): fullscreen real para
+--                     la app (esconde tabs/UI); opaca, sin gaps, sin borde.
+-- SUPER+CONTROL+F  -> TRADICIONAL (internal=2 client=2): cubre TODA la pantalla.
+-- Solo SHIFT+F y CONTROL+F notifican fullscreen a la app; F solo agranda.
 -- Siempre action="set" con estado explicito: nunca dependemos del toggle de la app.
 local GAPS_OUT = 10
 local GAPS_IN = 5
 
--- address -> "big" | "conc" | "trad"  (el in-place de la app no se registra)
+-- address -> "big" | "conc" | "trad"  (el in-place de la app y el F normal no se registran)
 local mode = {}
 
 -- Regla de estilo para el modo CONCENTRACION: se activa/desactiva segun el modo.
@@ -136,10 +139,14 @@ end)
 hl.bind(mainMod .. " + F", function()
     local w = hl.get_active_window()
     if not w then return end
-    if mode[w.address] == "big" then
-        clear_window_mode(w)
+    if mode[w.address] then
+        mode[w.address] = nil
+        sync_perception()
+    end
+    if w.fullscreen == 1 and w.fullscreen_client == 1 then
+        hl.dispatch(hl.dsp.window.fullscreen_state({ internal = 0, client = 0, action = "set" }))
     else
-        set_window_mode(w, "big")
+        hl.dispatch(hl.dsp.window.fullscreen_state({ internal = 1, client = 1, action = "set" }))
     end
 end)
 
