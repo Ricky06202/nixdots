@@ -135,6 +135,9 @@ end)
 -- Falso fullscreen automatico: si una app pide fullscreen real (cubrir todo),
 -- se convierte a llenar el workarea para no esconder Caelestia. Excepto si la
 -- ventana fue puesta a fullscreen tradicional a mano (manual_real_fs).
+-- Repara el desync del toggle (#14531): si el cliente queda en fullscreen (2)
+-- pero la ventana se encoge (internal=0) -> "fullscreen en chiquito". En ese
+-- caso la app pide fullscreen de nuevo: se re-aplica (1,2) para llenar el área.
 hl.on("window.fullscreen", function(w)
     if not w then return end
     local fs = w.fullscreen
@@ -142,6 +145,8 @@ hl.on("window.fullscreen", function(w)
         if not manual_real_fs[w.address] then
             hl.dispatch(hl.dsp.window.fullscreen_state({ internal = 1, client = 2, action = "set", window = w }))
         end
+    elseif fs == 0 and w.fullscreen_client == 2 then
+        hl.dispatch(hl.dsp.window.fullscreen_state({ internal = 1, client = 2, action = "set", window = w }))
     else
         manual_real_fs[w.address] = nil
     end
