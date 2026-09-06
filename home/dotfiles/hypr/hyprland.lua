@@ -64,105 +64,123 @@ local mainMod = "SUPER"
 hl.bind(mainMod .. " + Return", hl.dsp.exec_cmd("wezterm"))
 hl.bind(mainMod .. " + E", hl.dsp.exec_cmd("nemo"))
 hl.bind(mainMod .. " + Q", hl.dsp.window.close())
--- ===== FULLSCREEN (tres modos, transiciones deterministas) =====
--- SUPER+F          -> maximizar normal: llena el espacio conservando gaps, bordes,
---                     rounding y transparencia (modo "no veo bien").
--- SUPER+SHIFT+F    -> falso fullscreen / concentracion: llena EXACTAMENTE el area
---                     de trabajo de Caelestia, sin gaps, sin borde, opaca. La app
---                     cree que esta en fullscreen real (client=2).
--- SUPER+CONTROL+F  -> fullscreen TRADICIONAL (cubrir toda la pantalla, esconde
---                     Caelestia). Casi no se usa: por eso va detras de CONTROL.
--- Siempre se usa action="set" (el toggle esta roto en 0.55/0.56 y desincroniza
--- internal/client). Cada tecla decide por el estado ACTUAL de la ventana.
+-- ===== FULLSCREEN (percepcion por niveles; la app siempre en fullscreen) =====
+-- La app SIEMPRE ve fullscreen (client=2). Solo tu percepcion cambia con las teclas:
+--   boton de la app   -> IN-PLACE: la ventana se queda en su hueco del layout y la
+--                        app cree que esta a pantalla completa (el video llena su ventanita).
+--   SUPER+F           -> GRANDE transparente: llena el workarea (respeta Caelestia),
+--                        conserva gaps, borde, rounding y transparencia.
+--   SUPER+SHIFT+F     -> CONCENTRACION: igual de grande pero opaca, sin gaps, sin borde.
+--   SUPER+CONTROL+F   -> TRADICIONAL: cubre TODA la pantalla (Caelestia incluida).
+-- Siempre action="set" con estado explicito: nunca dependemos del toggle de la app.
 local GAPS_OUT = 10
 local GAPS_IN = 5
 
--- Addresses de ventanas puestas a fullscreen tradicional a mano: el listener
--- automatico NO debe reconvertirlas a concentracion.
-local manual_real_fs = {}
+-- address -> "big" | "conc" | "trad"  (el in-place de la app no se registra)
+local mode = {}
 
-local function is_fake_fullscreen(w)
-    return w ~= nil and w.fullscreen == 1 and w.fullscreen_client == 2
-end
-
--- Sincroniza los gaps globales con la realidad: si hay alguna ventana en falso
--- fullscreen -> 0; si no -> valores por defecto.
-local function sync_gaps()
-    for _, win in ipairs(hl.get_windows()) do
-        if is_fake_fullscreen(win) then
-            hl.config({ general = { gaps_out = 0, gaps_in = 0 } })
-            return
-        end
-    end
-    hl.config({ general = { gaps_out = GAPS_OUT, gaps_in = GAPS_IN } })
-end
-
-hl.bind(mainMod .. " + F", function()
-    local w = hl.get_active_window()
-    if not w then return end
-    if w.fullscreen == 1 and w.fullscreen_client == 1 then
-        hl.dispatch(hl.dsp.window.fullscreen_state({ internal = 0, client = 0, action = "set" }))
-    else
-        hl.dispatch(hl.dsp.window.fullscreen_state({ internal = 1, client = 1, action = "set" }))
-    end
-    sync_gaps()
-end)
-
-hl.bind(mainMod .. " + SHIFT + F", function()
-    local w = hl.get_active_window()
-    if not w then return end
-    if is_fake_fullscreen(w) then
-        hl.dispatch(hl.dsp.window.fullscreen_state({ internal = 0, client = 0, action = "set" }))
-    else
-        hl.dispatch(hl.dsp.window.fullscreen_state({ internal = 1, client = 2, action = "set" }))
-    end
-    sync_gaps()
-end)
-
-hl.bind(mainMod .. " + CONTROL + F", function()
-    local w = hl.get_active_window()
-    if not w then return end
-    if w.fullscreen == 2 or w.fullscreen == 3 then
-        manual_real_fs[w.address] = nil
-        hl.dispatch(hl.dsp.window.fullscreen_state({ internal = 0, client = 0, action = "set" }))
-    else
-        manual_real_fs[w.address] = true
-        hl.dispatch(hl.dsp.window.fullscreen_state({ internal = 2, client = 2, action = "set" }))
-    end
-    sync_gaps()
-end)
-
--- Falso fullscreen automatico: si una app pide fullscreen real (cubrir todo),
--- se convierte a llenar el workarea para no esconder Caelestia. Excepto si la
--- ventana fue puesta a fullscreen tradicional a mano (manual_real_fs).
--- Repara el desync del toggle (#14531): si el cliente queda en fullscreen (2)
--- pero la ventana se encoge (internal=0) -> "fullscreen en chiquito". En ese
--- caso la app pide fullscreen de nuevo: se re-aplica (1,2) para llenar el área.
-hl.on("window.fullscreen", function(w)
-    if not w then return end
-    local fs = w.fullscreen
-    if fs == 2 or fs == 3 then
-        if not manual_real_fs[w.address] then
-            hl.dispatch(hl.dsp.window.fullscreen_state({ internal = 1, client = 2, action = "set", window = w }))
-        end
-    elseif fs == 0 and w.fullscreen_client == 2 then
-        hl.dispatch(hl.dsp.window.fullscreen_state({ internal = 1, client = 2, action = "set", window = w }))
-    else
-        manual_real_fs[w.address] = nil
-    end
-    sync_gaps()
-end)
-
--- Ventanas en falso fullscreen ESTABLE (internal=1 Y client=2): sin borde,
--- sin rounding, opacas. Definida con nombre para que la reevaluacion de la
--- regla al cambiar el estado fullscreen sea predecible.
-hl.window_rule({
+-- Regla de estilo para el modo CONCENTRACION: se activa/desactiva segun el modo.
+local conc_rule = hl.window_rule({
     name = "fake-fullscreen-style",
     match = { float = false, fullscreen_state_internal = 1, fullscreen_state_client = 2 },
     border_size = 0,
     rounding = 0,
     opacity = "1.0 override 1.0 override 1.0 override",
 })
+conc_rule:set_enabled(false)
+
+local function any_mode(m)
+    for _, v in pairs(mode) do
+        if v == m then return true end
+    end
+    return false
+end
+
+-- Aplica percepcion global (gaps + regla de estilo) segun los modos activos.
+local function sync_perception()
+    if any_mode("conc") then
+        hl.config({ general = { gaps_out = 0, gaps_in = 0 } })
+        conc_rule:set_enabled(true)
+    else
+        hl.config({ general = { gaps_out = GAPS_OUT, gaps_in = GAPS_IN } })
+        conc_rule:set_enabled(false)
+    end
+end
+
+local function set_window_mode(w, m)
+    mode[w.address] = m
+    local internal = 0
+    if m == "big" or m == "conc" then
+        internal = 1
+    elseif m == "trad" then
+        internal = 2
+    end
+    hl.dispatch(hl.dsp.window.fullscreen_state({ internal = internal, client = 2, action = "set", window = w }))
+    sync_perception()
+end
+
+local function clear_window_mode(w)
+    mode[w.address] = nil
+    hl.dispatch(hl.dsp.window.fullscreen_state({ internal = 0, client = 0, action = "set", window = w }))
+    sync_perception()
+end
+
+-- Por si cierra una ventana en modo activo (evita gaps=0 clavados).
+hl.on("window.destroy", function(w)
+    if w and mode[w.address] then
+        mode[w.address] = nil
+        sync_perception()
+    end
+end)
+
+hl.bind(mainMod .. " + F", function()
+    local w = hl.get_active_window()
+    if not w then return end
+    if mode[w.address] == "big" then
+        clear_window_mode(w)
+    else
+        set_window_mode(w, "big")
+    end
+end)
+
+hl.bind(mainMod .. " + SHIFT + F", function()
+    local w = hl.get_active_window()
+    if not w then return end
+    if mode[w.address] == "conc" then
+        clear_window_mode(w)
+    else
+        set_window_mode(w, "conc")
+    end
+end)
+
+hl.bind(mainMod .. " + CONTROL + F", function()
+    local w = hl.get_active_window()
+    if not w then return end
+    if mode[w.address] == "trad" then
+        clear_window_mode(w)
+    else
+        set_window_mode(w, "trad")
+    end
+end)
+
+-- Cuando la app pide fullscreen real -> la convertimos a IN-PLACE determinista
+-- (internal=0 client=2): la ventana conserva su hueco y la app ve fullscreen.
+-- Si la app sale sola del fullscreen -> limpiamos el estado (forzamos (0,0)).
+hl.on("window.fullscreen", function(w)
+    if not w then return end
+    if mode[w.address] then
+        if w.fullscreen_client == 0 then
+            mode[w.address] = nil
+            hl.dispatch(hl.dsp.window.fullscreen_state({ internal = 0, client = 0, action = "set", window = w }))
+            sync_perception()
+        end
+        return
+    end
+    if w.fullscreen == 2 or w.fullscreen == 3 then
+        hl.dispatch(hl.dsp.window.fullscreen_state({ internal = 0, client = 2, action = "set", window = w }))
+    end
+end)
+
 hl.bind(mainMod .. " + V", hl.dsp.window.float({ action = "toggle" }))
 hl.bind(mainMod .. " + SHIFT + S", hl.dsp.exec_cmd("grim -g \"$(slurp)\" - | wl-copy --type image/png"))
 hl.bind(mainMod .. " + CONTROL + E", hl.dsp.exit())
