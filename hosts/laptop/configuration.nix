@@ -2,7 +2,7 @@
 # PRIME offload: la Intel maneja escritorio/batería, la NVIDIA se despierta
 # solo para gaming. Driver legacy_580 = último que soporta Maxwell (940M).
 
-{ config, pkgs, ... }:
+{ config, pkgs, lib, ... }:
 
 {
   imports = [
@@ -170,6 +170,22 @@
       done
     '';
   };
+
+  # --- Greeter (ReGreet sobre cage): forzar SOLO la iGPU Intel ---
+  # Sintoma: 1-2 min en la pantalla de login -> pantalla congelada (el cursor
+  # se mueve pero no se puede interactuar). Causa: cage/wlroots abre card0
+  # (nvidia-drm, minor 0, sin CRTC ni formato valido) y cuando el PM
+  # finegrained suspende la 940M tras la inactividad, el backend DRM de
+  # wlroots se atasca (igual que pasaba en la Omen: "cambiaba de display a la
+  # grafica"). Fix: limitar wlroots a la iGPU (/dev/dri/card1) y limpiar las
+  # vars NVIDIA globales que se filtran al entorno del greeter.
+  services.greetd.settings.default_session.command = lib.mkForce (
+    "${pkgs.dbus}/bin/dbus-run-session "
+    + "env -u GBM_BACKEND -u __GLX_VENDOR_LIBRARY_NAME -u WLR_NO_HARDWARE_CURSORS "
+    + "WLR_DRM_DEVICES=/dev/dri/card1 "
+    + "${lib.getExe pkgs.cage} ${lib.escapeShellArgs config.services.displayManager.regreet.cageArgs} "
+    + "-- ${lib.getExe pkgs.regreet}"
+  );
 
   # --- Steam con wrapper de PRIME offload ---
   # El cliente Steam lanza con GPU NVIDIA también desde el launcher de
