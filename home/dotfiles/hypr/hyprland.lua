@@ -78,15 +78,18 @@ hl.bind(mainMod .. " + Q", hl.dsp.window.close())
 -- Siempre action="set" con estado explicito: nunca dependemos del toggle de la app.
 local GAPS_OUT = 10
 local GAPS_IN = 5
+local BORDER_SIZE = 2
 
 -- address -> "big" | "conc" | "trad"  (el in-place de la app y el F normal no se registran)
 local mode = {}
 
 -- Regla de estilo para el modo CONCENTRACION: se activa/desactiva segun el modo.
+-- Nota: el match de estados fullscreen es fragil con juegos (Wine/Proton lanzan
+-- ventanas con estados distintos), asi que el border se maneja GLOBALMENTE en
+-- sync_perception (este rule solo pulles el rounding y la opacidad).
 local conc_rule = hl.window_rule({
     name = "fake-fullscreen-style",
-    match = { float = false, fullscreen_state_internal = 1, fullscreen_state_client = 2 },
-    border_size = 0,
+    match = { fullscreen_state_internal = 1 },
     rounding = 0,
     opacity = "1.0 override 1.0 override 1.0 override",
 })
@@ -100,13 +103,15 @@ local function any_mode(m)
 end
 
 -- Aplica percepcion global segun los modos activos.
--- LOS GAPS NUNCA SE TOCAN: cualquier modo conserva GAPS_OUT/GAPS_IN. El modo
--- conc solo activa su regla de estilo (sin borde, opaco); la ventana se agranda
--- pero mantiene su margen respecto a las demas apps.
+-- LOS GAPS NUNCA SE TOCAN: cualquier modo conserva GAPS_OUT/GAPS_IN.
+-- El border SI se quita en conc (immersivo): se restaura al salir. El estilo
+-- per-window (rounding/opacidad) lo aplica conc_rule.
 local function sync_perception()
     if any_mode("conc") then
+        hl.config({ general = { border_size = 0 } })
         conc_rule:set_enabled(true)
     else
+        hl.config({ general = { border_size = BORDER_SIZE } })
         conc_rule:set_enabled(false)
     end
 end
