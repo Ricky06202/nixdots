@@ -1,6 +1,9 @@
-# Laptop: Intel HD 5500 (iGPU, salidas de video) + NVIDIA 940M (Optimus).
-# PRIME offload: la Intel maneja escritorio/batería, la NVIDIA se despierta
-# solo para gaming. Driver legacy_580 = último que soporta Maxwell (940M).
+# Laptop: SOLO Intel HD 5500 (iGPU). La NVIDIA 940M está DESACTIVADA por
+# completo: sin driver, sin PRIME, sin kernel param. Todas las salidas de
+# video viven en la iGPU (card1), así que nada la necesita. La 940M queda en
+# latencia sin despertar nunca: 0 uso, 0 calor, 0 consumo.
+# (Si algún día quisieras reactivarla: reintroducir hardware.nvidia + PRIME
+# offload desde el repo, ya está documentado en git history.)
 
 { config, pkgs, ... }:
 
@@ -19,39 +22,14 @@
   # original del laptop no usa subvolúmenes Btrfs.
   swapDevices = [ { device = "/swapfile"; size = 8192; } ];
 
-  # --- NVIDIA 940M (Maxwell) + PRIME offload ---
-  services.xserver.videoDrivers = [ "nvidia" ];
-  hardware.nvidia = {
-    package = config.boot.kernelPackages.nvidiaPackages.legacy_580;
-    open = false;                    # Maxwell NO soporta módulos abiertos
-    modesetting.enable = true;       # necesario para Wayland/Hyprland
-    nvidiaSettings = true;
-    powerManagement = {
-      enable = true;
-      finegrained = true;            # apaga la NVIDIA cuando no se usa (ahorra batería)
-    };
-    prime = {
-      offload = {
-        enable = true;
-        enableOffloadCmd = true;     # crea `nvidia-offload` para lanzar apps en la GPU
-      };
-      intelBusId = "PCI:0@0:2:0";
-      nvidiaBusId = "PCI:0@4:0:0";
-    };
-  };
+  # --- NVIDIA 940M DESACTIVADA ---
+  # No se carga driver ni kernel params de NVIDIA. Solo la iGPU Intel.
+  # El módulo hardware.nvidia y PRIME offload se eliminan en la línea de abajo.
+  # (Sin driver: la 940M nunca se despierta, sin uso de VRAM/consumo.)
 
-  # NVIDIA: forzar modosetting en kernel para Wayland/Hyprland.
-  boot.kernelParams = [ "nvidia-drm.modeset=1" ];
-
-  # Variables de sesión específicas NVIDIA (Hyprland/Wayland).
-  # OJO: NUNCA definir GBM_BACKEND ni __GLX_VENDOR_LIBRARY_NAME GLOBALMENTE.
-  # Hacerlo fuerza que TODO el escritorio (Hyprland y cada app GL) use la 940M
-  # como backend, manteniendo la dGPU siempre activa (más calor/batería) así no
-  # se la pidas. Esas vars viven SOLO en el wrapper `nvidia-offload`: la NVIDIA
-  # se usa únicamente cuando se lanza algo con `nvidia-offload <app>`, el resto
-  # del sistema queda en la iGPU Intel, y `finegrained` la apaga en reposo.
+  # Cursor por software en Wayland (evita glitches de cursor en Hyprland).
   environment.sessionVariables = {
-    WLR_NO_HARDWARE_CURSORS = "1";   # evita problemas de cursor en Hyprland
+    WLR_NO_HARDWARE_CURSORS = "1";
   };
 
   # thermald: daemon térmico de Intel — baja frecuencia del CPU antes de sobrecalentarse.
@@ -175,11 +153,7 @@
     '';
   };
 
-  # --- Steam con iGPU Intel por defecto ---
-  # El wrapper ya NO fuerza la NVIDIA: Steam y sus juegos usan la iGPU Intel
-  # (menos calor, la 940M en reposo). Si RICKY quiere activar la 940M para
-  # un juego concreto, lo lanza con `nvidia-offload steam` (el wrapper vivo
-  # inyecta PRIME offload SOLO en ese proceso puntual, y la dGPU sigue en
-  # reposo profundo el resto del tiempo).
+  # --- Steam: iGPU Intel, sin wrapper ---
+  # Ya no hay NVIDIA que forzar: Steam y sus juegos usan la iGPU Intel natural.
   programs.steam.package = pkgs.steam;
 }

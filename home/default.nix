@@ -113,11 +113,7 @@ RUSTEOF
       ll = "ls -la";
       nv = "nvim";
       update = "sudo nixos-rebuild switch --flake /home/ricky/Dev/nixdots#${hostName}";
-    } // (lib.optionalAttrs (hostName == "laptop") {
-      # NVIDIA PRIME: steam y lutris usan la GPU dedicada automáticamente
-      steam = "nvidia-offload steam";
-      lutris = "nvidia-offload lutris";
-    });
+    };
     initContent = ''
       # zoxide: z (saltar a directorios frecuentes)
       eval "$(zoxide init zsh)"
@@ -269,11 +265,6 @@ RUSTEOF
   };
   home.file.".config/hypr/steam-launcher.sh" = {
     source = ./dotfiles/hypr/steam-launcher.sh;
-    executable = true;
-    force = true;
-  };
-  home.file.".config/hypr/nvidia-detect.sh" = lib.mkIf (hostName == "laptop") {
-    source = ./dotfiles/hypr/nvidia-detect.sh;
     executable = true;
     force = true;
   };
