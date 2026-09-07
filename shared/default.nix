@@ -129,20 +129,6 @@
     withUWSM = true;
   };
 
-  # --- ReGreet 0.5.0: fix del fondo estático (glycin) sin recompilar ---
-  # ReGreet 0.5.0 decodifica fondos estáticos con glycin; el paquete de nixpkgs
-  # no expone glycin-loaders ni bubblewrap, así que ReGreet cae al fallback de
-  # GStreamer (decodifica el JPEG como video en bucle), quema CPU y el greeter
-  # muere/queda colgado ("check_children: greeter exited without creating a
-  # session" -> login congelado). Fix de nixpkgs #557002 aplicado vía entorno
-  # (evita recompilar regreet): exponer loaders y bwrap + stderr a un log.
-  services.greetd.settings.default_session.command = lib.mkForce (
-    ''export PATH='${pkgs.bubblewrap}/bin':$PATH export XDG_DATA_DIRS='${pkgs.glycin-loaders}/share':$XDG_DATA_DIRS''
-    + "; exec ${pkgs.dbus}/bin/dbus-run-session env GTK_USE_PORTAL=0 GDK_DEBUG=no-portals "
-    + "${lib.getExe pkgs.cage} ${lib.escapeShellArgs config.services.displayManager.regreet.cageArgs} "
-    + "-- ${lib.getExe pkgs.regreet} 2> /tmp/regreet-stderr.log"
-  );
-
   # ReGreet: greeter gráfico GTK (Rust) — personalizable, fácil y estable.
   # El módulo configura greetd + cage automáticamente.
   # IMPORTANTE: ReGreet corre DENTRO de cage (compositor propio). NO lanza Hyprland.
