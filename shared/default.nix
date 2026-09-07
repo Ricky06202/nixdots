@@ -99,6 +99,20 @@
   # Para quitarlo: borrar este bloque y el grupo extra de ricky.
   virtualisation.virtualbox.host.enable = true;
 
+  # --- QEMU/KVM + virt-manager (libvirt) ---
+  # Para VMs con KVM nativo (rendimiento casi real). virtiofs para carpeta
+  # compartida bidireccional y SPICE para drag&drop/clipboard bidireccional.
+  virtualisation.libvirtd = {
+    enable = true;
+    qemu = {
+      package = pkgs.qemu_kvm;
+      runAsRoot = true;
+    };
+  };
+  services.spice-vdagentd.enable = true;
+  users.groups.libvirtd.members = [ "ricky" ];
+  users.groups.qemu-libvirtd.members = [ "ricky" ];
+
   # Set your time zone.
   time.timeZone = "America/Panama";
 
@@ -431,6 +445,8 @@
     lutris            # gestor de juegos
     wineWow64Packages.stableFull  # wine completo (wow64: 32+64 bits) para ejecutar .exe
     winetricks        # instala complementos de wine (DirectX, VC++, etc.)
+    virt-manager      # GUI de QEMU/KVM (libvirt): VMs con KVM nativo
+    virt-viewer       # visor SPICE/vnc para virt-manager (drag&drop bidireccional)
     wezterm           # terminal
     git
     grim              # captura de pantalla (wayland)
