@@ -44,9 +44,13 @@
   boot.kernelParams = [ "nvidia-drm.modeset=1" ];
 
   # Variables de sesión específicas NVIDIA (Hyprland/Wayland).
+  # OJO: NUNCA definir GBM_BACKEND ni __GLX_VENDOR_LIBRARY_NAME GLOBALMENTE.
+  # Hacerlo fuerza que TODO el escritorio (Hyprland y cada app GL) use la 940M
+  # como backend, manteniendo la dGPU siempre activa (más calor/batería) así no
+  # se la pidas. Esas vars viven SOLO en el wrapper `nvidia-offload`: la NVIDIA
+  # se usa únicamente cuando se lanza algo con `nvidia-offload <app>`, el resto
+  # del sistema queda en la iGPU Intel, y `finegrained` la apaga en reposo.
   environment.sessionVariables = {
-    GBM_BACKEND = "nvidia-drm";
-    __GLX_VENDOR_LIBRARY_NAME = "nvidia";
     WLR_NO_HARDWARE_CURSORS = "1";   # evita problemas de cursor en Hyprland
   };
 
@@ -171,15 +175,11 @@
     '';
   };
 
-  # --- Steam con wrapper de PRIME offload ---
-  # El cliente Steam lanza con GPU NVIDIA también desde el launcher de
-  # escritorio, no solo con el alias de zsh (`nvidia-offload steam`).
-  programs.steam.package = pkgs.steam.overrideAttrs (old: {
-    postFixup = (old.postFixup or "") + ''
-      wrapProgram $out/bin/steam \
-        --set __NV_PRIME_RENDER_OFFLOAD 1 \
-        --set __GLX_VENDOR_LIBRARY_NAME nvidia \
-        --set __VK_LAYER_NV_optimus NVIDIA_only
-    '';
-  });
+  # --- Steam con iGPU Intel por defecto ---
+  # El wrapper ya NO fuerza la NVIDIA: Steam y sus juegos usan la iGPU Intel
+  # (menos calor, la 940M en reposo). Si RICKY quiere activar la 940M para
+  # un juego concreto, lo lanza con `nvidia-offload steam` (el wrapper vivo
+  # inyecta PRIME offload SOLO en ese proceso puntual, y la dGPU sigue en
+  # reposo profundo el resto del tiempo).
+  programs.steam.package = pkgs.steam;
 }
