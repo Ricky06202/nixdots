@@ -99,13 +99,14 @@ local function any_mode(m)
     return false
 end
 
--- Aplica percepcion global (gaps + regla de estilo) segun los modos activos.
+-- Aplica percepcion global segun los modos activos.
+-- LOS GAPS NUNCA SE TOCAN: cualquier modo conserva GAPS_OUT/GAPS_IN. El modo
+-- conc solo activa su regla de estilo (sin borde, opaco); la ventana se agranda
+-- pero mantiene su margen respecto a las demas apps.
 local function sync_perception()
     if any_mode("conc") then
-        hl.config({ general = { gaps_out = 0, gaps_in = 0 } })
         conc_rule:set_enabled(true)
     else
-        hl.config({ general = { gaps_out = GAPS_OUT, gaps_in = GAPS_IN } })
         conc_rule:set_enabled(false)
     end
 end
@@ -113,12 +114,18 @@ end
 local function set_window_mode(w, m)
     mode[w.address] = m
     local internal = 0
-    if m == "big" or m == "conc" then
+    local client = 2
+    if m == "big" then
         internal = 1
+        client = 1   -- la app NO se entera del fullscreen (conserva tabs/UI)
+    elseif m == "conc" then
+        internal = 1
+        client = 2   -- la app SI ve fullscreen (esconde su UI)
     elseif m == "trad" then
         internal = 2
+        client = 2   -- fullscreen total
     end
-    hl.dispatch(hl.dsp.window.fullscreen_state({ internal = internal, client = 2, action = "set", window = w }))
+    hl.dispatch(hl.dsp.window.fullscreen_state({ internal = internal, client = client, action = "set", window = w }))
     sync_perception()
 end
 
@@ -139,15 +146,11 @@ end)
 hl.bind(mainMod .. " + F", function()
     local w = hl.get_active_window()
     if not w then return end
-    if mode[w.address] then
-        mode[w.address] = nil
-        sync_perception()
+    if mode[w.address] == "big" then
+        clear_window_mode(w)
+        return
     end
-    if w.fullscreen == 1 and w.fullscreen_client == 1 then
-        hl.dispatch(hl.dsp.window.fullscreen_state({ internal = 0, client = 0, action = "set" }))
-    else
-        hl.dispatch(hl.dsp.window.fullscreen_state({ internal = 1, client = 1, action = "set" }))
-    end
+    set_window_mode(w, "big")
 end)
 
 hl.bind(mainMod .. " + SHIFT + F", function()
@@ -177,9 +180,16 @@ hl.on("window.fullscreen", function(w)
     if not w then return end
     if mode[w.address] then
         if w.fullscreen_client == 0 then
-            mode[w.address] = nil
-            hl.dispatch(hl.dsp.window.fullscreen_state({ internal = 0, client = 0, action = "set", window = w }))
-            sync_perception()
+            if mode[w.address] == "big" then
+                -- Estando en SUPER+F y la app sale de su propio fullscreen:
+                -- re-aplicamos big (internal=1 client=1) para que se quede en
+                -- el mismo tamanio grande, no colapse a ventana chiquita.
+                set_window_mode(w, "big")
+            else
+                mode[w.address] = nil
+                hl.dispatch(hl.dsp.window.fullscreen_state({ internal = 0, client = 0, action = "set", window = w }))
+                sync_perception()
+            end
         end
         return
     end
