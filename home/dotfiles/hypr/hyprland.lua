@@ -103,15 +103,14 @@ local function any_mode(m)
 end
 
 -- Aplica percepcion global segun los modos activos.
--- LOS GAPS NUNCA SE TOCAN: cualquier modo conserva GAPS_OUT/GAPS_IN.
--- El border SI se quita en conc (immersivo): se restaura al salir. El estilo
--- per-window (rounding/opacidad) lo aplica conc_rule.
+-- conc (SHIFT+F): SIN gaps ni borde (immersivo, el juego llena la pantalla).
+-- big (SUPER+F) y normal: conservan gaps (GAPS_OUT/GAPS_IN) y borde.
 local function sync_perception()
     if any_mode("conc") then
-        hl.config({ general = { border_size = 0 } })
+        hl.config({ general = { gaps_out = 0, gaps_in = 0, border_size = 0 } })
         conc_rule:set_enabled(true)
     else
-        hl.config({ general = { border_size = BORDER_SIZE } })
+        hl.config({ general = { gaps_out = GAPS_OUT, gaps_in = GAPS_IN, border_size = BORDER_SIZE } })
         conc_rule:set_enabled(false)
     end
 end
