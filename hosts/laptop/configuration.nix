@@ -171,18 +171,15 @@
     '';
   };
 
-  # --- Greeter (ReGreet sobre cage): forzar SOLO la iGPU Intel ---
-  # Sintoma: 1-2 min en la pantalla de login -> pantalla congelada (el cursor
-  # se mueve pero no se puede interactuar). Causa: cage/wlroots abre card0
-  # (nvidia-drm, minor 0, sin CRTC ni formato valido) y cuando el PM
-  # finegrained suspende la 940M tras la inactividad, el backend DRM de
-  # wlroots se atasca (igual que pasaba en la Omen: "cambiaba de display a la
-  # grafica"). Fix: limitar wlroots a la iGPU (/dev/dri/card1) y limpiar las
-  # vars NVIDIA globales que se filtran al entorno del greeter.
+  # --- Greeter (ReGreet sobre cage): evitar que se congele tras ~1-2 min ---
+  # Sintoma: 1-2 min en la pantalla de login -> ReGreet deja de responder a
+  # teclado/raton (el cursor se mueve y se puede saltar a otro VT, cage sigue
+  # vivo; es la app GTK la que se bloquea). Causa: GTK/ReGreet esperando
+  # respuestas de xdg-desktop-portal por D-Bus bajo cage (ReGreet #164).
+  # Fix oficial del README de ReGreet: desactivar portals.
   services.greetd.settings.default_session.command = lib.mkForce (
     "${pkgs.dbus}/bin/dbus-run-session "
-    + "env -u GBM_BACKEND -u __GLX_VENDOR_LIBRARY_NAME -u WLR_NO_HARDWARE_CURSORS "
-    + "WLR_DRM_DEVICES=/dev/dri/card1 "
+    + "env GTK_USE_PORTAL=0 GDK_DEBUG=no-portals "
     + "${lib.getExe pkgs.cage} ${lib.escapeShellArgs config.services.displayManager.regreet.cageArgs} "
     + "-- ${lib.getExe pkgs.regreet}"
   );
