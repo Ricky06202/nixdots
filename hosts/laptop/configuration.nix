@@ -2,7 +2,7 @@
 # PRIME offload: la Intel maneja escritorio/batería, la NVIDIA se despierta
 # solo para gaming. Driver legacy_580 = último que soporta Maxwell (940M).
 
-{ config, pkgs, lib, ... }:
+{ config, pkgs, ... }:
 
 {
   imports = [
@@ -170,19 +170,6 @@
       done
     '';
   };
-
-  # --- Greeter (ReGreet sobre cage): evitar que se congele tras ~1-2 min ---
-  # Sintoma: 1-2 min en la pantalla de login -> ReGreet deja de responder a
-  # teclado/raton (el cursor se mueve y se puede saltar a otro VT, cage sigue
-  # vivo; es la app GTK la que se bloquea). Causa: GTK/ReGreet esperando
-  # respuestas de xdg-desktop-portal por D-Bus bajo cage (ReGreet #164).
-  # Fix oficial del README de ReGreet: desactivar portals.
-  services.greetd.settings.default_session.command = lib.mkForce (
-    "${pkgs.dbus}/bin/dbus-run-session "
-    + "env GTK_USE_PORTAL=0 GDK_DEBUG=no-portals "
-    + "${lib.getExe pkgs.cage} ${lib.escapeShellArgs config.services.displayManager.regreet.cageArgs} "
-    + "-- ${lib.getExe pkgs.regreet}"
-  );
 
   # --- Steam con wrapper de PRIME offload ---
   # El cliente Steam lanza con GPU NVIDIA también desde el launcher de
