@@ -156,4 +156,20 @@
   # --- Steam: iGPU Intel, sin wrapper ---
   # Ya no hay NVIDIA que forzar: Steam y sus juegos usan la iGPU Intel natural.
   programs.steam.package = pkgs.steam;
+
+  # --- Bluetooth: SBC @ 44100 Hz fijo (solo laptop) ---
+  # El chip Atheros QCA9565 de este equipo tira el transporte A2DP por jitter
+  # USB bajo carga: los audífonos se desconectan/reconectan solos. Forzar SBC
+  # a 44.1kHz reduce la tasa de paquetes y lo hace significativamente más
+  # estable (probado: se desconecta ~1 vez en vez de repetidamente).
+  # El nombre "90-" se carga después del "10-bluez-hfp-fix" de shared y lo
+  # sobreescribe. AMD NO lo hereda: allá queda AAC/SBC multi-codec.
+  services.pipewire.wireplumber.extraConfig = {
+    "90-bluez-sbc-laptop" = {
+      "wireplumber.settings" = {
+        "bluez5.codecs" = [ "sbc" ];
+        "bluez5.default.rate" = 44100;
+      };
+    };
+  };
 }
