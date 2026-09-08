@@ -183,17 +183,16 @@ end)
 hl.on("window.fullscreen", function(w)
     if not w then return end
     if mode[w.address] then
-        if w.fullscreen_client == 0 then
-            if mode[w.address] == "big" then
-                -- Estando en SUPER+F y la app sale de su propio fullscreen:
-                -- re-aplicamos big (internal=1 client=1) para que se quede en
-                -- el mismo tamanio grande, no colapse a ventana chiquita.
-                set_window_mode(w, "big")
-            else
-                mode[w.address] = nil
-                hl.dispatch(hl.dsp.window.fullscreen_state({ internal = 0, client = 0, action = "set", window = w }))
-                sync_perception()
-            end
+        if mode[w.address] == "big" then
+            -- Estando en SUPER+F, CUALQUIER cambio de fullscreen de la app
+            -- (entre en su propio fullscreen o salga de el) re-aplica big
+            -- (internal=1 client=1). Sin esto, presionar el boton fullscreen
+            -- de la app pasaba el client a 2 -> estado (1,2) = modo conc.
+            set_window_mode(w, "big")
+        elseif w.fullscreen_client == 0 then
+            mode[w.address] = nil
+            hl.dispatch(hl.dsp.window.fullscreen_state({ internal = 0, client = 0, action = "set", window = w }))
+            sync_perception()
         end
         return
     end
