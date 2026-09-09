@@ -28,11 +28,35 @@
     # Su input caelestia-shell solo se usa en el paquete with-shell (que no
     # usamos); no dispara ninguna compilación de quickshell extra.
 
+    # --- Caelestia-AW (live wallpapers) ---
+    # Forks de AdiAmbassador que añaden soporte nativo de wallpaper animado
+    # (VideoOutput/MediaPlayer en QtMultimedia) al shell y al CLI.
+    # Se mantienen DISPONIBLES pero NO activos: por ahora seguimos con vanilla
+    # en ambos hosts; el paquete .#caelestia-shell-aw permite probarlos sin
+    # rebuild de host. Ver caelestiaShellAW en outputs.
+    # OJO: el fork está en "v2.3.0 compatible" (detrás de master vanilla) y
+    # Arch-only vía patch.sh, pero su packaging nix/default.nix es compatible
+    # con nuestro qsPrebuilt: solo hay que inyectarle qt6.qtmultimedia (no lo
+    # declara) y usar su CLI fork (pillow + ffmpeg).
+    caelestia-aw = {
+      url = "github:AdiAmbassador/caelestia-shell-aw";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.m3shapes.follows = "m3shapes";
+      # No usamos sus packages.* (compilarían quickshell-git ~1h); solo
+      # callPackage sobre su /nix. Desactivamos sus inputs para no arrastrar
+      # lock de quickshell/outfoxxed ni de caelestia-cli vanilla.
+      inputs.quickshell.follows = "";
+      inputs.caelestia-cli.follows = "";
+    };
+    caelestia-cli-aw.url = "github:AdiAmbassador/caelestia-cli-aw";
+    caelestia-cli-aw.inputs.nixpkgs.follows = "nixpkgs";
+    caelestia-cli-aw.inputs.caelestia-shell.follows = "";
+
     # SpotX-Nix: parchea Spotify para bloquear anuncios (declarativo, NixOS-native).
     spotx-nix.url = "github:SpotX-Official/SpotX-Nix";
   };
 
-  outputs = { self, nixpkgs, caelestia, m3shapes, caelestia-cli, home-manager, spotx-nix }:
+  outputs = { self, nixpkgs, caelestia, m3shapes, caelestia-cli, home-manager, spotx-nix, caelestia-aw, caelestia-cli-aw }:
     let
       system = "x86_64-linux";
       pkgs = nixpkgs.legacyPackages.${system};
@@ -65,6 +89,29 @@
         in
           mkQs [ ];
 
+      # Caelestia-AW: fork con live wallpapers (video .mp4/.webm/etc.).
+      # Mismo enfoque que caelestiaShell (qsPrebuilt), pero:
+      #  - el wrapper quickshell lleva qt6.qtmultimedia (el fork NO lo declara,
+      #    aunque VideoWallpaper.qml importa QtMultimedia)
+      #  - CLI = fork caelestia-cli-aw (añade pillow + genera thumbnails con ffmpeg)
+      # Solo es un paquete para probar; NO se enrolla a ningún host todavía.
+      caelestiaShellAW =
+        let
+          qsAw = qsPrebuilt.withModules [ pkgs.qt6.qtmultimedia ];
+          cliAw = caelestia-cli-aw.packages.${system}.default;
+        in
+          (pkgs.callPackage "${caelestia-aw}/nix" {
+            stdenv = pkgs.clangStdenv;
+            inherit m3shapes;
+            quickshell = qsAw;
+            caelestia-cli = cliAw;
+            rev = caelestia-aw.sourceInfo.rev or "unknown";
+            # El CLI-AW genera thumbnails llamando ffmpeg por subprocess; el
+            # wrapper del shell lo expone en su PATH (default.nix del fork no
+            # lo añade por defecto).
+            extraRuntimeDeps = [ pkgs.ffmpeg ];
+          }).override { withCli = true; };
+
       # Caelestia shell usando nuestro quickshell precompilado.
       # Es el mismo callPackage ./nix del flake oficial; conCli incluye la CLI
       # de Caelestia (colores/material you/wallpapers) como runtime dep.
@@ -93,9 +140,12 @@
       };
     in
     {
-      # Paquete standalone para probar sin rebuild completo:
-      #   nix build .#caelestia-shell
-      packages.${system}.caelestia-shell = caelestiaShell;
+      # Paquetes standalone para probar sin rebuild completo:
+      #   nix build .#caelestia-shell / .#caelestia-shell-aw (live wallpapers)
+      packages.${system} = {
+        caelestia-shell = caelestiaShell;
+        caelestia-shell-aw = caelestiaShellAW;
+      };
 
       nixosConfigurations.laptop = mkHost "laptop";
       nixosConfigurations.amd = mkHost "amd";
