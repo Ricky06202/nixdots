@@ -31,13 +31,13 @@
     # --- Caelestia-AW (live wallpapers) ---
     # Forks de AdiAmbassador que añaden soporte nativo de wallpaper animado
     # (VideoOutput/MediaPlayer en QtMultimedia) al shell y al CLI.
-    # Se mantienen DISPONIBLES pero NO activos: por ahora seguimos con vanilla
-    # en ambos hosts; el paquete .#caelestia-shell-aw permite probarlos sin
-    # rebuild de host. Ver caelestiaShellAW en outputs.
-    # OJO: el fork está en "v2.3.0 compatible" (detrás de master vanilla) y
-    # Arch-only vía patch.sh, pero su packaging nix/default.nix es compatible
-    # con nuestro qsPrebuilt: solo hay que inyectarle qt6.qtmultimedia (no lo
-    # declara) y usar su CLI fork (pillow + ffmpeg).
+    # AMBOS hosts usan el fork AW: es un superconjunto de vanilla (con estático
+    # se comporta idéntico) y el vídeo solo carga al seleccionarlo en el launcher.
+    # OJO: el fork está en "v2.3.0 compatible" (detrás de master vanilla, ej.
+    # NetworkUsage sigue en QML) y su instalador es Arch-only (patch.sh), pero
+    # su packaging nix/default.nix es compatible con nuestro qsPrebuilt: solo
+    # hay que inyectarle qt6.qtmultimedia (no lo declara) y usar su CLI fork
+    # (pillow + ffmpeg). Ver caelestiaShellAW en outputs.
     caelestia-aw = {
       url = "github:AdiAmbassador/caelestia-shell-aw";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -94,7 +94,6 @@
       #  - el wrapper quickshell lleva qt6.qtmultimedia (el fork NO lo declara,
       #    aunque VideoWallpaper.qml importa QtMultimedia)
       #  - CLI = fork caelestia-cli-aw (añade pillow + genera thumbnails con ffmpeg)
-      # Solo es un paquete para probar; NO se enrolla a ningún host todavía.
       caelestiaShellAW =
         let
           qsAw = qsPrebuilt.withModules [ pkgs.qt6.qtmultimedia ];
@@ -125,7 +124,10 @@
 
       mkHost = name: nixpkgs.lib.nixosSystem {
         inherit system;
-        specialArgs = { inherit caelestiaShell spotx-nix; hostName = name; };
+        # Ambos hosts usan el fork AW (live wallpapers). Es un superconjunto de
+        # vanilla: con wallpaper estático (default) se comporta idéntico, y el
+        # vídeo solo carga MediaPlayer cuando se selecciona uno en el launcher.
+        specialArgs = { inherit caelestiaShellAW spotx-nix; hostName = name; };
         modules = [
           ./hosts/${name}/configuration.nix
           home-manager.nixosModules.home-manager
@@ -140,8 +142,9 @@
       };
     in
     {
-      # Paquetes standalone para probar sin rebuild completo:
-      #   nix build .#caelestia-shell / .#caelestia-shell-aw (live wallpapers)
+      # Paquetes standalone para probar/distribuir sin rebuild de host.
+      # caelestia-shell = vanilla (referencia); caelestia-shell-aw = el de los
+      # hosts (live wallpapers).
       packages.${system} = {
         caelestia-shell = caelestiaShell;
         caelestia-shell-aw = caelestiaShellAW;

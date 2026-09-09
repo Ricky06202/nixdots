@@ -242,6 +242,13 @@ RUSTEOF
     force = true;
   };
 
+  # Live wallpaper (Caelestia-AW): se copia a $CAELESTIA_WALLPAPERS_DIR/Animated,
+  # que es donde el fork AW lee los wallpapers animados. En laptop NO se usa
+  # (se sigue con el estático); queda listo para la amd.
+  home.file."Imágenes/wallpapers/Animated/mylivewallpapers-com-Xayah-Winter-Wanderer-FHD.mp4" = {
+    source = ./assets/wallpapers/Animated/mylivewallpapers-com-Xayah-Winter-Wanderer-FHD.mp4;
+  };
+
   # Scripts de Hyprland
   home.file.".config/hypr/autostart.sh" = {
     source = ./dotfiles/hypr/autostart.sh;

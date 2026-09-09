@@ -1,7 +1,7 @@
 # Config compartida entre hosts (laptop + amd + omen).
 # Lo específico de cada máquina vive en hosts/<nombre>/configuration.nix.
 
-{ config, pkgs, lib, caelestiaShell, spotx-nix, ... }:
+{ config, pkgs, lib, caelestiaShellAW, spotx-nix, ... }:
 
 {
   # Nix con flakes y nix-command habilitados (necesario para home-manager y caelestia)
@@ -513,9 +513,9 @@
     bitwarden-desktop # gestor de contraseñas (nube, encriptado, 2FA)
     obs-studio        # OBS COMPLETO con obs-browser (overlays de Twitch, alertas) — la PC AMD lo aguanta
     vesktop           # Discord con Vencord (reemplaza a discord, más estable en Wayland)
-    # Escritorio Caelestia (quickshell de nixpkgs precompilado + CLI incluido).
-    # Evita compilar el quickshell-git de outfoxxed (~1h). Ver flake.nix.
-    caelestiaShell
+    # Escritorio Caelestia AW (fork con live wallpapers; quickshell de nixpkgs
+    # precompilado + CLI fork). Evita compilar el quickshell-git (~1h). Ver flake.nix.
+    caelestiaShellAW
     # --- Uso offline / multimedia ---
     mpv               # reproductor de video local
     (symlinkJoin {

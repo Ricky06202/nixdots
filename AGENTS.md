@@ -52,9 +52,13 @@ sudo nixos-rebuild switch --flake .#amd      # en la PC AMD
 - **zsh**: oh-my-zsh via home-manager; NO añadir alias `z` (pisa la función de
   zoxide y rompe el salto de directorios). Highlight/autosuggest son nativos
   de home-manager, NO plugins de omz.
-- **Caelestia**: se arma en `flake.nix` (`caelestiaShell`) usando el
-  **quickshell precompilado de nixpkgs** (wrapper `qsPrebuilt` que replica el
-  passthru `withModules` de outfoxxed). NO usar `caelestia.packages.*`: eso
-  compila quickshell-git desde fuente (~1h local, sin caché binaria). El CLI
-  va incluido vía `withCli = true`.
+- **Caelestia**: ambos hosts usan el **fork AW** (`caelestiaShellAW` en
+  `flake.nix`, inputs `caelestia-aw` + `caelestia-cli-aw`) con live wallpapers.
+  Se arma con el **quickshell precompilado de nixpkgs** (wrapper `qsPrebuilt`).
+  NO usar `caelestia.packages.*` (ni AW): compila quickshell-git desde fuente
+  (~1h local, sin caché binaria). El wrapper AW inyecta `qt6.qtmultimedia`
+  (el fork no lo declara) y expone `ffmpeg` en PATH (thumbnails del CLI).
+  Está detrás de master vanilla (ej. NetworkUsage en QML) — no "actualizarlo"
+  sin revisar el fork. Los vídeos van en `$CAELESTIA_WALLPAPERS_DIR/Animated`
+  y solo cargan MediaPlayer al seleccionarlos (estático = comportamiento vanilla).
 - El alias `update` reconstruye el host local automáticamente.
