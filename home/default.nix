@@ -242,9 +242,22 @@ RUSTEOF
     force = true;
   };
 
-  # Live wallpaper (Caelestia-AW): se copia a $CAELESTIA_WALLPAPERS_DIR/Animated,
-  # que es donde el fork AW lee los wallpapers animados. En laptop NO se usa
-  # (se sigue con el estático); queda listo para la amd.
+  # Wallpapers versionados: los estáticos que Caelestia bajó por ID (carpeta
+  # ~/Imágenes/wallpapers) y el live wallpaper mp4. Se declaran en el repo para
+  # no perderlos al reinstalar; home-manager los hace symlinks al store.
+  home.file."Imágenes/wallpapers/1317094.png" = { source = ./assets/wallpapers/1317094.png; force = true; };
+  home.file."Imágenes/wallpapers/1320431.png" = { source = ./assets/wallpapers/1320431.png; force = true; };
+  home.file."Imágenes/wallpapers/1343335.png" = { source = ./assets/wallpapers/1343335.png; force = true; };
+  home.file."Imágenes/wallpapers/1346878.png" = { source = ./assets/wallpapers/1346878.png; force = true; };
+  home.file."Imágenes/wallpapers/1351579.png" = { source = ./assets/wallpapers/1351579.png; force = true; };
+  home.file."Imágenes/wallpapers/1351640.png" = { source = ./assets/wallpapers/1351640.png; force = true; };
+  home.file."Imágenes/wallpapers/1351642.png" = { source = ./assets/wallpapers/1351642.png; force = true; };
+  home.file."Imágenes/wallpapers/1358147.png" = { source = ./assets/wallpapers/1358147.png; force = true; };
+  home.file."Imágenes/wallpapers/895647.jpg" = { source = ./assets/wallpapers/895647.jpg; force = true; };
+  home.file."Imágenes/wallpapers/938042.jpg" = { source = ./assets/wallpapers/938042.jpg; force = true; };
+  home.file."Imágenes/wallpapers/948491.jpg" = { source = ./assets/wallpapers/948491.jpg; force = true; };
+  home.file."Imágenes/wallpapers/986484.png" = { source = ./assets/wallpapers/986484.png; force = true; };
+  home.file."Imágenes/wallpapers/wallpaper.jpg" = { source = ./assets/wallpapers/wallpaper.jpg; force = true; };
   home.file."Imágenes/wallpapers/Animated/mylivewallpapers-com-Xayah-Winter-Wanderer-FHD.mp4" = {
     source = ./assets/wallpapers/Animated/mylivewallpapers-com-Xayah-Winter-Wanderer-FHD.mp4;
   };
