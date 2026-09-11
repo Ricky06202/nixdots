@@ -8,7 +8,7 @@
     "auto": true,
     "prune": true,
     "keep": {
-      "tokens": 100000
+      "tokens": 50000
     },
     "buffer": 850000
   }
