@@ -8,8 +8,8 @@
     "auto": true,
     "prune": true,
     "keep": {
-      "tokens": 150000
+      "tokens": 100000
     },
-    "buffer": 20000
+    "buffer": 850000
   }
 }
