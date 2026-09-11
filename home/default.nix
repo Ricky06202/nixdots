@@ -300,25 +300,30 @@ RUSTEOF
     force = true;
   };
 
-  # Config pública de OpenCode (modelo + compactación). La API key NO va aquí,
-  # se guarda aparte en ~/.local/share/opencode/auth.json (secreto, local).
+  # Entorno de OpenCode por completo — config, instrucciones globales, agente,
+  # comando y skills. EL CONTEXTO que opencode carga en cada chat nuevo vive aquí
+  # (repo público, sin secretos). La API key NO va aquí: se guarda aparte en
+  # ~/.local/share/opencode/auth.json (secreto, local).
   home.file.".config/opencode/opencode.jsonc" = {
     source = ./dotfiles/opencode/opencode.jsonc;
     force = true;
   };
+  home.file.".config/opencode/INSTRUCTIONS.md" = {
+    source = ./dotfiles/opencode/INSTRUCTIONS.md;
+    force = true;
+  };
+  home.file.".config/opencode/agent/nixos.md" = {
+    source = ./dotfiles/opencode/agent/nixos.md;
+    force = true;
+  };
+  home.file.".config/opencode/command/rebuild.md" = {
+    source = ./dotfiles/opencode/command/rebuild.md;
+    force = true;
+  };
 
-  # Skills de OpenCode (tauri-developer, rust-developer, etc.) — públicas, sin secretos.
-  home.file.".config/opencode/skills/.keep" = {
-    source = ./dotfiles/opencode/skills/.keep;
-    force = true;
-  };
-  home.file.".config/opencode/skills/tauri-developer" = {
-    source = ./dotfiles/opencode/skills/tauri-developer;
-    recursive = true;
-    force = true;
-  };
-  home.file.".config/opencode/skills/rust-developer" = {
-    source = ./dotfiles/opencode/skills/rust-developer;
+  # Skills de OpenCode — todas las del repo se despliegan (públicas, sin secretos).
+  home.file.".config/opencode/skills" = {
+    source = ./dotfiles/opencode/skills;
     recursive = true;
     force = true;
   };

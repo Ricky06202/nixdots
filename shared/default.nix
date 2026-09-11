@@ -520,12 +520,12 @@
     mpv               # reproductor de video local
     (symlinkJoin {
       name = "rustdesk";
-      paths = [ rustdesk ];
+      paths = [ (pkgs.callPackage ../packages/rustdesk-official { }) ];
       nativeBuildInputs = [ makeWrapper ];
       postBuild = ''
         wrapProgram $out/bin/rustdesk --unset WAYLAND_DISPLAY --unset WAYLAND_SOCKET --set XDG_SESSION_TYPE x11 --set GDK_BACKEND x11
       '';
-    })  # escritorio remoto (fix teclado Wayland: XWayland; symlinkJoin usa el bin del caché sin recompilar)
+    })  # escritorio remoto (fix teclado Wayland: XWayland; binario oficial precompilado, sin compilación)
     ffmpeg            # herramienta multimedia
     gpu-screen-recorder # backend de grabación de Caelestia (botón de grabar pantalla)
     mangohud          # overlay de rendimiento (FPS, temps, GPU/CPU) — necesita systemPackages para Vulkan layer
