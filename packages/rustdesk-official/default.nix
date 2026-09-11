@@ -47,7 +47,9 @@ pkgs.stdenv.mkDerivation {
     mkdir -p $out/bin $out/share/rustdesk
     cp -r deb/out/usr/share/rustdesk/* $out/share/rustdesk/
     ln -s $out/share/rustdesk/rustdesk $out/bin/rustdesk
-    cp -r deb/out/usr/share/icons/* $out/share/icons/ 2>/dev/null || true
+    mkdir -p $out/share/icons $out/share/applications
+    cp -r deb/out/usr/share/icons/* $out/share/icons/
+    cp -r deb/out/usr/share/applications/* $out/share/applications/
   '';
 
   dontStrip = true;
