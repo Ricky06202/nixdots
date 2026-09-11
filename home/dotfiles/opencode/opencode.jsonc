@@ -3,26 +3,13 @@
   "instructions": [
     "/home/ricky/.config/opencode/INSTRUCTIONS.md"
   ],
-  "model": "bailian/qwen3.8-flash",
-  "provider": {
-    "bailian": {
-      "npm": "@ai-sdk/anthropic",
-      "name": "Alibaba Cloud Model Studio",
-      "options": {
-        "baseURL": "https://dashscope-intl.aliyuncs.com/apps/anthropic/v1"
-      },
-      "models": {
-        "qwen3.8-flash": { "name": "qwen3.8-flash" },
-        "qwen3.8-max": { "name": "qwen3.8-max" }
-      }
-    }
-  },
-  "disabled_providers": ["alibaba"],
+  "model": "alibaba/qwen3.8-flash",
   "compaction": {
     "auto": true,
     "prune": true,
-    "reserved": 10000,
-    "tail_turns": 20,
-    "preserve_recent_tokens": 30000
+    "keep": {
+      "tokens": 150000
+    },
+    "buffer": 20000
   }
 }
