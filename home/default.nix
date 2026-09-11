@@ -112,7 +112,11 @@ RUSTEOF
       ls = "ls --color=auto";
       ll = "ls -la";
       nv = "nvim";
-      update = "sudo nixos-rebuild switch --flake /home/ricky/Dev/nixdots#${hostName}";
+      # update: avanza el lock a lo mas nuevo (nix flake update)
+      # upgrade: instala/aplica lo declarado (lock actual)
+      update = "cd /home/ricky/Dev/nixdots && nix flake update";
+      upgrade = "sudo nixos-rebuild switch --flake /home/ricky/Dev/nixdots#${hostName}";
+      up-full = "cd /home/ricky/Dev/nixdots && nix flake update && sudo nixos-rebuild switch --flake /home/ricky/Dev/nixdots#${hostName}";
     };
     initContent = ''
       # zoxide: z (saltar a directorios frecuentes)
