@@ -4,12 +4,32 @@
     "/home/ricky/.config/opencode/INSTRUCTIONS.md"
   ],
   "model": "alibaba/qwen3.8-flash",
+  "providers": {
+    "alibaba": {
+      "models": {
+        "qwen3.8-flash": {
+          "limit": {
+            "context": 170000,
+            "input": 170000,
+            "output": 32000
+          }
+        },
+        "qwen3.8-max": {
+          "limit": {
+            "context": 170000,
+            "input": 170000,
+            "output": 32000
+          }
+        }
+      }
+    }
+  },
   "compaction": {
     "auto": true,
     "prune": true,
     "keep": {
       "tokens": 50000
     },
-    "buffer": 850000
+    "buffer": 20000
   }
 }
