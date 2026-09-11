@@ -21,6 +21,8 @@
   "compaction": {
     "auto": true,
     "prune": true,
-    "reserved": 10000
+    "reserved": 10000,
+    "tail_turns": 20,
+    "preserve_recent_tokens": 30000
   }
 }
