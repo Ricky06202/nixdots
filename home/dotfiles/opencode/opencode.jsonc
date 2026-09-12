@@ -4,7 +4,7 @@
     "/home/ricky/.config/opencode/INSTRUCTIONS.md"
   ],
   "model": "alibaba/qwen3.8-flash",
-  "providers": {
+  "provider": {
     "alibaba": {
       "models": {
         "qwen3.8-flash": {

@@ -35,6 +35,8 @@ Instrucciones globales para asistir en este equipo. Léelas siempre que trabajes
 8. El repo es PÚBLICO: jamás commitear tokens, passwords o claves.
 9. Validar cambios antes de pedir rebuild: `nix flake check` y/o
    `nix build .#nixosConfigurations.<host>.config.system.build.toplevel --dry-run`
+10. Keystores (ej: exports Android/Godot) y secretos similares van en `~/Dev/keys/`,
+    FUERA de cualquier repo: jamás dentro del proyecto ni commiteados.
 
 ## Caelestia (IMPORTANTE)
 - Se arma en `flake.nix` (`caelestiaShell`) usando el **quickshell precompilado de
