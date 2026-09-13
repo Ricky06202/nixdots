@@ -23,7 +23,9 @@ if [ -n "$PICK" ]; then
     if command -v caelestia >/dev/null 2>&1; then
         # Asegurar scheme dynamic para que la rotación devuelva colores Material You
         caelestia scheme set -n dynamic 2>/dev/null || true
-        caelestia wallpaper -f "$PICK"
+        # --no-smart: regenera colores dynamic desde el wallpaper sin cambiar a
+        # modo claro (evita flashbang). El modo/variant se mantienen como están.
+        caelestia wallpaper -f "$PICK" --no-smart
     else
         STATE_DIR="$HOME/.local/state/caelestia/wallpaper"
         mkdir -p "$STATE_DIR"
