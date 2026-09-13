@@ -4,6 +4,13 @@
 hl.monitor({ output = "HDMI-A-2", mode = "1920x1080@60", position = "0x0", scale = 1 })
 hl.monitor({ output = "eDP-1", mode = "1920x1080@60", position = "1920x0", scale = 1 })
 
+-- ===== SCHEME CAELESTIA (colores Material You) =====
+-- Caelestia regenera ~/.config/hypr/scheme/current.lua al rotar wallpaper.
+local CaScheme = dofile(os.getenv("HOME") .. "/.config/hypr/scheme/current.lua")
+local function c(hex, alpha)
+    return "rgba(" .. (hex or "ffffff") .. (alpha or "ee") .. ")"
+end
+
 -- ===== CURSOR (Bibata Modern Classic: negro, bordes redondeados) =====
 hl.env("HYPRCURSOR_THEME", "Bibata-Modern-Classic")
 hl.env("HYPRCURSOR_SIZE", "24")
@@ -17,8 +24,8 @@ hl.config({
         gaps_out = 10,
         border_size = 2,
         col = {
-            active_border = { colors = { "rgba(33ccffee)", "rgba(00ff99ee)" }, angle = 45 },
-            inactive_border = "rgba(595959aa)",
+            active_border = { colors = { c(CaScheme.primary), c(CaScheme.primaryDim) }, angle = 45 },
+            inactive_border = c(CaScheme.surfaceVariant, "aa"),
         },
         layout = "dwindle",
     },

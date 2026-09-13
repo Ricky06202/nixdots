@@ -28,6 +28,9 @@ if [ -n "$PICK" ]; then
         # --no-smart: regenera colores dynamic desde el wallpaper sin cambiar a
         # modo claro (evita flashbang). El modo/variant se mantienen como están.
         caelestia wallpaper -f "$PICK" --no-smart
+        # Re-evaluar hyprland.lua: relee scheme/current.lua y actualiza bordes.
+        # El autostart está en hl.on('hyprland.start'), así que no se repite.
+        hyprctl reload
     else
         STATE_DIR="$HOME/.local/state/caelestia/wallpaper"
         mkdir -p "$STATE_DIR"
