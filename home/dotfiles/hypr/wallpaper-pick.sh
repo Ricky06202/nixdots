@@ -14,15 +14,17 @@ if [ ! -d "$WALL_DIR" ] || [ -z "$(ls -A "$WALL_DIR" 2>/dev/null)" ]; then
     exit 0
 fi
 
-# Elige una imagen al azar
-PICK=$(find "$WALL_DIR" -maxdepth 1 -type f \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" -o -iname "*.webp" \) 2>/dev/null | shuf -n 1)
+# Elige una imagen al azar (los wallpapers son symlinks al store: usar find -L /
+# -type f o -type l para no dejarlos fuera, y excluir los .hm-bak de home-manager)
+PICK=$(find -L "$WALL_DIR" -maxdepth 1 -type f ! -name "*.hm-bak" \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" -o -iname "*.webp" \) 2>/dev/null | shuf -n 1)
 
 if [ -n "$PICK" ]; then
     # Delegar en el CLI nativo (actualiza current/path.txt/thumbnail y regenera
     # los colores dynamic). Si el CLI no está en el PATH, volver al symlink a mano.
     if command -v caelestia >/dev/null 2>&1; then
-        # Asegurar scheme dynamic para que la rotación devuelva colores Material You
-        caelestia scheme set -n dynamic 2>/dev/null || true
+        # Asegurar scheme dynamic en modo OSCURO: la rotación devuelve colores
+        # Material You sin salirse del dark (aunque el state traiga light).
+        caelestia scheme set -n dynamic -m dark 2>/dev/null || true
         # --no-smart: regenera colores dynamic desde el wallpaper sin cambiar a
         # modo claro (evita flashbang). El modo/variant se mantienen como están.
         caelestia wallpaper -f "$PICK" --no-smart
