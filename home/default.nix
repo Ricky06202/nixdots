@@ -247,23 +247,14 @@ RUSTEOF
     force = true;
   };
 
-  # Wallpapers versionados: los estáticos que Caelestia bajó por ID (carpeta
-  # ~/Imágenes/wallpapers) y el live wallpaper mp4. Se declaran en el repo para
-  # no perderlos al reinstalar; home-manager los hace symlinks al store.
-  home.file."Imágenes/wallpapers/1317094.png" = { source = ./assets/wallpapers/1317094.png; force = true; };
-  home.file."Imágenes/wallpapers/1320431.png" = { source = ./assets/wallpapers/1320431.png; force = true; };
-  home.file."Imágenes/wallpapers/1343335.png" = { source = ./assets/wallpapers/1343335.png; force = true; };
-  home.file."Imágenes/wallpapers/1346878.png" = { source = ./assets/wallpapers/1346878.png; force = true; };
-  home.file."Imágenes/wallpapers/1351579.png" = { source = ./assets/wallpapers/1351579.png; force = true; };
-  home.file."Imágenes/wallpapers/1351640.png" = { source = ./assets/wallpapers/1351640.png; force = true; };
-  home.file."Imágenes/wallpapers/1351642.png" = { source = ./assets/wallpapers/1351642.png; force = true; };
-  home.file."Imágenes/wallpapers/1358147.png" = { source = ./assets/wallpapers/1358147.png; force = true; };
-  home.file."Imágenes/wallpapers/895647.jpg" = { source = ./assets/wallpapers/895647.jpg; force = true; };
-  home.file."Imágenes/wallpapers/938042.jpg" = { source = ./assets/wallpapers/938042.jpg; force = true; };
-  home.file."Imágenes/wallpapers/948491.jpg" = { source = ./assets/wallpapers/948491.jpg; force = true; };
-  home.file."Imágenes/wallpapers/986484.png" = { source = ./assets/wallpapers/986484.png; force = true; };
-  home.file."Imágenes/wallpapers/Animated/mylivewallpapers-com-Xayah-Winter-Wanderer-FHD.mp4" = {
-    source = ./assets/wallpapers/Animated/mylivewallpapers-com-Xayah-Winter-Wanderer-FHD.mp4;
+  # Wallpapers versionados (carpeta entera): los estáticos que Caelestia bajó
+  # por ID (~/Imágenes/wallpapers) y el live wallpaper mp4. Se declaran en el
+  # repo para no perderlos al reinstalar; home-manager los hace symlinks al
+  # store. Para añadir más solo hay que copiarlos a ./assets/wallpapers/
+  # (añadir archivos nuevos en la carpeta lanza el rebuild sin tocar la config).
+  home.file."Imágenes/wallpapers" = {
+    source = ./assets/wallpapers;
+    force = true;
   };
 
   # Scripts de Hyprland
