@@ -1,4 +1,4 @@
-{ config, pkgs, lib, hostName ? "laptop", ... }:
+{ config, pkgs, lib, hostName ? "laptop", cliAw, ... }:
 
 {
   # Caelestia: usar ~/Imágenes/wallpapers como carpeta de fondos
@@ -131,6 +131,7 @@ RUSTEOF
 
   # Paquetes del shell
   home.packages = with pkgs; [
+    cliAw # CLI de Caelestia (colores/material-you/wallpapers) para scripts externos
     zoxide
     fzf
     ripgrep
@@ -261,7 +262,6 @@ RUSTEOF
   home.file."Imágenes/wallpapers/938042.jpg" = { source = ./assets/wallpapers/938042.jpg; force = true; };
   home.file."Imágenes/wallpapers/948491.jpg" = { source = ./assets/wallpapers/948491.jpg; force = true; };
   home.file."Imágenes/wallpapers/986484.png" = { source = ./assets/wallpapers/986484.png; force = true; };
-  home.file."Imágenes/wallpapers/wallpaper.jpg" = { source = ./assets/wallpapers/wallpaper.jpg; force = true; };
   home.file."Imágenes/wallpapers/Animated/mylivewallpapers-com-Xayah-Winter-Wanderer-FHD.mp4" = {
     source = ./assets/wallpapers/Animated/mylivewallpapers-com-Xayah-Winter-Wanderer-FHD.mp4;
   };

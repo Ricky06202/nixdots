@@ -61,6 +61,11 @@
       system = "x86_64-linux";
       pkgs = nixpkgs.legacyPackages.${system};
 
+      # CLI de Caelestia (fork AW: pillow + thumbnails por ffmpeg). Se expone
+      # además como paquete del usuario para scripts exteriores (p.ej.
+      # wallpaper-pick.sh) sin depender del PATH del wrapper del shell.
+      cliAw = caelestia-cli-aw.packages.${system}.default;
+
       # Quickshell precompilado de nixpkgs (+ módulos QML extra).
       # Replica el wrapper del flake oficial de outfoxxed, incluyendo su
       # passthru `withModules`: se copia el binario ya compilado y
@@ -97,7 +102,6 @@
       caelestiaShellAW =
         let
           qsAw = qsPrebuilt.withModules [ pkgs.qt6.qtmultimedia ];
-          cliAw = caelestia-cli-aw.packages.${system}.default;
         in
           (pkgs.callPackage "${caelestia-aw}/nix" {
             stdenv = pkgs.clangStdenv;
@@ -135,7 +139,7 @@
             home-manager.useGlobalPkgs = true;
             home-manager.useUserPackages = true;
             home-manager.backupFileExtension = "hm-bak";
-            home-manager.extraSpecialArgs = { hostName = name; };
+            home-manager.extraSpecialArgs = { hostName = name; inherit cliAw; };
             home-manager.users.ricky = import ./home;
           }
         ];
