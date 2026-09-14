@@ -3,6 +3,31 @@
 
 { config, pkgs, lib, caelestiaShellAW, spotx-nix, ... }:
 
+let
+  # --- Android SDK declarativo (sin abrir Android Studio nunca) ---
+  # Compone el SDK como paquete inmutable del store con EXACTAMENTE lo que
+  # piden Godot 4.7 y Tauri v2 en 2026:
+  #   Godot: platform android-35, build-tools 35.0.1, NDK r28b (28.1.13356709)
+  #   Tauri: platform android-36, NDK 29 (mayor instalado → 16KB pages)
+  # platform-tools del catálogo actual = 37.0.1 (único; Godot pide "35.0.0+").
+  # catálogo consultado: androidenv/repo.json del nixpkgs del lock (8ce4ef6).
+  # OJO: Godot pide CMake 3.10.2.4988404 (solo existe 3.10.2 en el catálogo) y
+  # el NDK 29.0.13846066 que pide Tauri-cli NO existe estable (solo -rc); lo
+  # cubrimos con el 29.0.14206865 estable. CMake solo lo usa el Gradle build
+  # custom de Godot (≠ export APK directo).
+  androidSdk =
+    (pkgs.androidenv.composeAndroidPackages {
+      platformVersions = [ "35" "36" ];
+      buildToolsVersions = [ "35.0.1" "36.0.0" ];
+      includeNDK = true;
+      ndkVersions = [ "28.1.13356709" "28.2.13676358" "29.0.14206865" ];
+      includeCmake = true;
+      cmakeVersions = [ "3.10.2" ];
+      platformToolsVersion = "37.0.1";
+      includeEmulator = false;
+      includeSystemImages = false;
+    }).androidsdk;
+in
 {
   # Nix con flakes y nix-command habilitados (necesario para home-manager y caelestia)
   nix.settings = {
@@ -341,6 +366,17 @@
 
   # Allow unfree packages
   nixpkgs.config.allowUnfree = true;
+  # Licencia del Android SDK (aceptada declarativamente; sin esto androidsdk no evalúa).
+  nixpkgs.config.android_sdk.accept_license = true;
+
+  # --- Waydroid: Android en contenedor LXC (probar juegos/apps móviles) ---
+  # El módulo habilita automáticamente: binder (ANDROID_BINDER_IPC/BINDERFS/MEMFD),
+  # LXC, firewall trustedInterface waydroid0, servicio waydroid-container y
+  # tmpfiles. Tras el rebuild hay que inicializar UNA vez con GApps:
+  #   sudo waydroid init -f -s GAPPS
+  # y luego iniciar la sesión:  systemctl --user start waydroid-session
+  virtualisation.waydroid.enable = true;
+  virtualisation.waydroid.package = pkgs.waydroid-nftables;
 
   # SpotX-Nix overlay: parchea Spotify para bloquear anuncios.
   nixpkgs.overlays = [ spotx-nix.overlays.default ];
@@ -487,13 +523,14 @@
     # --- Godot + Android (exportar APK) ---
     godot             # motor de juegos 2D/3D (Godot 4.7)
     android-tools     # adb, fastboot (para instalar APK en el teléfono)
-    android-studio    # IDE Android con SDK Manager (instala build-tools/NDK)
+    androidSdk        # SDK declarativo (platforms 35/36, NDK 28.1+28.2, build-tools) — no requiere Android Studio
     pkg-config        # detección de librerías (necesario para Tauri/build)
     # --- Tauri (apps de escritorio con Rust + web) ---
     cargo-tauri       # CLI de Tauri
     webkitgtk_4_1     # WebView (motor de render de Tauri en Linux)
     librsvg           # renderizado SVG (dependencia de Tauri)
     gsettings-desktop-schemas # schemas GSettings para diálogos GTK nativos (GtkFileChooser de Tauri/rfd aborta sin ellos)
+    waydroid-nftables # Android en contenedor LXC (apps/juegos móviles) — variante para nftables (default de NixOS)
     prismlauncher     # launcher de Minecraft
     wofi              # lanzador de apps (wayland)
     winetricks        # utilidades wine (complemento de Lutris)
@@ -595,8 +632,15 @@
   environment.sessionVariables = {
     XCURSOR_THEME = "Bibata-Modern-Classic";
     XCURSOR_SIZE = "24";
-    # Android (Godot/Tauri export): ruta del JDK (Godot lo necesita).
-    JAVA_HOME = "${pkgs.jdk21}";
+    # Android (Godot/Tauri export): ruta del JDK. Godot 4.7 y Tauri v2 exigen
+    # OpenJDK 17 (no 21). PrismLauncher/Minecraft siguen con jdk21 (programs.java).
+    JAVA_HOME = "${pkgs.jdk17}";
+    ANDROID_HOME = "${androidSdk}/libexec/android-sdk";
+    ANDROID_SDK_ROOT = "${androidSdk}/libexec/android-sdk";
+    # NDK para Tauri: usa el "mayor instalado" (29.0.14206865). Godot lee el
+    # suyo desde su propio editor (Android SDK Path → su NDK r28b).
+    NDK_HOME = "${androidSdk}/libexec/android-sdk/ndk/29.0.14206865";
+    ANDROID_NDK_HOME = "${androidSdk}/libexec/android-sdk/ndk/29.0.14206865";
     # MangoHUD: ruta del config + dlsym para OpenGL (juegos 2D/GameMaker)
     MANGOHUD_CONFIGFILE = "/home/ricky/.config/MangoHUD/MangoHUD.conf";
     MANGOHUD_DLSYM = "1";
@@ -633,7 +677,20 @@
       "${pkgs.gtk3}/share/gsettings-schemas/${pkgs.gtk3.name}/glib-2.0/schemas"
       "${pkgs.gsettings-desktop-schemas}/share/gsettings-schemas/${pkgs.gsettings-desktop-schemas.name}/glib-2.0/schemas"
     ];
+    # Android SDK bin: sdkmanager, avdmanager, apkanalyzer (cmdline-tools),
+    # adb (platform-tools) para que scripts y herramientas los encuentren.
+    PATH = lib.mkBefore (lib.concatStringsSep ":" [
+      "${androidSdk}/libexec/android-sdk/cmdline-tools/latest/bin"
+      "${androidSdk}/libexec/android-sdk/platform-tools"
+      "${androidSdk}/libexec/android-sdk/emulator"
+    ]);
   };
+
+  # Symlink del SDK a ~/Android/Sdk (ruta estándar que esperan Godot y la
+  # mayoría de guías de Tauri): el SDK real vive en el store (inmutable); este
+  # enlace solo apunta ahí. Una vez hecho el rebuild, en Godot: Editor →
+  # Settings → Export → Android → "Android SDK Path" = ~/Android/Sdk.
+  home-manager.users.ricky.home.file."Android/Sdk".source = "${androidSdk}/libexec/android-sdk";
 
   # Enlazar los esquemas GSettings (glib/gtk3/gsettings-desktop-schemas) al
   # directorio accesible vía XDG_DATA_DIRS. Sin esto, los diálogos GTK nativos
