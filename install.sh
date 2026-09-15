@@ -265,7 +265,7 @@ format_and_mount() {
 
     mount -o subvol=@home,compress=zstd,noatime "$PART_ROOT" "$MNT/home"
     mount -o subvol=@nix,compress=zstd,noatime  "$PART_ROOT" "$MNT/nix"
-    mount -o subvol=@swap,compress=no,noDB      "$PART_ROOT" "$MNT/swap"
+    mount -o subvol=@swap,compress=no,nodatacow "$PART_ROOT" "$MNT/swap"
     mount "$PART_ESP" "$MNT/boot"
 
     success "Subvolúmenes montados en ${MNT}"
