@@ -55,6 +55,9 @@ HEAVY_PATTERNS = [
 
 MIN_FREE_RAM_MB = 500
 
+# Apps graficas que nini NO debe ejecutar (el usuario las abre el mismo)
+DENY_RUN = {"code", "codium", "code-insiders", "gvim", "sublime_text", "zed"}
+
 def get_free_ram_mb():
     """Get free RAM in MB."""
     try:
@@ -392,7 +395,8 @@ DEV_PROMPT = (
     "  #WRITE <ruta>         seguido de todo el contenido del archivo: crearlo o reemplazarlo COMPLETO\n"
     "Cuando termines la tarea: #DONE <resumen corto en español>\n"
     "Reglas: explora con LIST si no conoces la estructura; lee con READ antes de editar; "
-    "edita lo mínimo posible; verifica con RUN cuando convenga; NO inventes rutas. "
+    "edita lo mínimo posible; verifica con RUN cuando convenga; NO inventes rutas; "
+    "JAMÁS uses #RUN para abrir editores ni apps gráficas (code, firefox, etc.). "
     "Siempre responde con una acción hasta completar la tarea."
 )
 
@@ -597,6 +601,11 @@ def run_cmd(cmd, silent=False):
 
 def safe_run_cmd(cmd, silent=False):
     """Run command with safety check. Returns (exit_code, output, blocked)."""
+    first = cmd.split()[0] if cmd.split() else ""
+    if first in DENY_RUN:
+        print(f"\n  {RED}⛔ '{first}' es una app gráfica; nini no la abre.{RESET}")
+        print(f"  Ábrela tú mismo: {cmd}")
+        return -1, "App gráfica bloqueada", True
     safe, warning = check_heavy_command(cmd)
     if not safe:
         is_destructive = warning.startswith("DESTRUCTIVO:")
