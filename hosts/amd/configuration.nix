@@ -31,7 +31,7 @@
     package = pkgs.ollama-vulkan;
     host = "127.0.0.1";
     port = 11434;
-    loadModels = [ "qwen3:8b" "qwen2.5-coder:7b" ];
+    loadModels = [ "qwen3:4b" "qwen2.5-coder:7b" ];
   };
 
   # Auto-descargar el modelo tras cada consulta: libera VRAM/RAM al momento,

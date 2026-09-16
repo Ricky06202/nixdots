@@ -8,7 +8,7 @@ DEEPSEEK_URL  = "https://api.deepseek.com/chat/completions"
 DEEPSEEK_MODEL = "deepseek-chat"
 OLLAMA_URL    = "http://127.0.0.1:11434/api/chat"
 OLLAMA_TAGS   = "http://127.0.0.1:11434/api/tags"
-OLLAMA_MODEL  = "qwen3:8b"
+OLLAMA_MODEL  = "qwen3:4b"
 THINK_MODE    = False  # True = qwen3 razona antes de responder (más lento)
 
 API_KEY = Path.home() / ".config" / "nini" / "api.key"
@@ -771,7 +771,7 @@ def auto_chain(user_text, system_prompt, max_steps=MAX_STEPS):
 HELP_TEXT = f"""{BOLD}nini{RESET} v4 — asistente terminal (Ollama local + DeepSeek respaldo)
 
 {BOLD}Backend (automático):{RESET}
-  - Si Ollama local responde  -> usa qwen3:8b (offline, gratis, sin key)
+  - Si Ollama local responde  -> usa qwen3:4b (offline, gratis, sin key)
   - Si no -> usa DeepSeek (key en {API_KEY.name})
   - Si DeepSeek falla (sin internet) -> cae automatico a Ollama local
   Fuerza uno: --api ollama | --api deepseek
