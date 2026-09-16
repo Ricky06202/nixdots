@@ -55,6 +55,7 @@ HEAVY_PATTERNS = [
 ]
 
 MIN_FREE_RAM_MB = 500
+YES_MODE = False
 
 # Apps graficas que nini NO debe ejecutar (el usuario las abre el mismo)
 DENY_RUN = {"code", "codium", "code-insiders", "gvim", "sublime_text", "zed"}
@@ -523,7 +524,9 @@ def exec_dev_action(kind, arg, content, dry_run=False):
     if kind == "RUN":
         if dry_run:
             return True, f"[RUN {arg}] (dry-run, no se ejecutó)"
-        exit_code, output, blocked = safe_run_cmd(arg, silent=False)
+        if not confirm_exec(arg):
+            return True, f"[RUN {arg}] cancelado por el usuario"
+        exit_code, output, blocked = safe_run_cmd(arg, silent=True)
         if blocked:
             return False, f"[RUN {arg}] ⛔ bloqueado por seguridad"
         return True, f"[RUN {arg}] exit={exit_code}\n" + truncate(output.strip(), 4000)
@@ -629,6 +632,14 @@ def run_cmd(cmd, silent=False):
         for line in output.strip()[:500].split("\n"):
             print(f"  {line}")
     return r.returncode, output
+
+
+def confirm_exec(cmd):
+    print(f"  $ {cmd}")
+    if YES_MODE:
+        return True
+    ans = input(f"  ¿Ejecutar? [Y/n] ").strip().lower()
+    return ans in ("", "y", "s", "si", "sí")
 
 
 def safe_run_cmd(cmd, silent=False):
@@ -785,6 +796,7 @@ HELP_TEXT = f"""{BOLD}nini{RESET} v4 — asistente terminal (Ollama local + Deep
   echo "texto" | nini <procesar>     (pipe)
   nini -f <archivo> <pregunta>       agrega contenido de archivo al contexto
   nini --dry-run <orden>             mostrar sin ejecutar
+  nini --yes <orden>                 ejecutar sin preguntar (scripts)
   nini --steps N <orden>             máx N pasos, default 10
   nini help                          (esta ayuda)
 
@@ -803,7 +815,7 @@ HELP_TEXT = f"""{BOLD}nini{RESET} v4 — asistente terminal (Ollama local + Deep
 
 
 def main():
-    global THINK_MODE, OLLAMA_MODEL
+    global THINK_MODE, OLLAMA_MODEL, YES_MODE
     # --help
     if len(sys.argv) < 2 or sys.argv[1] in ("--help", "-h", "help"):
         print(HELP_TEXT)
@@ -828,6 +840,9 @@ def main():
     if "--smart" in args:
         THINK_MODE = True
         args.remove("--smart")
+    if "--yes" in args:
+        YES_MODE = True
+        args.remove("--yes")
     for flag in ["--api", "--model", "-f", "--file", "--steps", "--dev-steps"]:
         while flag in args:
             idx = args.index(flag)
@@ -972,7 +987,10 @@ def main():
 
     # Execute first command with safety check
     print(f"\n── Paso 1/{max_steps} ──")
-    exit_code, output, blocked = safe_run_cmd(content, silent=False)
+    if not confirm_exec(content):
+        save_history(user_text, content, -1)
+        return
+    exit_code, output, blocked = safe_run_cmd(content, silent=True)
     if blocked:
         save_history(user_text, content, -1)
         return
@@ -996,9 +1014,10 @@ def main():
         kind_fix, fixed_cmd = parse(raw_fix)
         if kind_fix == "cmd" and fixed_cmd != content:
             print(f"  Fix: {fixed_cmd}")
-            exit_code2, output2, _ = safe_run_cmd(fixed_cmd, silent=False)
-            steps_log[-1]["fix"] = fixed_cmd
-            steps_log[-1]["fix_exit"] = exit_code2
+            if confirm_exec(fixed_cmd):
+                exit_code2, output2, _ = safe_run_cmd(fixed_cmd, silent=True)
+                steps_log[-1]["fix"] = fixed_cmd
+                steps_log[-1]["fix_exit"] = exit_code2
 
     # Chain continuation
     current_prompt = build_chain_prompt(user_text, steps_log)
@@ -1039,7 +1058,10 @@ def main():
             return
 
         # Execute with safety check
-        exit_code, output, blocked = safe_run_cmd(content, silent=False)
+        if not confirm_exec(content):
+            print(f"{DIM}  Cancelado en paso {step}.{RESET}")
+            break
+        exit_code, output, blocked = safe_run_cmd(content, silent=True)
         if blocked:
             break
 
@@ -1062,9 +1084,10 @@ def main():
             kind_fix, fixed_cmd = parse(raw_fix)
             if kind_fix == "cmd" and fixed_cmd != content:
                 print(f"  Fix: {fixed_cmd}")
-                exit_code2, output2, _ = safe_run_cmd(fixed_cmd, silent=False)
-                steps_log[-1]["fix"] = fixed_cmd
-                steps_log[-1]["fix_exit"] = exit_code2
+                if confirm_exec(fixed_cmd):
+                    exit_code2, output2, _ = safe_run_cmd(fixed_cmd, silent=True)
+                    steps_log[-1]["fix"] = fixed_cmd
+                    steps_log[-1]["fix_exit"] = exit_code2
 
         # Update chain prompt
         current_prompt = build_chain_prompt(user_text, steps_log)
