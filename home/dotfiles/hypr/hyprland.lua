@@ -51,6 +51,7 @@ hl.config({
         mouse_move_enables_dpms = true,
         key_press_enables_dpms = true,
         on_focus_under_fullscreen = 1,
+        vrr = 1, -- Freesync siempre (cubre ventana/borderless fullscreen)
     },
     cursor = {
         sync_gsettings_theme = true,
