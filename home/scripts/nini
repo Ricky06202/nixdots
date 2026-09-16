@@ -127,7 +127,7 @@ def get_system_context():
         r = subprocess.run(["systemctl", "list-units", "--type=service", "--state=failed",
                             "--no-pager", "--no-legend"], capture_output=True, text=True, timeout=5)
         if r.stdout.strip():
-            ctx.append("FAILED services:\n" + r.stdout.strip()[:300])
+            ctx.append("FAILED services:\n" + r.stdout.strip())
     except Exception: pass
     try:
         r = subprocess.run(["bluetoothctl", "info"], capture_output=True, text=True, timeout=5)
@@ -262,13 +262,16 @@ def build_chain_prompt(user_text, steps_log):
         status = "OK" if s["exit_code"] == 0 else f"FAIL({s['exit_code']})"
         parts.append(f"  Step {i} [{status}]: {s['cmd']}")
         if s["output"].strip():
-            parts.append(f"    Output: {s['output'].strip()[:300]}")
+            parts.append(f"    Output: {s['output'].strip()}")
     parts.append("")
     parts.append(
         "You are chaining commands automatically. "
         "If the task is COMPLETE or you already have a useful result, reply with exactly: DONE <short summary in Spanish>. "
         "Do NOT retry the same command with different flags. "
         "Do NOT keep searching if you already have the answer. "
+        "CRITICAL: your DONE summary MUST be based ONLY on the command outputs shown above. "
+        "If a piece of data is NOT visible in the outputs, say 'no lo muestra el comando' instead of guessing. "
+        "Never invent hardware/specs/versions that are not in the outputs. "
         "If you just CREATED a file (cat >, echo >, tee, etc.), the next step MUST be to EXECUTE or VERIFY it. "
         "If more steps are needed, reply with the NEXT bash command in a ```code block. "
         "Maximum 10 steps total. Be efficient — combine steps when possible."
@@ -583,8 +586,7 @@ def dev_agent(task, files_ctx, max_steps=MAX_DEV_STEPS, dry_run=False):
     for step in range(1, max_steps + 1):
         print(f"── Paso {step}/{max_steps} ──")
         raw = ask(system, convo, max_tokens=700)
-        snippet = raw[:300] + ("…" if len(raw) > 300 else "")
-        print(f"  nini: {DIM}{snippet}{RESET}")
+        print(f"  nini: {DIM}{raw}{RESET}")
         actions, done = parse_actions(raw)
         results = []
         got_action = False
@@ -653,7 +655,7 @@ def run_cmd(cmd, silent=False):
     r = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=60)
     output = r.stdout + r.stderr
     if not silent and output.strip():
-        for line in output.strip()[:500].split("\n"):
+        for line in output.strip().split("\n"):
             print(f"  {line}")
     return r.returncode, output
 
@@ -702,12 +704,12 @@ def run_with_recovery(cmd, user_prompt, system_prompt):
     output = r.stdout + r.stderr
     if r.returncode != 0 and output.strip():
         print(f"{RED}  Exit code: {r.returncode}{RESET}")
-        for line in output.strip()[:500].split("\n"):
+        for line in output.strip().split("\n"):
             print(f"  {line}")
         fix_prompt = (
             f"The command failed with exit code {r.returncode}.\n"
             f"Command: {cmd}\n"
-            f"Error output: {output.strip()[:500]}\n"
+            f"Error output: {output.strip()}\n"
             f"Original request: {user_prompt}\n"
             f"Suggest a fix. Reply ONLY with the corrected bash command in a ```code block."
         )
@@ -719,7 +721,7 @@ def run_with_recovery(cmd, user_prompt, system_prompt):
             ans2 = input(f"  ¿Ejecutar el fix? [Y/n] ").strip().lower()
             if ans2 in ("", "y", "s", "si", "sí"):
                 r2 = subprocess.run(fixed_cmd, shell=True, capture_output=True, text=True, timeout=60)
-                out2 = (r2.stdout + r2.stderr).strip()[:500]
+                out2 = (r2.stdout + r2.stderr).strip()
                 if out2:
                     for line in out2.split("\n"):
                         print(f"  {line}")
@@ -727,7 +729,7 @@ def run_with_recovery(cmd, user_prompt, system_prompt):
         return r.returncode
     else:
         if output.strip():
-            for line in output.strip()[:500].split("\n"):
+            for line in output.strip().split("\n"):
                 print(f"  {line}")
     return r.returncode
 
@@ -783,7 +785,7 @@ def auto_chain(user_text, system_prompt, max_steps=MAX_STEPS):
             print(f"{RED}  Exit code: {exit_code}{RESET}")
             fix_prompt = (
                 f"Command failed (exit {exit_code}):\n{content}\n"
-                f"Error: {output.strip()[:300]}\n"
+                f"Error: {output.strip()}\n"
                 f"Suggest a fix in a ```code block, or reply DONE if unrecoverable."
             )
             raw_fix = ask(system_prompt, fix_prompt, max_tokens=150)
@@ -1035,7 +1037,7 @@ def main():
         print(f"{RED}  Exit code: {exit_code}{RESET}")
         fix_prompt = (
             f"Command failed (exit {exit_code}):\n{content}\n"
-            f"Error: {output.strip()[:300]}\n"
+            f"Error: {output.strip()}\n"
             f"Suggest a fix in a ```code block, or reply DONE if unrecoverable."
         )
         raw_fix = ask(system_prompt, fix_prompt, max_tokens=150)
@@ -1105,7 +1107,7 @@ def main():
             print(f"{RED}  Exit code: {exit_code}{RESET}")
             fix_prompt = (
                 f"Command failed (exit {exit_code}):\n{content}\n"
-                f"Error: {output.strip()[:300]}\n"
+                f"Error: {output.strip()}\n"
                 f"Suggest a fix in a ```code block, or reply DONE if unrecoverable."
             )
             raw_fix = ask(system_prompt, fix_prompt, max_tokens=150)
