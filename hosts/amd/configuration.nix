@@ -31,6 +31,14 @@
     package = pkgs.ollama-vulkan;
     host = "127.0.0.1";
     port = 11434;
+    loadModels = [ "qwen2.5-coder:7b" ];
+  };
+
+  # Auto-descargar el modelo tras cada consulta: libera VRAM/RAM al momento,
+  # así no hay que desmontarlo a mano para jugar (solo se sube mientras se usa).
+  systemd.services.ollama.environment = {
+    OLLAMA_KEEP_ALIVE = "0";
+    OLLAMA_MAX_LOADED_MODELS = "1";
   };
 
   # Blacklistear nouveau: si hay una NVIDIA físicamente presente, no se usa y

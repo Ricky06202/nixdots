@@ -132,6 +132,7 @@ RUSTEOF
   # Paquetes del shell
   home.packages = with pkgs; [
     cliAw # CLI de Caelestia (colores/material-you/wallpapers) para scripts externos
+    aider-chat # asistente de programación por CLI (usa el Qwen local via Ollama)
     zoxide
     fzf
     ripgrep
@@ -151,6 +152,13 @@ RUSTEOF
       "default-sort-order" = "reverse";
     };
   };
+
+  # Config de Aider: modelo Qwen local de Ollama (sin API key externa).
+  home.file.".config/aider/aider.conf.yml".text = ''
+    # Cambia `model` por otro qwen si quieres probar (ej: qwen2.5-coder:14b).
+    model: ollama_chat/qwen2.5-coder:7b
+    ollama-api-base: http://127.0.0.1:11434
+  '';
 
   # Aplicaciones predeterminadas: sin esto, xdg-open agarra al primer .desktop
   # que se registra (VSCode abre carpetas, PrismLauncher los zip, Brave las imágenes).
