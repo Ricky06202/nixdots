@@ -312,11 +312,60 @@ generate_hardware() {
 
     local hw_file="$REPO_DIR/hosts/${host}/hardware-configuration.nix"
     local hw_generated
-    hw_generated=$(nixos-generate-config --root "$MNT" --show-hardware-config)
+    hw_generated=$(nixos-generate-config --root "$MNT" --show-hardware-config) || \
+        die "nixos-generate-config falló. Checa los mounts bajo ${MNT} antes de continuar."
 
+    mkdir -p "$(dirname "$hw_file")"
     echo "$hw_generated" > "$hw_file"
     success "hardware-configuration.nix generado para ${host}"
     info "Archivo: ${hw_file}"
+
+    verify_hardware "$host" "$hw_file"
+}
+
+# ── Verificación: el hardware-config DEBE ser de ESTA máquina ────────────────
+# Previene el caso "instalé con el hw-config de otro disco/UUID y no bootea":
+# el archivo que usará nixos-install tiene que referenciar exactamente las
+# particiones que acabamos de crear (PART_ESP / PART_ROOT de este disco).
+
+verify_hardware() {
+    local host="$1"
+    local hw_file="$2"
+
+    local root_uuid esp_uuid
+    root_uuid=$(blkid -s UUID -o value "$PART_ROOT" 2>/dev/null || true)
+    esp_uuid=$(blkid -s UUID -o value "$PART_ESP" 2>/dev/null || true)
+
+    [ -n "$root_uuid" ] || warn "No se pudo leer el UUID de ${PART_ROOT}"
+    [ -n "$esp_uuid" ]  || warn "No se pudo leer el UUID de ${PART_ESP}"
+
+    local ok=1
+    if [ -n "$root_uuid" ] && ! grep -q "by-uuid/${root_uuid}" "$hw_file"; then
+        error "El hardware-config NO referencia el root que acabamos de crear: by-uuid/${root_uuid}"
+        ok=0
+    fi
+    if [ -n "$esp_uuid" ] && ! grep -q "by-uuid/${esp_uuid}" "$hw_file"; then
+        error "El hardware-config NO referencia la ESP creada: by-uuid/${esp_uuid}"
+        ok=0
+    fi
+    if ! grep -q 'fileSystems\."/"' "$hw_file"; then
+        error "El hardware-config no define la raíz (fileSystems.\"/\")."
+        ok=0
+    fi
+    if ! grep -q '"btrfs"' "$hw_file"; then
+        error "El hardware-config no usa btrfs como raíz, algo anda mal."
+        ok=0
+    fi
+
+    if [ "$ok" -eq 0 ]; then
+        echo
+        echo -e "  ${YELLOW}Contenido generado (para depurar):${NC}"
+        sed -n '1,60p' "$hw_file" | sed 's/^/    /'
+        echo
+        die "hardware-config inválido o de OTRA máquina. Se aborta para no instalar un sistema que no bootea."
+    fi
+
+    success "hardware-configuration.nix verificado: corresponde a ESTA máquina (${host})"
 }
 
 # ── Fase 8: nixos-install ────────────────────────────────────────────────────
