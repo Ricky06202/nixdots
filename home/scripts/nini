@@ -329,10 +329,6 @@ def ask_ollama(system_prompt, user_prompt, max_tokens=150, temperature=0.0):
         except Exception as e:
             raise RuntimeError(f"Ollama sin conexión: {e}")
         content = (data.get("message") or {}).get("content", "").strip()
-        if THINK_MODE:
-            thinking = (data.get("message") or {}).get("thinking", "").strip()
-            if thinking:
-                content = thinking + "\n\n" + content
         if content:
             return content
     raise RuntimeError(f"Ollama devolvió respuesta vacía tras 2 intentos ({OLLAMA_MODEL})")
