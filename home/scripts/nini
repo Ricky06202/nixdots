@@ -9,6 +9,7 @@ DEEPSEEK_MODEL = "deepseek-chat"
 OLLAMA_URL    = "http://127.0.0.1:11434/api/chat"
 OLLAMA_TAGS   = "http://127.0.0.1:11434/api/tags"
 OLLAMA_MODEL  = "qwen3:8b"
+THINK_MODE    = False  # True = qwen3 razona antes de responder (más lento)
 
 API_KEY = Path.home() / ".config" / "nini" / "api.key"
 HISTORY = Path.home() / ".config" / "nini" / "history.jsonl"
@@ -304,50 +305,64 @@ def detect_provider(forced=None):
         sys.exit(1)
 
 def ask_ollama(system_prompt, user_prompt, max_tokens=150, temperature=0.0):
-    payload = json.dumps({
-        "model": OLLAMA_MODEL,
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user",   "content": user_prompt},
-        ],
-        "stream": False,
-        "options": {"temperature": temperature, "num_predict": max_tokens},
-    }).encode()
-    req = urllib.request.Request(OLLAMA_URL, data=payload, headers={"Content-Type": "application/json"})
-    try:
-        with urllib.request.urlopen(req, timeout=120) as resp:
-            data = json.loads(resp.read())
-    except urllib.error.HTTPError as e:
-        raise RuntimeError(f"Ollama error {e.code}: {e.read().decode(errors='replace')[:200]}")
-    except Exception as e:
-        raise RuntimeError(f"Ollama sin conexión: {e}")
-    return data["message"]["content"].strip()
+    for attempt in range(2):
+        eff_prompt = user_prompt
+        if attempt > 0:
+            eff_prompt = user_prompt[:400] + "\n\n(No dejaste contenido visible en tu respuesta. Responde directamente ahora, sin pensar en voz alta.)"
+        payload = json.dumps({
+            "model": OLLAMA_MODEL,
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user",   "content": eff_prompt},
+            ],
+            "stream": False,
+            "options": {"temperature": temperature, "num_predict": max_tokens, "think": THINK_MODE},
+        }).encode()
+        req = urllib.request.Request(OLLAMA_URL, data=payload, headers={"Content-Type": "application/json"})
+        try:
+            with urllib.request.urlopen(req, timeout=120) as resp:
+                data = json.loads(resp.read())
+        except urllib.error.HTTPError as e:
+            raise RuntimeError(f"Ollama error {e.code}: {e.read().decode(errors='replace')[:200]}")
+        except Exception as e:
+            raise RuntimeError(f"Ollama sin conexión: {e}")
+        content = (data.get("message") or {}).get("content", "").strip()
+        if content:
+            return content
+    raise RuntimeError(f"Ollama devolvió respuesta vacía tras 2 intentos ({OLLAMA_MODEL})")
 
 def ask_deepseek(system_prompt, user_prompt, max_tokens=150, temperature=0.0):
     with open(API_KEY) as f:
         key = f.read().strip()
-    payload = json.dumps({
-        "model": DEEPSEEK_MODEL,
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user",   "content": user_prompt},
-        ],
-        "max_tokens": max_tokens,
-        "temperature": temperature,
-    }).encode()
-    req = urllib.request.Request(DEEPSEEK_URL, data=payload, headers={
-        "Content-Type":  "application/json",
-        "Authorization": f"Bearer {key}",
-    })
-    try:
-        with urllib.request.urlopen(req, timeout=60) as resp:
-            data = json.loads(resp.read())
-    except urllib.error.HTTPError as e:
-        body = e.read().decode(errors="replace")
-        raise RuntimeError(f"DeepSeek API error {e.code}: {body[:200]}")
-    except Exception as e:
-        raise RuntimeError(f"DeepSeek sin conexión (¿se fue la luz?): {e}")
-    return data["choices"][0]["message"]["content"].strip()
+    for attempt in range(2):
+        eff_prompt = user_prompt
+        if attempt > 0:
+            eff_prompt = user_prompt[:400] + "\n\n(No dejaste contenido visible en tu respuesta. Responde directamente ahora.)"
+        payload = json.dumps({
+            "model": DEEPSEEK_MODEL,
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user",   "content": eff_prompt},
+            ],
+            "max_tokens": max_tokens,
+            "temperature": temperature,
+        }).encode()
+        req = urllib.request.Request(DEEPSEEK_URL, data=payload, headers={
+            "Content-Type":  "application/json",
+            "Authorization": f"Bearer {key}",
+        })
+        try:
+            with urllib.request.urlopen(req, timeout=60) as resp:
+                data = json.loads(resp.read())
+        except urllib.error.HTTPError as e:
+            body = e.read().decode(errors="replace")
+            raise RuntimeError(f"DeepSeek API error {e.code}: {body[:200]}")
+        except Exception as e:
+            raise RuntimeError(f"DeepSeek sin conexión (¿se fue la luz?): {e}")
+        content = data["choices"][0]["message"]["content"].strip()
+        if content:
+            return content
+    raise RuntimeError("DeepSeek devolvió respuesta vacía tras 2 intentos")
 
 def ask(system_prompt, user_prompt, max_tokens=150, temperature=0.0):
     """Intenta el provider activo; si falla, hace fallback al otro (offline = local)."""
@@ -761,6 +776,7 @@ HELP_TEXT = f"""{BOLD}nini{RESET} v4 — asistente terminal (Ollama local + Deep
   - Si DeepSeek falla (sin internet) -> cae automatico a Ollama local
   Fuerza uno: --api ollama | --api deepseek
   Modelo local alternativo: --model qwen2.5-coder:7b
+  Razonamiento (más lento): --smart
 
 {BOLD}Uso:{RESET}
   nini <pregunta u orden>            consulta sistema / comando (auto-chain)
@@ -787,6 +803,7 @@ HELP_TEXT = f"""{BOLD}nini{RESET} v4 — asistente terminal (Ollama local + Deep
 
 
 def main():
+    global THINK_MODE, OLLAMA_MODEL
     # --help
     if len(sys.argv) < 2 or sys.argv[1] in ("--help", "-h", "help"):
         print(HELP_TEXT)
@@ -808,6 +825,9 @@ def main():
             if flag == "--dry-run": dry_run = True
             if flag == "--no-chain": no_chain = True
             args.remove(flag)
+    if "--smart" in args:
+        THINK_MODE = True
+        args.remove("--smart")
     for flag in ["--api", "--model", "-f", "--file", "--steps", "--dev-steps"]:
         while flag in args:
             idx = args.index(flag)
@@ -886,6 +906,10 @@ def main():
         raw = ask(system_prompt, user_text, max_tokens=tokens)
         kind, content = parse(raw)
 
+        if not content.strip():
+            print(f"{YELLOW}⚠ el modelo respondió vacío; reintenta.{RESET}")
+            return
+
         if kind == "cmd":
             if dry_run:
                 print(f"\n  Dry run: {content}\n")
@@ -907,6 +931,10 @@ def main():
     # First, check if AI thinks this is a question (text) or action (cmd)
     raw = ask(system_prompt, user_text, max_tokens=300)
     kind, content = parse(raw)
+
+    if not content.strip():
+        print(f"{YELLOW}⚠ el modelo respondió vacío; reintenta o usa --api deepseek.{RESET}")
+        return
 
     if kind == "text":
         # It's a question, just answer
