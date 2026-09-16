@@ -241,6 +241,9 @@ def build_system_prompt(mode, system_ctx, history_ctx):
             "If the user asks a question: reply with plain text, concise, ≤40 words, no code block. "
             "If a command needs sudo, include sudo. "
             "If a command needs a file path, use common sense defaults. "
+            "CRITICAL: if you combine MULTIPLE commands in one line, ALWAYS separate them with \" && \" "
+            "(e.g. 'lscpu | grep -i vendor && lspci -k | grep -i vga'). Never put two commands "
+            "together without an operator."
         )
     if system_ctx:
         parts.append(f"\nSystem state:\n{system_ctx}")
@@ -388,6 +391,23 @@ def ask(system_prompt, user_prompt, max_tokens=150, temperature=0.0):
 
 
 # ── Parse ─────────────────────────────────────────────────────────────────────
+def fix_missing_seps(cmd):
+    """Insert '&&' between glued commands (e.g. 'lscpu ... lspci ...'). Generoso,
+    pero la confirmacion [Y/n] deja ver el resultado antes de ejecutar."""
+    if not cmd:
+        return cmd
+    strong = ("lscpu", "lspci", "systemctl", "journalctl", "nmcli", "bluetoothctl",
+              "hyprctl", "uname", "hostnamectl", "lsblk", "mount", "sensors", "uptime",
+              "free", "df", "ps", "ping", "ss", "ip", "top", "which", "find",
+              "apt", "apt-get", "dnf", "pacman", "curl", "wget", "git", "ls", "cat",
+              "grep", "head", "tail", "neofetch", "fastfetch", "nvidia-smi",
+              "sudo")
+    pat = r"(?<=[^\s&|;<>])\s+(?=(?:" + "|".join(
+        sorted(strong, key=len, reverse=True)) + r")(?=\s|\||$))"
+    cmd = re.sub(pat, " && ", cmd)
+    return re.sub(r"\s*&&\s+(?:&&\s+)+", " && ", cmd).strip()
+
+
 def parse(text):
     """Extract command from AI response (thinking prose makes it tolerant)."""
     if "```" in text:
@@ -400,7 +420,7 @@ def parse(text):
             if first in ("bash", "sh", "cmd", "shell", "zsh"):
                 block = " ".join(block.split()[1:])
             if block.split():
-                return ("cmd", block)
+                return ("cmd", fix_missing_seps(block))
     # No fenced command — check if it starts with a known command word
     stripped = text.strip()
     cmd_starters = ("sudo", "nix", "apt", "dnf", "curl", "wget",
@@ -411,7 +431,7 @@ def parse(text):
                     "head", "tail", "ping", "ss", "ip", "wpctl", "pactl")
     first_word = stripped.split()[0] if stripped.split() else ""
     if first_word in cmd_starters:
-        return ("cmd", stripped)
+        return ("cmd", fix_missing_seps(stripped))
     return ("text", text)
 
 
