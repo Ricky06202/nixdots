@@ -316,7 +316,7 @@ def ask_ollama(system_prompt, user_prompt, max_tokens=150, temperature=0.0):
                 {"role": "user",   "content": eff_prompt},
             ],
             "stream": False,
-            "options": {"temperature": temperature, "num_predict": max_tokens, "think": THINK_MODE},
+            "options": {"temperature": temperature, "think": THINK_MODE},
         }).encode()
         req = urllib.request.Request(OLLAMA_URL, data=payload, headers={"Content-Type": "application/json"})
         try:
@@ -940,6 +940,11 @@ def main():
         # It's a question, just answer
         print(f"\n{content}\n")
         save_history(user_text, "[text response]", 0, content[:100])
+        return
+
+    if kind == "cmd" and re.search(r"\bcomando\b|command\b|qu[eé] comando", user_text, re.I):
+        print(f"\nEl comando sería:\n  {BOLD}{content}{RESET}\n")
+        save_history(user_text, content, 0)
         return
 
     # It's a command — run auto-chain
