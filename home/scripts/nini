@@ -1,14 +1,23 @@
 #!/usr/bin/env python3
-"""nini — DeepSeek single-shot CLI for Hyprland/NixOS (v3 auto-chain)."""
-import json, os, sys, subprocess, urllib.request, urllib.error, time, uuid
+"""nini — asistente de terminal: Ollama local primero, DeepSeek como respaldo (v4 mini-opencode)."""
+import json, os, re, sys, subprocess, urllib.request, urllib.error, time, uuid
 from pathlib import Path
 
-API_URL = "https://api.deepseek.com/chat/completions"
-MODEL   = "deepseek-chat"
+# ── Providers ──
+DEEPSEEK_URL  = "https://api.deepseek.com/chat/completions"
+DEEPSEEK_MODEL = "deepseek-chat"
+OLLAMA_URL    = "http://127.0.0.1:11434/api/chat"
+OLLAMA_TAGS   = "http://127.0.0.1:11434/api/tags"
+OLLAMA_MODEL  = "qwen2.5-coder:7b"
+
 API_KEY = Path.home() / ".config" / "nini" / "api.key"
 HISTORY = Path.home() / ".config" / "nini" / "history.jsonl"
 MAX_HIST = 20
 MAX_STEPS = 10
+MAX_DEV_STEPS = 12
+MAX_READ_CHARS = 30000
+MAX_CONVO_CHARS = 40000
+PROVIDER = None
 
 # ANSI
 BOLD  = "\033[1m"
@@ -259,25 +268,79 @@ def build_chain_prompt(user_text, steps_log):
     return "\n".join(parts)
 
 
-# ── API ───────────────────────────────────────────────────────────────────────
-def ask(system_prompt, user_prompt, max_tokens=150):
+# ── Providers ───────────────────────────────────────────────────────────────────
+def ollama_available():
+    try:
+        with urllib.request.urlopen(OLLAMA_TAGS, timeout=2) as r:
+            data = json.loads(r.read())
+    except Exception:
+        return False
+    models = {m.get("name") or m.get("model") for m in data.get("models", [])}
+    if models and OLLAMA_MODEL not in models:
+        print(f"{YELLOW}Ollama activo pero no tiene {OLLAMA_MODEL}.{RESET}")
+        print(f"  Descárgalo: ollama pull {OLLAMA_MODEL}")
+        print(f"  O usa: nini --api deepseek <consulta>")
+        return False
+    return bool(models)
+
+def detect_provider(forced=None):
+    global PROVIDER
+    if forced:
+        PROVIDER = forced.lower()
+        print(f"{DIM}Backend: {PROVIDER}{RESET}")
+        return
+    if ollama_available():
+        PROVIDER = "ollama"
+        print(f"{DIM}Backend: Ollama local ({OLLAMA_MODEL}){RESET}")
+    elif API_KEY.is_file():
+        PROVIDER = "deepseek"
+        print(f"{DIM}Backend: DeepSeek (sin ollama local){RESET}")
+    else:
+        print(f"{RED}Error:{RESET} sin Ollama local ni API key de DeepSeek.")
+        print(f"  - levanta ollama y baja el modelo: ollama pull {OLLAMA_MODEL}")
+        print(f"  - o crea {API_KEY} con tu key de DeepSeek (una línea)")
+        sys.exit(1)
+
+def ask_ollama(system_prompt, user_prompt, max_tokens=150, temperature=0.0):
+    payload = json.dumps({
+        "model": OLLAMA_MODEL,
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user",   "content": user_prompt},
+        ],
+        "stream": False,
+        "options": {"temperature": temperature, "num_predict": max_tokens},
+    }).encode()
+    req = urllib.request.Request(OLLAMA_URL, data=payload, headers={"Content-Type": "application/json"})
+    try:
+        with urllib.request.urlopen(req, timeout=120) as resp:
+            data = json.loads(resp.read())
+    except urllib.error.HTTPError as e:
+        print(f"{RED}Ollama error {e.code}:{RESET} {e.read().decode(errors='replace')[:200]}")
+        sys.exit(1)
+    except Exception as e:
+        print(f"{RED}Connection error (ollama):{RESET} {e}")
+        sys.exit(1)
+    return data["message"]["content"].strip()
+
+def ask_deepseek(system_prompt, user_prompt, max_tokens=150, temperature=0.0):
     with open(API_KEY) as f:
         key = f.read().strip()
     payload = json.dumps({
-        "model": MODEL,
+        "model": DEEPSEEK_MODEL,
         "messages": [
             {"role": "system", "content": system_prompt},
             {"role": "user",   "content": user_prompt},
         ],
         "max_tokens": max_tokens,
-        "temperature": 0.0,
+        "temperature": temperature,
     }).encode()
-    req = urllib.request.Request(API_URL, data=payload, headers={
+    req = urllib.request.Request(DEEPSEEK_URL, data=payload, headers={
         "Content-Type":  "application/json",
         "Authorization": f"Bearer {key}",
     })
     try:
-        with urllib.request.urlopen(req, timeout=20) as resp:
+        with urllib.request.urlopen(req, timeout=60) as resp:
             data = json.loads(resp.read())
     except urllib.error.HTTPError as e:
         body = e.read().decode(errors="replace")
@@ -287,6 +350,11 @@ def ask(system_prompt, user_prompt, max_tokens=150):
         print(f"{RED}Connection error:{RESET} {e}")
         sys.exit(1)
     return data["choices"][0]["message"]["content"].strip()
+
+def ask(system_prompt, user_prompt, max_tokens=150, temperature=0.0):
+    if PROVIDER == "ollama":
+        return ask_ollama(system_prompt, user_prompt, max_tokens, temperature)
+    return ask_deepseek(system_prompt, user_prompt, max_tokens, temperature)
 
 
 # ── Parse ─────────────────────────────────────────────────────────────────────
@@ -312,6 +380,206 @@ def parse(text):
     if first_word in cmd_starters:
         return ("cmd", stripped)
     return ("text", text)
+
+
+# ── Dev agent (mini-opencode) ──────────────────────────────────────────────
+DEV_PROMPT = (
+    "Eres un desarrollador senior trabajando en la terminal sobre este proyecto.\n"
+    "Puedes editar código real. Protocolo de acciones (una línea por acción, empieza con #):\n"
+    "  #READ <ruta>          leer un archivo (ruta relativa al cwd)\n"
+    "  #LIST <ruta>          listar un directorio\n"
+    "  #RUN <comando>        ejecutar un comando bash\n"
+    "  #WRITE <ruta>         seguido de todo el contenido del archivo: crearlo o reemplazarlo COMPLETO\n"
+    "Cuando termines la tarea: #DONE <resumen corto en español>\n"
+    "Reglas: explora con LIST si no conoces la estructura; lee con READ antes de editar; "
+    "edita lo mínimo posible; verifica con RUN cuando convenga; NO inventes rutas. "
+    "Siempre responde con una acción hasta completar la tarea."
+)
+
+ACTION_RE = re.compile(r"^#(READ|LIST|RUN|WRITE|DONE)\s*(.*)$", re.I)
+
+def truncate(s, n):
+    return s if len(s) <= n else s[:n] + f"\n… [truncado {len(s)-n} chars]"
+
+def load_file_context(paths):
+    parts = []
+    for p in paths:
+        fp = Path(p)
+        if not fp.is_file():
+            print(f"{YELLOW}⚠ no existe: {p}{RESET}")
+            continue
+        try:
+            txt = fp.read_text(errors="replace")
+        except Exception as e:
+            print(f"{YELLOW}⚠ no pude leer {p}: {e}{RESET}")
+            continue
+        parts.append(f"── Archivo: {p} ──\n{txt}")
+        total = sum(len(x) for x in parts)
+        if total > 60000:
+            parts.pop()
+            print(f"{YELLOW}⚠ contexto de archivos limitado a 60k chars.{RESET}")
+            break
+    return "\n\n".join(parts) if parts else ""
+
+def repo_tree(max_entries=80):
+    try:
+        r = subprocess.run(["git", "ls-files"], capture_output=True, text=True, timeout=5)
+        if r.returncode == 0 and r.stdout.strip():
+            files = [l for l in r.stdout.splitlines() if l.strip() and "/.git" not in l]
+            shown = files if len(files) <= max_entries else files[:max_entries]
+            return "git ls-files:\n" + "\n".join(shown) + (f"\n… ({len(files)} archivos totales)" if len(files) > max_entries else "")
+    except Exception:
+        pass
+    lines = []
+    root = Path(os.getcwd())
+    for p in sorted(root.rglob("*")):
+        if any(part.startswith(".") for part in p.parts):
+            continue
+        if p.is_file():
+            lines.append(str(p.relative_to(root)))
+        if len(lines) >= max_entries:
+            break
+    return "archivos del proyecto:\n" + ("\n".join(lines) if lines else "(vacío)")
+
+def git_status_snapshot():
+    try:
+        r = subprocess.run(["git", "status", "--short", "--branch"], capture_output=True, text=True, timeout=5)
+        return r.stdout.strip() if r.stdout.strip() else ""
+    except Exception:
+        return ""
+
+def parse_actions(text):
+    """Devuelve (list[(kind,arg,content)], summary). WRITE acumula contenido hasta la próxima acción."""
+    actions, summary = [], ""
+    cur_write, write_buf = None, []
+    for line in text.replace("\r", "").split("\n"):
+        m = ACTION_RE.match(line.strip())
+        if m:
+            kind, arg = m.group(1).upper(), m.group(2).strip()
+            if cur_write:
+                actions.append(("WRITE", cur_write, "\n".join(write_buf).rstrip("\n")))
+                cur_write, write_buf = None, []
+            if kind == "DONE":
+                summary = arg or "listo"
+                break
+            if kind in ("READ", "LIST", "RUN") and arg:
+                actions.append((kind, arg, ""))
+            elif kind == "WRITE" and arg:
+                cur_write = arg
+            continue
+        if cur_write is not None:
+            write_buf.append(line)
+        else:
+            m2 = re.search(r"\bDONE\b\s*(.*)", line, re.I)
+            if m2 and not summary:
+                summary = m2.group(1).strip()
+    if cur_write:
+        actions.append(("WRITE", cur_write, "\n".join(write_buf).rstrip("\n")))
+    return actions, summary
+
+def exec_dev_action(kind, arg, content, dry_run=False):
+    """Ejecuta acción del agente. Devuelve (hecho, texto_respuesta)."""
+    if kind in ("READ", "LIST"):
+        p = Path(arg)
+        if not p.exists():
+            return True, f"[{kind} {arg}] no existe"
+        if kind == "LIST" or p.is_dir():
+            entries = sorted(os.listdir(p))
+            return True, f"[LIST {arg}]\n" + ("\n".join(entries[:100]) or "(vacío)")
+        try:
+            txt = p.read_text(errors="replace")
+        except Exception as e:
+            return True, f"[READ {arg}] error: {e}"
+        return True, f"[READ {arg}]\n" + truncate(txt, MAX_READ_CHARS)
+    if kind == "RUN":
+        if dry_run:
+            return True, f"[RUN {arg}] (dry-run, no se ejecutó)"
+        exit_code, output, blocked = safe_run_cmd(arg, silent=False)
+        if blocked:
+            return False, f"[RUN {arg}] ⛔ bloqueado por seguridad"
+        return True, f"[RUN {arg}] exit={exit_code}\n" + truncate(output.strip(), 4000)
+    if kind == "WRITE":
+        if dry_run:
+            return True, f"[WRITE {arg}] (dry-run) no se escribió ({len(content)} chars de contenido)"
+        if not content.strip():
+            return True, f"[WRITE {arg}] vacío — omitido"
+        fp = Path(arg)
+        fp.parent.mkdir(parents=True, exist_ok=True)
+        fp.write_text(content)
+        return True, f"[WRITE {arg}] escrito ({len(content)} chars)"
+    return False, ""
+
+def dev_agent(task, files_ctx, max_steps=MAX_DEV_STEPS, dry_run=False):
+    tree = repo_tree()
+    git = git_status_snapshot()
+    ctx = []
+    if git:
+        ctx.append("Git status:\n" + git)
+    ctx.append(tree)
+    if files_ctx:
+        ctx.append(files_ctx)
+    system = DEV_PROMPT + "\n\nEstado del proyecto:\n" + "\n".join(ctx)
+    convo = f"Tarea: {task}\n\nEscribe TU PRIMERA acción (#READ/#LIST/#RUN/#WRITE)."
+    prev_sig = None
+    repeat_count = 0
+    sig_counts = {}
+    for step in range(1, max_steps + 1):
+        print(f"── Paso {step}/{max_steps} ──")
+        raw = ask(system, convo, max_tokens=700)
+        snippet = raw[:300] + ("…" if len(raw) > 300 else "")
+        print(f"  nini: {DIM}{snippet}{RESET}")
+        actions, done = parse_actions(raw)
+        results = []
+        got_action = False
+        for kind, arg, content in actions:
+            did, resp = exec_dev_action(kind, arg, content, dry_run)
+            got_action = got_action or did
+            results.append(resp)
+        sig = "|".join(f"{k}:{a}" for k, a, _ in actions)
+        sig_counts[sig] = sig_counts.get(sig, 0) + 1
+        if sig_counts[sig] >= 3:
+            print(f"\n{YELLOW}⚠ repetición: nini está ciclando entre las mismas acciones.{RESET}")
+            print(f"  Sugerencias: pide la tarea más concreta, o usa --api deepseek para más inteligencia.")
+            save_history(task, f"[dev bucle en paso {step}]", -1)
+            return step, "bucle detectado"
+        if sig == prev_sig and sig:
+            repeat_count += 1
+        else:
+            repeat_count = 0
+        prev_sig = sig
+        if repeat_count >= 2:
+            print(f"\n{YELLOW}⚠ repetición: nini se quedó dando la misma acción.{RESET}")
+            print(f"  Sugerencias: pide la tarea más concreta, o usa --api deepseek para más inteligencia.")
+            save_history(task, f"[dev bucle en paso {step}]", -1)
+            return step, "bucle detectado"
+        if done and not got_action:
+            print(f"\n{GREEN}✅ {done}{RESET}")
+            save_history(task, f"[dev {step} paso(s)]", 0, done[:100])
+            return step, done
+        if not got_action and not results:
+            text = raw.strip()
+            if done:
+                print(f"\n{GREEN}✅ {done}{RESET}")
+            else:
+                print(f"{YELLOW}⚠ modelo sin acciones:{RESET} {text[:200]}")
+            save_history(task, f"[dev {step} paso(s)]", 0, (done or text)[:100])
+            return step, (done or text)
+        results_txt = "\n\n".join([r for r in results if r])
+        if done:
+            if results_txt:
+                print(f"\n{DIM}{results_txt}{RESET}")
+            print(f"\n{GREEN}✅ {done}{RESET}")
+            save_history(task, f"[dev {step} paso(s)]", 0, done[:100])
+            return step, done
+        convo = (f"Tarea original: {task}\n\n"
+                 f"Resultados de tus acciones:\n{results_txt}\n\n"
+                 f"Continúa: da la siguiente acción para completar la tarea, "
+                 f"o responde #DONE <resumen> si ya terminó.")
+        if len(convo) > MAX_CONVO_CHARS:
+            convo = convo[:MAX_CONVO_CHARS] + "\n… [contexto limitado]"
+    print(f"\n{YELLOW}⚠ Máximo de pasos ({max_steps}) alcanzado.{RESET}")
+    save_history(task, f"[dev {max_steps} paso(s), max]", 0)
+    return max_steps, f"Pasos agotados ({max_steps})."
 
 
 # ── Run command (silent mode for chain) ──────────────────────────────────────
@@ -459,37 +727,35 @@ def auto_chain(user_text, system_prompt, max_steps=MAX_STEPS):
 
 
 # ── Main ──────────────────────────────────────────────────────────────────────
-HELP_TEXT = f"""{BOLD}nini{RESET} v3 — DeepSeek CLI para NixOS/Hyprland
+HELP_TEXT = f"""{BOLD}nini{RESET} v4 — asistente terminal (Ollama local + DeepSeek respaldo)
+
+{BOLD}Backend (automático):{RESET}
+  - Si Ollama local responde  -> usa qwen2.5-coder:7b (gratis, sin key)
+  - Si no -> usa DeepSeek (key en {API_KEY.name})
+  Fuerza uno: --api ollama | --api deepseek
+  Modelo local alternativo: --model qwen2.5-coder:14b
 
 {BOLD}Uso:{RESET}
-  nini <pregunta u orden>
-  echo "texto" | nini <procesar>    (pipe)
-  nini --dry-run <orden>             (mostrar sin ejecutar)
-  nini --no-chain <orden>            (sin auto-chain)
-  nini --steps N <orden>             (máx N pasos, default 10)
+  nini <pregunta u orden>            consulta sistema / comando (auto-chain)
+  nini dev "<tarea de código>"       MODE DEV: lee/lista/ejecuta/escribe archivos
+                                     iterando hasta completar (mini-opencode)
+  echo "texto" | nini <procesar>     (pipe)
+  nini -f <archivo> <pregunta>       agrega contenido de archivo al contexto
+  nini --dry-run <orden>             mostrar sin ejecutar
+  nini --steps N <orden>             máx N pasos, default 10
   nini help                          (esta ayuda)
 
-{BOLD}Modos (automáticos):{RESET}
-  Explain    — "qué hace systemctl list-units"
-  Translate  — "en ubuntu sería apt install firefox"
-  NixOS      — "instala firefox"
-  Default    — genera un comando bash (auto-chain activo)
-
-{BOLD}Auto-chain:{RESET}
-  nini detecta si tu tarea necesita varios pasos
-  y los ejecuta automáticamente (máx 10 pasos).
-  Al final muestra un resumen de todo lo que hizo.
+{BOLD}Modos dev:{RESET}
+  #READ <ruta>   #LIST <ruta>  #RUN <comando>  #WRITE <ruta> (+ contenido)
+  El agente explora el proyecto y edita archivos, verificando con git status.
 
 {BOLD}Ejemplos:{RESET}
   nini ¿cuánto espacio tengo en disco?
   nini instala firefox
-  nini qué procesos usan más RAM
-  nini conecta los audífonos AZ09
-  nini qué hace "systemctl list-units --type=service"
-  nini en ubuntu sería "apt install neovim"
-  nini --dry-run borra /tmp/ viejos
+  nini dev "agrega una bandera --verbose al script main.py"
+  nini -f ~/.config/hypr/hyprland.lua "revisa mis binds"
   cat log.txt | nini resume esto
-  nini organiza mis descargas (auto-chain)
+  nini --dry-run borra /tmp/ viejos
 """
 
 
@@ -499,34 +765,44 @@ def main():
         print(HELP_TEXT)
         sys.exit(0)
 
-    # API key check
-    if not API_KEY.is_file():
-        print(f"{RED}Error:{RESET} API key no encontrada.")
-        print(f"  Crea el archivo: {API_KEY}")
-        print(f"  Contenido: tu API key de DeepSeek (una línea)")
-        sys.exit(1)
-
     # Parse flags
     dry_run = False
     no_chain = False
     max_steps = MAX_STEPS
+    dev_steps = MAX_DEV_STEPS
+    api_forced = None
+    model_override = None
+    file_args = []
     args = sys.argv[1:]
 
-    if "--dry-run" in args:
-        dry_run = True
-        args.remove("--dry-run")
-    if "--no-chain" in args:
-        no_chain = True
-        args.remove("--no-chain")
-    if "--steps" in args:
-        idx = args.index("--steps")
-        if idx + 1 < len(args):
-            try:
-                max_steps = min(int(args[idx + 1]), MAX_STEPS)
-            except ValueError:
-                max_steps = MAX_STEPS
-            args.pop(idx + 1)
-        args.pop(idx)
+    # Pre-process flags (remain after removal)
+    for flag in ["--dry-run", "--no-chain"]:
+        if flag in args:
+            if flag == "--dry-run": dry_run = True
+            if flag == "--no-chain": no_chain = True
+            args.remove(flag)
+    for flag in ["--api", "--model", "-f", "--file", "--steps", "--dev-steps"]:
+        while flag in args:
+            idx = args.index(flag)
+            if idx + 1 < len(args):
+                val = args.pop(idx + 1)
+                if flag in ("-f", "--file"):
+                    file_args.append(val)
+                elif flag == "--api":
+                    api_forced = val
+                elif flag == "--model":
+                    model_override = val
+                elif flag == "--steps":
+                    try: max_steps = min(int(val), MAX_STEPS)
+                    except ValueError: pass
+                elif flag == "--dev-steps":
+                    try: dev_steps = min(int(val), MAX_DEV_STEPS)
+                    except ValueError: pass
+            args.pop(idx)
+
+    if model_override:
+        global OLLAMA_MODEL
+        OLLAMA_MODEL = model_override
 
     # Pipe support
     pipe_input = ""
@@ -541,7 +817,26 @@ def main():
     if pipe_input:
         user_text = f"Input from pipe:\n{pipe_input}\n\nUser request: {user_text}"
 
-    # Detect mode
+    # Detect backend provider (ollama / deepseek)
+    detect_provider(api_forced)
+
+    # File context (-f / --file)
+    files_ctx = load_file_context(file_args) if file_args else ""
+
+    # ── Modo DEV (mini-opencode) ──
+    is_dev = False
+    task_text = user_text
+    if user_text.startswith("dev ") or user_text.startswith('dev "') or user_text.startswith("dev '"):
+        is_dev = True
+        task_text = re.sub(r'^dev\s+', '', user_text)
+    elif "--dev" in args:
+        is_dev = True
+        task_text = re.sub(r'--dev\s*', '', user_text)
+    if is_dev:
+        step, summary = dev_agent(task_text, files_ctx, dev_steps, dry_run)
+        return
+
+    # Detect mode (explain / translate / nixos / default)
     mode = detect_mode(user_text)
 
     # System context
@@ -551,8 +846,10 @@ def main():
     hist_entries = load_history(n=5)
     hist_ctx = format_history(hist_entries)
 
-    # Build system prompt
+    # Build system prompt (+ optional file context)
     system_prompt = build_system_prompt(mode, sys_ctx, hist_ctx)
+    if files_ctx:
+        system_prompt += f"\n\nArchivos seleccionados:\n{files_ctx}"
 
     # ── Explain / Translate / NixOS modes → single shot (no chain) ──
     if mode in ("explain", "translate", "nixos") or no_chain:
