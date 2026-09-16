@@ -1,21 +1,17 @@
--- ===== MONITORES =====
--- formato: hl.monitor({ output = NOMBRE, mode = "RESOLUCION@REFRESCO", position = "XxY", scale = N })
--- HDMI-A-2 declarado primero -> es el monitor principal (ID 0)
-hl.monitor({ output = "HDMI-A-2", mode = "1920x1080@60", position = "0x0", scale = 1 })
-hl.monitor({ output = "eDP-1", mode = "1920x1080@60", position = "1920x0", scale = 1 })
-
--- ===== WORKSPACES ANCLADOS AL MONITOR PRINCIPAL =====
--- Los workspaces del escritorio viven SIEMPRE en HDMI-A-2 (persistente): si
--- eDP-1 llega a estar activa al arrancar, no se llevan los workspaces 1-5.
-hl.workspace_rule({ workspace = "1", monitor = "HDMI-A-2", persistent = true })
-hl.workspace_rule({ workspace = "2", monitor = "HDMI-A-2", persistent = true })
-hl.workspace_rule({ workspace = "3", monitor = "HDMI-A-2", persistent = true })
-hl.workspace_rule({ workspace = "4", monitor = "HDMI-A-2", persistent = true })
-hl.workspace_rule({ workspace = "5", monitor = "HDMI-A-2", persistent = true })
+-- ===== MONITORES Y ANCLAJE DE WORKSPACES =====
+-- La cabecera por host (monitors-laptop.lua | monitors-amd.lua) la inyecta
+-- home/default.nix con builtins.readFile segun hostName. Nada de monitores
+-- aqui: en el amd los nombres HDMI-A-2/eDP-1 no existen (rompe el arranque).
 
 -- ===== SCHEME CAELESTIA (colores Material You) =====
 -- Caelestia regenera ~/.config/hypr/scheme/current.lua al rotar wallpaper.
-local CaScheme = dofile(os.getenv("HOME") .. "/.config/hypr/scheme/current.lua")
+-- Si aún no existe (primer arranque), NO romper el parseo: usar una paleta
+-- Material You oscura por defecto y que el reload posterior la actualice.
+local schemePath = os.getenv("HOME") .. "/.config/hypr/scheme/current.lua"
+local okCa, CaScheme = pcall(dofile, schemePath)
+if not okCa or type(CaScheme) ~= "table" then
+    CaScheme = { primary = "6750A4", primaryDim = "4f378b", surfaceVariant = "49454f" }
+end
 local function c(hex, alpha)
     return "rgba(" .. (hex or "ffffff") .. (alpha or "ee") .. ")"
 end

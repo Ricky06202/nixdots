@@ -3,6 +3,11 @@
 # - si HDMI-A-2 esta conectado -> eDP-1 (portatil) se apaga
 # - si HDMI-A-2 se desconecta  -> eDP-1 se enciende de nuevo
 # (comandos en formato Lua porque Hyprland ya no usa hyprctl keyword)
+#
+# Solo tiene sentido en el laptop (eDP-1 + HDMI-A-2): si no existe un panel
+# eDP-1 (host amd, RX 7600 con HDMI-A-1) el script es un no-op para no estar
+# lanzando `hyprctl eval` a un monitor inexistente cada 3 segundos.
+hyprctl monitors 2>/dev/null | grep -q 'eDP-1' || exit 0
 
 last=""
 while true; do

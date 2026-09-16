@@ -202,9 +202,16 @@ RUSTEOF
     terminal = false;
   };
 
-  # Config de Hyprland (force: sobrescribe los archivos manuales existentes)
+  # Config de Hyprland (force: sobrescribe los archivos manuales existentes).
+  # La cabecera de monitores es POR HOST: en amd los puertos del laptop
+  # (HDMI-A-2/eDP-1) no existen y rompen el arranque. El cuerpo de
+  # hyprland.lua es compartido y no debe declarar monitores.
   xdg.configFile."hypr/hyprland.lua" = {
-    source = ./dotfiles/hypr/hyprland.lua;
+    text = ''
+      ${builtins.readFile ./dotfiles/hypr/${if hostName == "amd" then "monitors-amd.lua" else "monitors-laptop.lua"}}
+
+      ${builtins.readFile ./dotfiles/hypr/hyprland.lua}
+    '';
     force = true;
   };
 
