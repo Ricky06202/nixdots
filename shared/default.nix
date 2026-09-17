@@ -299,6 +299,27 @@ in
     };
   };
 
+  # Brave "adelgazado": desactiva vía policy los servicios de fondo/telemetría
+  # que no usas (Rewards, Wallet, VPN, News, Talk, Web Discovery, P3A/stats,
+  # background mode). Se aplica a ambos hosts en /etc/brave/policies/managed/.
+  # OJO: NO se toca SyncDisabled (usas sync de favoritos) ni BraveAIChatEnabled
+  # (Leo AI: hay reportes de crash al forzarlo por policy en Brave reciente).
+  environment.etc."brave/policies/managed/debloat.json".text = builtins.toJSON {
+    BraveRewardsDisabled = true;
+    BraveWalletDisabled = true;
+    BraveVPNDisabled = true;
+    BraveNewsDisabled = true;
+    BraveTalkDisabled = true;
+    BraveSpeedreaderEnabled = false;
+    BraveWaybackMachineEnabled = false;
+    BraveWebDiscoveryEnabled = false;
+    BraveP3AEnabled = false;
+    BraveStatsPingEnabled = false;
+    MetricsReportingEnabled = false;
+    BackgroundModeEnabled = false;
+    IPFSEnabled = false;
+  };
+
   # Configure keymap in X11
   services.xserver.xkb = {
     layout = "us";
