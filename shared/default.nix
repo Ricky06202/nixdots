@@ -599,7 +599,15 @@ in
       paths = [ (pkgs.callPackage ../packages/rustdesk-official { }) ];
       nativeBuildInputs = [ makeWrapper ];
       postBuild = ''
-        wrapProgram $out/bin/rustdesk --unset WAYLAND_DISPLAY --unset WAYLAND_SOCKET --set XDG_SESSION_TYPE x11 --set GDK_BACKEND x11
+        # xdg-user-dir al PATH: el frontend Flutter de RustDesk llama a
+        # getApplicationDocumentsDirectory() (path_provider) que ejecuta
+        # xdg-user-dir DOCUMENTS. Sin ese binario (NixOS no trae
+        # xdg-user-dirs) lanza MissingPlatformDirectoryException, _dir queda
+        # vacio y mainInit(appDir vacio) deja config::APP_DIR vacio. Como
+        # main_load_recent_peers() solo lista peers si APP_DIR no esta vacio,
+        # la pestana Recent queda SIEMPRE vacia aunque los peers si se
+        # guarden en ~/.config/rustdesk/peers/. Esto arregla ese bug.
+        wrapProgram $out/bin/rustdesk --unset WAYLAND_DISPLAY --unset WAYLAND_SOCKET --set XDG_SESSION_TYPE x11 --set GDK_BACKEND x11 --prefix PATH : ${pkgs.xdg-user-dirs}/bin
       '';
     })  # escritorio remoto (fix teclado Wayland: XWayland; binario oficial precompilado, sin compilación)
     ffmpeg            # herramienta multimedia
