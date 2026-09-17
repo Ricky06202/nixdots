@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
-# Lanzador de Steam robusto: espera a que PipeWire/audio y la red estén listos
-# antes de arrancar, para que no muera en el inicio del sistema.
-# Se lanza al final del autostart con nohup.
+# Lanzador de Steam robusto y rápido: comprueba PipeWire/audio y la red con
+# re-chequeo continuo (sin esperas fijas largas) y arranca Steam con flags
+# ligeros para abrir antes.
 
-# Esperar hasta 45s a que PipeWire esté disponible
-for i in $(seq 1 45); do
+# Esperar a que PipeWire esté disponible (máx ~15s)
+for i in $(seq 1 15); do
     if pactl info >/dev/null 2>&1; then
         break
     fi
     sleep 1
 done
 
-# Esperar red (Steam lo necesita para el login)
+# Esperar red (máx ~15s). Si no hay nmcli, saltamos.
 if command -v nmcli >/dev/null 2>&1; then
-    for i in $(seq 1 30); do
+    for i in $(seq 1 15); do
         if nmcli -t -f STATE g | grep -q connected; then
             break
         fi
@@ -21,7 +21,9 @@ if command -v nmcli >/dev/null 2>&1; then
     done
 fi
 
-# Pequeña pausa extra para que el entorno Wayland esté asentado
-sleep 5
+# Pequeña pausa para que el entorno Wayland esté asentado
+sleep 2
 
-exec steam
+# -no-browser: sin navegador webhelper (ahorra RAM y acelera el arranque)
+# -no-shaderbackgrounddownload: no baja shaders en background al abrir
+exec steam -no-browser -no-shaderbackgrounddownload
