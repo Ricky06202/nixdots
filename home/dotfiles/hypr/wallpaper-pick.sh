@@ -7,6 +7,7 @@
 
 WALL_DIR="$HOME/Imágenes/wallpapers"
 LOCK_WALL="$HOME/.cache/hypr/wallpaper.jpg"
+STATE_DIR="$HOME/.local/state/caelestia/wallpaper"
 
 mkdir -p "$(dirname "$LOCK_WALL")"
 
@@ -15,8 +16,12 @@ if [ ! -d "$WALL_DIR" ] || [ -z "$(ls -A "$WALL_DIR" 2>/dev/null)" ]; then
 fi
 
 # Elige una imagen al azar (los wallpapers son symlinks al store: usar find -L /
-# -type f o -type l para no dejarlos fuera, y excluir los .hm-bak de home-manager)
-PICK=$(find -L "$WALL_DIR" -maxdepth 1 -type f ! -name "*.hm-bak" \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" -o -iname "*.webp" \) 2>/dev/null | shuf -n 1)
+# -type f o -type l para no dejarlos fuera, y excluir los .hm-bak de home-manager).
+# Incluye los videos animados de Animated/ (maxdepth 2): el CLI de Caelestia ya
+# distingue is_video y genera su thumbnail. Mezcla natural (1 video en el pool).
+PICK=$(find -L "$WALL_DIR" -maxdepth 2 -type f ! -name "*.hm-bak" \
+    \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" -o -iname "*.webp" \
+       -o -iname "*.mp4" -o -iname "*.webm" -o -iname "*.mkv" \) 2>/dev/null | shuf -n 1)
 
 if [ -n "$PICK" ]; then
     # Delegar en el CLI nativo (actualiza current/path.txt/thumbnail y regenera
@@ -37,5 +42,10 @@ if [ -n "$PICK" ]; then
         ln -sf "$PICK" "$STATE_DIR/current"
         echo "$PICK" > "$STATE_DIR/path.txt"
     fi
-    cp "$PICK" "$LOCK_WALL"
+    # hyprlock solo muestra imágenes: si el elegido es video, copiar el
+    # thumbnail que Caelestia genera (está como symlink actual en el state).
+    case "${PICK##*.}" in
+        mp4|webm|mkv)   cp "$STATE_DIR/thumbnail.jpg" "$LOCK_WALL" ;;
+        *)              cp "$PICK" "$LOCK_WALL" ;;
+    esac
 fi
