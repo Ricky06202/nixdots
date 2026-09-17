@@ -400,37 +400,23 @@ in
   virtualisation.waydroid.package = pkgs.waydroid-nftables;
 
   # SpotX-Nix overlay: parchea Spotify para bloquear anuncios.
-  # + Pin de opencode a 1.18.29: la 1.18.30 es una regresión que rompe el
-  # provider alibaba/dashscope ("Unexpected server error" incluso SIN config;
-  # verificado: 1.18.29 responde bien, 1.18.30 falla con y sin ~/.config/opencode).
-  # node_modules es un fixed-output con outputHash dependiente de la versión,
-  # así que hay que overridear version/src y su outputHash (el de 1.18.29 ya
-  # está en el store, no se re-baja). Revertir este pin cuando nixpkgs tenga
-  # una versión que arregle el provider.
+  # + opencode: la versión sale de nixpkgs (se actualiza con `nix flake update`),
+  # pero el nixpkgs actual compila con bun 1.4.2, que genera un binario roto
+  # (crash 'a.name' en SystemPrompt.environment → "Unexpected server error" con
+  # cualquier modelo). Forzamos bun 1.3.13 (estable) SOLO para el build de
+  # opencode. Quitar este override cuando nixpkgs traiga un bun que no rompa.
   nixpkgs.overlays = [
     spotx-nix.overlays.default
     (final: prev: {
-      opencode = prev.opencode.overrideAttrs (old: {
-        version = "1.18.29";
-        src = final.fetchFromGitHub {
-          owner = "anomalyco";
-          repo = "opencode";
-          tag = "v1.18.29";
-          hash = "sha256-lCXlxTOhcX70jxJAbpolyGlIxQK2nst+6bFhq3Xzdmc=";
-        };
-        passthru = (old.passthru or { }) // {
-          node_modules = (old.passthru.node_modules).overrideAttrs (_: {
-            version = "1.18.29";
-            src = final.fetchFromGitHub {
-              owner = "anomalyco";
-              repo = "opencode";
-              tag = "v1.18.29";
-              hash = "sha256-lCXlxTOhcX70jxJAbpolyGlIxQK2nst+6bFhq3Xzdmc=";
-            };
-            outputHash = "sha256-0rpyP6nqK4FrJNjl0WV5adPjEQhe8a55RM7CgP9wlak=";
-          });
-        };
-      });
+      opencode = prev.opencode.override {
+        bun = prev.bun.overrideAttrs (_: {
+          version = "1.3.13";
+          src = prev.fetchurl {
+            url = "https://github.com/oven-sh/bun/releases/download/bun-v1.3.13/bun-linux-x64-baseline.zip";
+            hash = "sha256-nYokKSpwaAkCBdqsCloiP19pc29Sh+N7+I07QDHtx1A=";
+          };
+        });
+      };
     })
   ];
 
