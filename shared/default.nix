@@ -400,7 +400,39 @@ in
   virtualisation.waydroid.package = pkgs.waydroid-nftables;
 
   # SpotX-Nix overlay: parchea Spotify para bloquear anuncios.
-  nixpkgs.overlays = [ spotx-nix.overlays.default ];
+  # + Pin de opencode a 1.18.29: la 1.18.30 es una regresión que rompe el
+  # provider alibaba/dashscope ("Unexpected server error" incluso SIN config;
+  # verificado: 1.18.29 responde bien, 1.18.30 falla con y sin ~/.config/opencode).
+  # node_modules es un fixed-output con outputHash dependiente de la versión,
+  # así que hay que overridear version/src y su outputHash (el de 1.18.29 ya
+  # está en el store, no se re-baja). Revertir este pin cuando nixpkgs tenga
+  # una versión que arregle el provider.
+  nixpkgs.overlays = [
+    spotx-nix.overlays.default
+    (final: prev: {
+      opencode = prev.opencode.overrideAttrs (old: {
+        version = "1.18.29";
+        src = final.fetchFromGitHub {
+          owner = "anomalyco";
+          repo = "opencode";
+          tag = "v1.18.29";
+          hash = "sha256-lCXlxTOhcX70jxJAbpolyGlIxQK2nst+6bFhq3Xzdmc=";
+        };
+        passthru = (old.passthru or { }) // {
+          node_modules = (old.passthru.node_modules).overrideAttrs (_: {
+            version = "1.18.29";
+            src = final.fetchFromGitHub {
+              owner = "anomalyco";
+              repo = "opencode";
+              tag = "v1.18.29";
+              hash = "sha256-lCXlxTOhcX70jxJAbpolyGlIxQK2nst+6bFhq3Xzdmc=";
+            };
+            outputHash = "sha256-0rpyP6nqK4FrJNjl0WV5adPjEQhe8a55RM7CgP9wlak=";
+          });
+        };
+      });
+    })
+  ];
 
   # nix-ld: permite correr binarios dinámicos "tal cual vienen de internet"
   # (Electron/npm run dev, node_modules/.bin, AppImages sin parchear) que
