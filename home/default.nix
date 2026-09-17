@@ -49,10 +49,13 @@ XS_EOF
     fi
   '';
 
-  # RustDesk — keyboard layout fix
+  # RustDesk — keyboard layout fix. Se escribe SOLO la primera vez (si falta):
+  # RustDesk guarda aquí sus dispositivos recientes/remembered y un rebuild
+  # sobrescribiéndolo los borraría.
   home.activation.writeRustDeskConfig = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
     mkdir -p "$HOME/.config/rustdesk"
-    cat > "$HOME/.config/rustdesk/RustDesk_local.toml" << 'RUSTEOF'
+    if [ ! -f "$HOME/.config/rustdesk/RustDesk_local.toml" ]; then
+      cat > "$HOME/.config/rustdesk/RustDesk_local.toml" << 'RUSTEOF'
 remote_id =
 kb_layout_type = universal
 size = [0, 0, 1826, 1036]
@@ -62,6 +65,7 @@ fav = []
 
 [ui_flutter]
 RUSTEOF
+    fi
   '';
 
   # Programa zellij
