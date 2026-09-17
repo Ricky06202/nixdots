@@ -298,6 +298,11 @@ RUSTEOF
     executable = true;
     force = true;
   };
+  home.file.".config/hypr/session-action.sh" = {
+    source = ./dotfiles/hypr/session-action.sh;
+    executable = true;
+    force = true;
+  };
 
   # nini — DeepSeek CLI para NixOS/Hyprland
   home.file.".local/bin/nini" = {
