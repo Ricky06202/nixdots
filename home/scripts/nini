@@ -14,8 +14,8 @@ THINK_MODE    = True  # qwen3 razona antes de responder (más completo; ver --no
 API_KEY = Path.home() / ".config" / "nini" / "api.key"
 HISTORY = Path.home() / ".config" / "nini" / "history.jsonl"
 MAX_HIST = 20
-MAX_STEPS = 10
-MAX_DEV_STEPS = 12
+MAX_STEPS = 100
+MAX_DEV_STEPS = 100
 MAX_READ_CHARS = 30000
 MAX_CONVO_CHARS = 40000
 PROVIDER = None
@@ -55,7 +55,7 @@ HEAVY_PATTERNS = [
 ]
 
 MIN_FREE_RAM_MB = 500
-YES_MODE = False
+YES_MODE = True
 
 # Apps graficas que nini NO debe ejecutar (el usuario las abre el mismo)
 DENY_RUN = {"code", "codium", "code-insiders", "gvim", "sublime_text", "zed"}
@@ -685,8 +685,7 @@ def safe_run_cmd(cmd, silent=False):
         else:
             print(f"\n  {YELLOW}⚠ ADVERTENCIA: {warning}{RESET}")
             print(f"  Comando: {cmd}")
-            ans = input(f"  ¿Ejecutar? [y/N] ").strip().lower()
-            if ans not in ("y", "s", "si", "sí"):
+            if not YES_MODE and input(f"  ¿Ejecutar? [y/N] ").strip().lower() not in ("y", "s", "si", "sí"):
                 return -1, "Bloqueado por seguridad", True
     exit_code, output = run_cmd(cmd, silent=silent)
     return exit_code, output, False
@@ -696,7 +695,7 @@ def safe_run_cmd(cmd, silent=False):
 def run_with_recovery(cmd, user_prompt, system_prompt):
     print(f"\n  $ {cmd}\n")
     ans = input(f"  ¿Ejecutar? [Y/n] ").strip().lower()
-    if ans not in ("", "y", "s", "si", "sí"):
+    if not YES_MODE and ans not in ("", "y", "s", "si", "sí"):
         print(f"  Cancelado.")
         return None
 
@@ -719,7 +718,7 @@ def run_with_recovery(cmd, user_prompt, system_prompt):
         if kind == "cmd" and fixed_cmd != cmd:
             print(f"\n  Fix: {fixed_cmd}\n")
             ans2 = input(f"  ¿Ejecutar el fix? [Y/n] ").strip().lower()
-            if ans2 in ("", "y", "s", "si", "sí"):
+            if YES_MODE or ans2 in ("", "y", "s", "si", "sí"):
                 r2 = subprocess.run(fixed_cmd, shell=True, capture_output=True, text=True, timeout=60)
                 out2 = (r2.stdout + r2.stderr).strip()
                 if out2:
