@@ -285,6 +285,11 @@ RUSTEOF
     executable = true;
     force = true;
   };
+  home.file.".config/hypr/rotate-wallpaper.sh" = {
+    source = ./dotfiles/hypr/rotate-wallpaper.sh;
+    executable = true;
+    force = true;
+  };
   home.file.".config/hypr/steam-launcher.sh" = {
     source = ./dotfiles/hypr/steam-launcher.sh;
     executable = true;
@@ -327,4 +332,30 @@ RUSTEOF
   };
 
   home.stateVersion = "26.05";
+
+  # Rotación automática de wallpaper cada hora (con jitter ±15 min para no
+  # ser mecánico). Importa el entorno de Hyprland vía el wrapper y recarga
+  # Caelestia + WezTerm en caliente (el watch del scheme corre dentro de wezterm).
+  systemd.user.services."rotate-wallpaper" = {
+    Unit.Description = "Rota el wallpaper de Caelestia";
+    Service = {
+      Type = "oneshot";
+      ExecStart = "${pkgs.bash}/bin/bash ${./dotfiles/hypr/rotate-wallpaper.sh}";
+    };
+    Install = {
+      WantedBy = [ "default.target" ];
+    };
+  };
+
+  systemd.user.timers."rotate-wallpaper" = {
+    Unit.Description = "Timer de rotación de wallpaper";
+    Timer = {
+      OnCalendar = "hourly";
+      RandomizedDelaySec = "15min";
+      Persistent = true;
+    };
+    Install = {
+      WantedBy = [ "timers.target" ];
+    };
+  };
 }
