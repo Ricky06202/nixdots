@@ -24,6 +24,7 @@ fi
 # Pequeña pausa para que el entorno Wayland esté asentado
 sleep 2
 
-# -no-browser: sin navegador webhelper (ahorra RAM y acelera el arranque)
 # -no-shaderbackgrounddownload: no baja shaders en background al abrir
-exec steam -no-browser -no-shaderbackgrounddownload
+# (NO usar -no-browser: deshabilita steamwebhelper y rompe la lista de
+#  amigos/invitaciones del overlay Shift+Tab).
+exec steam -no-shaderbackgrounddownload
