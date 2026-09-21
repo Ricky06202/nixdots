@@ -303,6 +303,11 @@ RUSTEOF
     executable = true;
     force = true;
   };
+  home.file.".config/hypr/caelestia-resume.sh" = {
+    source = ./dotfiles/hypr/caelestia-resume.sh;
+    executable = true;
+    force = true;
+  };
 
   # nini — DeepSeek CLI para NixOS/Hyprland
   home.file.".local/bin/nini" = {
@@ -364,6 +369,25 @@ RUSTEOF
     };
     Install = {
       WantedBy = [ "timers.target" ];
+    };
+  };
+
+  # Reinicia el shell de Caelestia al despertar de la suspensión. Fix
+  # quickshell#989: tras suspender/resumir el event socket de Hyprland deja de
+  # emitir y Caelestia queda congelada (workspaces sin actualizar, blur) hasta
+  # reiniciarla. El watcher escucha PrepareForSleep de logind en el bus del
+  # sistema y relanza el shell al despertar.
+  systemd.user.services."caelestia-resume" = {
+    Unit.Description = "Reinicia Caelestia al despertar de la suspensión";
+    Service = {
+      Type = "simple";
+      Restart = "always";
+      RestartSec = "5s";
+      ExecStart =
+        "${pkgs.bash}/bin/bash ${./dotfiles/hypr/caelestia-resume.sh}";
+    };
+    Install = {
+      WantedBy = [ "graphical-session.target" ];
     };
   };
 }
