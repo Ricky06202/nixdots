@@ -353,6 +353,23 @@ in
           "bluez5.default.channels" = 2;
         };
       };
+      # --- Fix karere (WhatsApp Desktop): el volumen se quedaba pegado en 0 ---
+      # WirePlumber restaura/guarda el volumen por aplicación desde
+      # ~/.local/state/wireplumber/stream-properties; karere quedó con 0 y cada
+      # stream nuevo (sonidos, llamadas) renacía silenciado. Con esta regla sus
+      # streams ignoran ese estado y arrancan siempre al 100%.
+      # Probado en vivo con wireplumber 0.5.17 (formato actions/update-props
+      # validado; update-props a secas o apply-args los rechaza pw.conf).
+      "20-karere-volume" = {
+        "stream.rules" = [
+          {
+            matches = [ { "application.name" = "karere"; } ];
+            actions = {
+              update-props = { "state.restore-props" = "false"; };
+            };
+          }
+        ];
+      };
     };
   };
 

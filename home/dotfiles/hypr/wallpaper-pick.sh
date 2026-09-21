@@ -44,8 +44,11 @@ if [ -n "$PICK" ]; then
     fi
     # hyprlock solo muestra imágenes: si el elegido es video, copiar el
     # thumbnail que Caelestia genera (está como symlink actual en el state).
+    # El origen es 444 (store), así que cp heredaría el permiso de solo lectura
+    # y bloquearía la siguiente rotación: copiar a temporal + mv.
     case "${PICK##*.}" in
-        mp4|webm|mkv)   cp "$STATE_DIR/thumbnail.jpg" "$LOCK_WALL" ;;
-        *)              cp "$PICK" "$LOCK_WALL" ;;
+        mp4|webm|mkv)   SRC="$STATE_DIR/thumbnail.jpg" ;;
+        *)              SRC="$PICK" ;;
     esac
+    cp -f "$SRC" "$LOCK_WALL.tmp.$$" && mv -f "$LOCK_WALL.tmp.$$" "$LOCK_WALL"
 fi
