@@ -5,7 +5,7 @@
 
 /run/current-system/sw/libexec/polkit-gnome-authentication-agent-1 &
 xsettingsd &
-brave --renderer-process-limit=4 --disable-features=TabDiscarding --js-flags="--max-old-space-size=512" &
+librewolf &
 blueman-applet &
 sleep 8
 vesktop &

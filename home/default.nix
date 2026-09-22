@@ -156,7 +156,7 @@ RUSTEOF
   };
 
   # Aplicaciones predeterminadas: sin esto, xdg-open agarra al primer .desktop
-  # que se registra (VSCode abre carpetas, PrismLauncher los zip, Brave las imágenes).
+  # que se registra (VSCode abre carpetas, PrismLauncher los zip, Librewolf las imágenes).
   xdg.mimeApps = {
     enable = true;
     defaultApplications = {

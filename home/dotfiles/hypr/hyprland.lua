@@ -275,7 +275,7 @@ hl.bind("ALT + Tab", hl.dsp.window.cycle_next(), { dont_inhibit = true })
 hl.bind("ALT + SHIFT + Tab", hl.dsp.window.cycle_next({ prev = true }), { dont_inhibit = true })
 
 -- ===== APPS POR WORKSPACE =====
-hl.window_rule({ match = { class = "brave-browser" }, workspace = 1 })
+hl.window_rule({ match = { class = "^(librewolf|Navigator)$" }, workspace = 1 })
 hl.window_rule({ match = { class = "vivaldi-stable" }, workspace = 1 })
 hl.window_rule({ match = { class = "^vesktop$" }, workspace = 2 })
 hl.window_rule({ match = { class = "io.github.tobagin.karere" }, workspace = 2 })

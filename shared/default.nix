@@ -284,40 +284,30 @@ in
     };
   };
 
-  # Cierre limpio de Brave: al apagar el sistema, envía SIGTERM a Brave y
-  # espera a que se cierre por su cuenta antes de que systemd lo mate con
-  # SIGKILL. Esto evita el diálogo de "sesión caída" tras apagones normales.
-  systemd.services.graceful-brave = {
-    description = "Cierra Brave limpiamente antes de apagar";
+  # Cierre limpio de LibreWolf: al apagar el sistema, envía SIGTERM y espera
+  # a que se cierre por su cuenta antes de que systemd lo mate con SIGKILL.
+  # Evita el diálogo de "sesión caída" tras apagones normales (aplican igual
+  # que con Brave, es un fork de Firefox con reintentos de estado).
+  systemd.services.graceful-librewolf = {
+    description = "Cierra LibreWolf limpiamente antes de apagar";
     wantedBy = [ "multi-user.target" ];
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;
       ExecStart = "${pkgs.coreutils}/bin/true";
-      ExecStop = "${pkgs.bash}/bin/bash -c 'pkill -TERM -x brave 2>/dev/null; for i in $(seq 1 10); do pgrep -x brave >/dev/null 2>&1 || exit 0; sleep 1; done'";
+      ExecStop = "${pkgs.bash}/bin/bash -c 'pkill -TERM -x librewolf 2>/dev/null; for i in $(seq 1 10); do pgrep -x librewolf >/dev/null 2>&1 || exit 0; sleep 1; done'";
       TimeoutStopSec = 15;
     };
   };
 
-  # Brave "adelgazado": desactiva vía policy los servicios de fondo/telemetría
-  # que no usas (Rewards, Wallet, VPN, News, Talk, Web Discovery, P3A/stats,
-  # background mode). Se aplica a ambos hosts en /etc/brave/policies/managed/.
-  # OJO: NO se toca SyncDisabled (usas sync de favoritos) ni BraveAIChatEnabled
-  # (Leo AI: hay reportes de crash al forzarlo por policy en Brave reciente).
-  environment.etc."brave/policies/managed/debloat.json".text = builtins.toJSON {
-    BraveRewardsDisabled = true;
-    BraveWalletDisabled = true;
-    BraveVPNDisabled = true;
-    BraveNewsDisabled = true;
-    BraveTalkDisabled = true;
-    BraveSpeedreaderEnabled = false;
-    BraveWaybackMachineEnabled = false;
-    BraveWebDiscoveryEnabled = false;
-    BraveP3AEnabled = false;
-    BraveStatsPingEnabled = false;
-    MetricsReportingEnabled = false;
-    BackgroundModeEnabled = false;
-    IPFSEnabled = false;
+  # LibreWolf: políticas mínimas (viene endurecido/limpio de fábrica y con
+  # uBlock Origin PREINSTALADO — no force_install nada para no duplicar el
+  # mismo GUID). Solo confirmamos telemetría/Pocket off; lo demás ya viene bien.
+  environment.etc."librewolf/policies/policies.json".text = builtins.toJSON {
+    policies = {
+      DisablePocket = true;
+      DisableTelemetry = true;
+    };
   };
 
   # Configure keymap in X11
@@ -530,7 +520,7 @@ in
     gamescope          # capa de juego: FSR1 universal + FSR3 FG en algunos títulos (útil en amd)
     opencode          # asistente de IA (este)
     neovim            # editor
-    brave             # navegador principal (Chromium, bloqueador built-in, ligero)
+    librewolf         # navegador principal (fork de Firefox con uBlock Origin preinstalado + privacidad)
     chromium          # navegador Chromium puro (compatibilidad web sin capas extra)
     karere            # whatsapp (whatsapp-for-linux se retiró de nixpkgs)
     spotify-spotx     # spotify con anuncios bloqueados (vía SpotX-Nix, flake externo)
