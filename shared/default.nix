@@ -47,7 +47,8 @@ in
   # WiFi USB (TP-Link Archer T2U, chipset Realtek RTL8821AU) — capta 5GHz y es
   # más estable que la Atheros AR9565 integrada. En el kernel 7.2 el driver
   # rtw88_8821au viene nativo. La integrada (ath9k) se deja como respaldo.
-  boot.kernelModules = [ "rtw88_8821au" ];
+  # "cifs": montaje del NAS (ver fileSystems /mnt/flix).
+  boot.kernelModules = [ "rtw88_8821au" "cifs" ];
 
   # Kernel latest: USB WiFi + GPUs funcionan nativos.
   boot.kernelPackages = pkgs.linuxPackages_latest;
@@ -101,6 +102,32 @@ in
 
   # udisks2: montaje automático de USB/unidades extraíbles (Nemo lo usa).
   services.udisks2.enable = true;
+
+  # --- NAS de la casa (192.168.2.90, TrueNAS) ---
+  # Montajes CIFS reales de los shares "Flix" y "Familia": Nemo los ve como
+  # carpetas normales en /mnt/* y NUNCA pide clave. Antes, vía browsing smb://
+  # (GVfs), pedía credenciales en cada entrada porque el NAS rechaza guest
+  # (NT_STATUS_ACCESS_DENIED). La credencial (misma cuenta para ambos shares)
+  # vive FUERA del repo (repo público): ~/.config/nas/nas.cred (chmod 600),
+  # creada por el usuario con username=.../password=... . Automount: monta al
+  # primer acceso y no frena el boot si el NAS está apagado.
+  fileSystems = lib.listToAttrs (map (s: {
+    name = "/mnt/${lib.toLower s}";
+    value = {
+      device = "//192.168.2.90/${s}";
+      fsType = "cifs";
+      options = [
+        "credentials=/home/ricky/.config/nas/nas.cred"
+        "uid=1000"
+        "gid=100"
+        "file_mode=0664"
+        "dir_mode=0775"
+        "_netdev"
+        "noauto"
+        "x-systemd.automount"
+      ];
+    };
+  }) [ "Flix" "Familia" ]);
 
   # flatpak: necesario para Sober (Roblox en Linux). Contenido y reversible.
   services.flatpak.enable = true;
@@ -593,6 +620,7 @@ in
     zip               # crear archivos zip desde la terminal / file-roller
     loupe             # visor de imágenes (GNOME, ligero, Wayland nativo)
     gvfs              # daemon de red para Nemo (SMB, MTP, network browsing)
+    cifs-utils        # mount.cifs para el NAS (/mnt/flix, ver fileSystems)
     bitwarden-desktop # gestor de contraseñas (nube, encriptado, 2FA)
     obs-studio        # OBS COMPLETO con obs-browser (overlays de Twitch, alertas) — la PC AMD lo aguanta
     vesktop           # Discord con Vencord (reemplaza a discord, más estable en Wayland)
