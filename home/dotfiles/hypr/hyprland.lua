@@ -280,7 +280,7 @@ hl.window_rule({ match = { class = "vivaldi-stable" }, workspace = 1 })
 hl.window_rule({ match = { class = "^vesktop$" }, workspace = 2 })
 hl.window_rule({ match = { class = "io.github.tobagin.karere" }, workspace = 2 })
 hl.window_rule({ match = { class = "^(steam|steamwebhelper)$" }, workspace = 3 })
-hl.window_rule({ match = { class = "^Spotify$" }, workspace = 4 })
+hl.window_rule({ match = { class = "^(feishin|Feishin)$" }, workspace = 4 })
 hl.window_rule({ match = { class = "^com.obsproject.Studio$" }, workspace = 5 })
 
 -- ===== INICIO (autostart) =====
