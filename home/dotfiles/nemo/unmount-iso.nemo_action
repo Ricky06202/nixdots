@@ -1,0 +1,9 @@
+[Nemo Action]
+Name=Desmontar y quitar imagen
+Comment=Desmonta y elimina el loop device de la imagen seleccionada
+Exec=<unmount-iso.sh %F>
+Selection=notnone
+Extensions=dir;iso;img;mdf
+Quote=double
+Dependencies=udisksctl;losetup;findmnt
+Icon-Name=media-eject
