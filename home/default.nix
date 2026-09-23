@@ -142,6 +142,7 @@ RUSTEOF
     xdg-desktop-portal-hyprland # implementación de captura para Hyprland
     shotcut # editor de video para clips/shorts
     chatterino2 # cliente ligero de chat de Twitch (sin navegador)
+    motrix-next # gestor de descargas (HTTP/FTP/BitTorrent) vía aria2, sustituto de Free Download Manager
     dconf   # necesario para forzar tema GTK en home.activation
   ];
 
