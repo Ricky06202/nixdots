@@ -1,0 +1,9 @@
+[Nemo Action]
+Name=Montar imagen
+Comment=Monta la imagen de disco con udisksctl y la abre en Nemo
+Exec=<mount-iso.sh %F>
+Selection=notnone
+Extensions=iso;img;mdf
+Quote=double
+Dependencies=udisksctl
+Icon-Name=media-optical

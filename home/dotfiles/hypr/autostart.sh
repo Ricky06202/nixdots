@@ -16,4 +16,7 @@ disown -a
 # Spotify directo; Steam vía steam-launcher.sh (espera PipeWire + red).
 nohup spotify >/dev/null 2>&1 &
 nohup "$HOME/.config/hypr/steam-launcher.sh" >/dev/null 2>&1 &
+
+# --- Motrix (gestor de descargas) ----------------------------------------------
+nohup motrix-next >/dev/null 2>&1 &
 disown -a

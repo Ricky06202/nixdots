@@ -143,6 +143,7 @@ RUSTEOF
     shotcut # editor de video para clips/shorts
     chatterino2 # cliente ligero de chat de Twitch (sin navegador)
     motrix-next # gestor de descargas (HTTP/FTP/BitTorrent) vía aria2, sustituto de Free Download Manager
+    libnotify # notify-send para la acción "Montar imagen" de Nemo y scripts
     dconf   # necesario para forzar tema GTK en home.activation
   ];
 
@@ -302,6 +303,16 @@ RUSTEOF
   home.file.".config/hypr/session-action.sh" = {
     source = ./dotfiles/hypr/session-action.sh;
     executable = true;
+    force = true;
+  };
+  # Acción "Montar imagen" de Nemo: script + definición en ~/.local/share/nemo/actions/
+  home.file.".local/share/nemo/actions/mount-iso.sh" = {
+    source = ./dotfiles/nemo/mount-iso.sh;
+    executable = true;
+    force = true;
+  };
+  home.file.".local/share/nemo/actions/mount-iso.nemo_action" = {
+    source = ./dotfiles/nemo/mount-iso.nemo_action;
     force = true;
   };
   # nini — DeepSeek CLI para NixOS/Hyprland
