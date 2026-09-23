@@ -143,6 +143,8 @@ RUSTEOF
     shotcut # editor de video para clips/shorts
     chatterino2 # cliente ligero de chat de Twitch (sin navegador)
     motrix-next # gestor de descargas (HTTP/FTP/BitTorrent) vía aria2, sustituto de Free Download Manager
+    jellyfin-desktop # cliente de Jellyfin (ver el servidor desde el PC)
+    spotdl # descarga canciones de Spotify (lo resuelve vía YouTube) con metadatos
     libnotify # notify-send para la acción "Montar imagen" de Nemo y scripts
     dconf   # necesario para forzar tema GTK en home.activation
   ];
