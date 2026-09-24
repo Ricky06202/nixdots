@@ -407,9 +407,11 @@ RUSTEOF
     };
   };
 
-  # Reinicia el shell de Caelestia al despertar de la suspensión. Fix (REMOVED):
-  # el watcher mataba el shell tras el resume y, si la lockscreen de Caelestia
-  # estaba activa en ese momento, la mataba con él (crash del lockscreen).
-  # En su lugar el reboot del shell se hace a mano con `caelestia shell -k` +
-  # `setsid caelestia-shell -d` SOLO cuando no hay lockscreen activa.
+  # Quitado todo el extra de suspend/resume de esta sesion:
+#  - la unidad systemd "caelestia-resume" (disparaba al entrar en suspend, no
+#    al resume, y mataba el shell a mitad de suspension)
+#  - el script/manual "reshell" (era pasivo, no toca suspend, pero se retira
+#    para volver de lleno al sistema tal como estaba).
+# El freeze al suspender/despertar es un bug del firmware/kernel de la placa
+# (journal cortado sin logs PM), independiente de estos extras.
 }
