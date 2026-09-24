@@ -100,20 +100,14 @@
       #    aunque VideoWallpaper.qml importa QtMultimedia)
       #  - CLI = fork caelestia-cli-aw (añade pillow + genera thumbnails con ffmpeg)
       #
-      # PATCH caelestia-dots/shell#1814 (LOCK): el blur del lock screen
-      # (ScreencopyView { captureSource: root.screen }) captura a veces una
-      # pantalla que Quickshell acaba de reportar como muerta → null monitor
-      # deref y CRASH de Hyprland <=0.56.2 (SEGV en
-      # Screenshare::CScreenshareFrame::transform) al reanudar de suspensión o
-      # tras DPMS off, matando toda la sesión. Guardamos captureSource contra
-      # pantallas no Wayland-backed (fix probado por el issue; costo: sin blur
-      # en el raro caso de pantalla fantasma). Aplica a AMBOS hosts (uso el
-      # fork AW en ambos). El compositor lo arreglan en master (#15714) pero
-      # no hay release con eso aún.
+      # Vanilla: sin parches postPatch (el fix #1814 del blur del lock screen
+      # se retiró a petición; si Hyprland vuelve a crashear al despertar,
+      # está en el git history — commit c96c840).
       caelestiaShellAW =
         let
           qsAw = qsPrebuilt.withModules [ pkgs.qt6.qtmultimedia ];
-          shell = (pkgs.callPackage "${caelestia-aw}/nix" {
+        in
+          (pkgs.callPackage "${caelestia-aw}/nix" {
             stdenv = pkgs.clangStdenv;
             inherit m3shapes;
             quickshell = qsAw;
@@ -124,23 +118,6 @@
             # lo añade por defecto).
             extraRuntimeDeps = [ pkgs.ffmpeg ];
           }).override { withCli = true; };
-        in
-          shell.overrideAttrs (old: {
-            postPatch =
-              (old.postPatch or "")
-              + ''
-                # FIX #1814: no capturar pantallas no Wayland-backed (evita
-                # crash de Hyprland <=0.56.2 al reanudar de suspensión/DPMS).
-                substituteInPlace modules/lock/LockSurface.qml \
-                  --replace-fail 'import QtQuick.Effects' 'import QtQuick.Effects
-        import Quickshell' \
-                  --replace-fail 'captureSource: root.screen' 'captureSource: Quickshell.screens.includes(root.screen) ? root.screen : null'
-                # Lock.qml ya importa Quickshell; mismo tratamiento al prime
-                # de pantalla del lock.
-                substituteInPlace modules/lock/Lock.qml \
-                  --replace-fail 'captureSource: Quickshell.screens[0]' 'captureSource: Quickshell.screens.length > 0 ? Quickshell.screens[0] : null'
-              '';
-          });
 
       # Caelestia shell usando nuestro quickshell precompilado.
       # Es el mismo callPackage ./nix del flake oficial; conCli incluye la CLI
