@@ -19,11 +19,25 @@
   # Microcode AMD (estabilidad/seguridad del CPU).
   hardware.cpu.amd.updateMicrocode = true;
 
-  # 16GB RAM física: zram al 25% (4GB) + swapfile 4GB.
+  # 32GB RAM física: zram al 25% (8GB, priority -1 => nunca es target de
+  # hibernación) + swapfile de disco de 40GB para poder hibernar (>= RAM de
+  # uso tipico con margen).
   zramSwap.memoryPercent = 25;
 
   # Swap en disco, dentro del subvolúmen @swap (instalación Btrfs):
-  swapDevices = [ { device = "/swap/swapfile"; size = 4096; } ];
+  # es el dispositivo donde systemd-hibernate escribe la imagen de la RAM.
+  swapDevices = [ { device = "/swap/swapfile"; size = 40960; } ];
+
+  # initrd con systemd: systemd-hibernate-resume lee la EFI var
+  # "HibernateLocation" que deja el hibernate y restaura la imagen al boot
+  # (funciona con swapfile, sin tocar GRUB ni hardcoded offsets).
+  boot.initrd.systemd.enable = true;
+
+  # Comportamiento de suspend/hibernate de logind.
+  systemd.sleep.settings.Sleep = {
+    HibernateMode = "shutdown";
+    HibernateDelaySec = "30min";
+  };
 
   # IA local (ollama) — la RX 7600 lo acelera vía Vulkan.
   services.ollama = {
@@ -44,4 +58,20 @@
   # Blacklistear nouveau: si hay una NVIDIA físicamente presente, no se usa y
   # nouveau solo gasta RAM/CPU.
   boot.blacklistedKernelModules = [ "nouveau" ];
+
+  # Estabilidad de suspend en esta placa (B550M + RX 7600):
+  # - mem_sleep_default=s2idle: el handoff al S3 "deep" de la BIOS cuelga el
+  #   sistema justo tras "Suspending console(s)" (firmware AM4 con S3 mal
+  #   implementado). s2idle usa la ruta de idle del SoC, que sí funciona.
+  # - amdgpu.sg_display=0: workaround del hang de display DC en suspend/resume
+  #   (el boot ya muestra REG_WAIT timeout en optc32_disable_crtc, DCN 3.2).
+  # - secretmem.enable=false: si algun proceso mantiene memfd_secret viva
+  #   (p.ej. GnuPG >=2.4), hibernation_available() del kernel 7.x se vuelve
+  #   false => /sys/power/disk=[disabled] y suspend-then-hibernate muere con
+  #   EPERM. Apagandolo, esos usuarios caen a mlock y la hibernacion revierte.
+  boot.kernelParams = [
+    "mem_sleep_default=s2idle"
+    "amdgpu.sg_display=0"
+    "secretmem.enable=false"
+  ];
 }

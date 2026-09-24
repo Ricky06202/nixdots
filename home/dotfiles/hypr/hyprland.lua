@@ -219,7 +219,12 @@ hl.bind(mainMod .. " + W", hl.dsp.window.float({ action = "toggle" }))
 hl.bind(mainMod .. " + SHIFT + S", hl.dsp.exec_cmd("grim -g \"$(slurp)\" - | wl-copy --type image/png"))
 hl.bind(mainMod .. " + CONTROL + E", hl.dsp.exit())
 hl.bind(mainMod .. " + SHIFT + R", hl.dsp.exec_cmd("hyprctl reload"))
-hl.bind(mainMod .. " + CONTROL + S", hl.dsp.exec_cmd("systemctl suspend"))
+-- Energia (global): la tecla de siempre (S) hace SUSPEND-THEN-HIBERNATE:
+-- duerme ya en s2idle (rapido) y si a los 30min (HibernateDelaySec en
+-- hosts/amd) no tocas nada, despierta solo, escribe la RAM al swap de 40G y
+-- se apaga por completo. Toque antes de los 30min = despierta al instante.
+-- Hibernate directo (apagon total ya): `systemctl hibernate` por consola.
+hl.bind(mainMod .. " + CONTROL + S", hl.dsp.exec_cmd("systemctl suspend-then-hibernate"))
 hl.bind(mainMod .. " + CONTROL + ESCAPE", hl.dsp.exec_cmd("$HOME/.config/hypr/session-action.sh poweroff"))
 hl.bind(mainMod .. " + CONTROL + R", hl.dsp.exec_cmd("$HOME/.config/hypr/session-action.sh reboot"))
 hl.bind(mainMod .. " + L", hl.dsp.global("caelestia:lock"))
