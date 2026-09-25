@@ -71,6 +71,10 @@ in
     "vm.dirty_ratio" = 15;
     "vm.dirty_background_ratio" = 5;
     "vm.vfs_cache_pressure" = 50;
+    # SysRq (501=todas las funciones seguras): si el grafo se congela,
+    # ALT+PrintScr+S, U (sync + remontar ro) y luego B (reboot) => apagon
+    # limpio sin tocar el boton y sin corromper el ESP (ver fix-grub.sh).
+    "kernel.sysrq" = 501;
   };
 
   # Bluetooth: deshabilitar autosuspend del adaptador btusb para evitar
