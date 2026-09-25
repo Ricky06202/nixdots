@@ -738,6 +738,17 @@ in
     openFirewall = true;
   };
 
+  # avahi 0.8 deja /run/avahi-daemon/pid huérfano cuando muere por SIGHUP
+  # (pasa al reiniciar tras un rebuild). En el siguiente arranque lo detecta
+  # como obsoleto, avisa "trying to remove PID file" pero no logra borrarlo, y
+  # muere con 255/EXCEPTION en "open(...pid): File exists" — con
+  # Type=dbus eso además hace fallar el switch-to-configuration entero.
+  # Borrarlo antes de arrancar (el "-" ignora el error si no existe) deja el
+  # servicio autorecoverable. El archivo lo crea nixpkgs vía
+  # systemd.tmpfiles.rules, de ahí la ruta fija.
+  systemd.services.avahi-daemon.serviceConfig.ExecStartPre =
+    "-rm -f /run/avahi-daemon/pid";
+
   # Enable the OpenSSH daemon.
   # services.openssh.enable = true;
 
