@@ -133,6 +133,27 @@ in
     };
   }) [ "Flix" "Familia" ]);
 
+  # El link de red tarda ~15s en subir al boot (y negotiate a 100Mbps, ver
+  # cable). Si algo toca /mnt/* antes de que haya carrier — Caelestia lo hace
+  # con los bookmarks de la barra lateral — mount.cifs aborta con ENETUNREACH
+  # ("CIFS: Error connecting to socket", -101) y a los 5 intentos systemd
+  # marca start-limit-hit: el .automount queda muerto en `failed` y los shares
+  # no aparecen en Nemo hasta el reboot siguiente. Estos drop-ins quitan el
+  # límite de arranques y reintentan cada 20s, así el montaje se recupera solo
+  # en cuanto la red está lista. No pisan la unidad del fstab (son drop-ins, que
+  # systemd aplica igual a las generadas por systemd-fstab-generator).
+  # OJO: asignaciones punteadas (no `environment.etc = { ... }`) porque en este
+  # mismo módulo environment.etc ya está definido para librewolf (abajo) y dos
+  # definiciones del mismo path en un attrset son error de sintaxis.
+  environment.etc."systemd/system/mnt-familia.automount.d/10-resilient.conf".text =
+    "[Unit]\nStartLimitIntervalSec=0\n";
+  environment.etc."systemd/system/mnt-familia.mount.d/10-resilient.conf".text =
+    "[Unit]\nStartLimitIntervalSec=0\nRestart=on-failure\nRestartSec=20s\n";
+  environment.etc."systemd/system/mnt-flix.automount.d/10-resilient.conf".text =
+    "[Unit]\nStartLimitIntervalSec=0\n";
+  environment.etc."systemd/system/mnt-flix.mount.d/10-resilient.conf".text =
+    "[Unit]\nStartLimitIntervalSec=0\nRestart=on-failure\nRestartSec=20s\n";
+
   # flatpak: necesario para Sober (Roblox en Linux). Contenido y reversible.
   services.flatpak.enable = true;
 
