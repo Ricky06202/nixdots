@@ -218,7 +218,9 @@ hl.bind(mainMod .. " + V", hl.dsp.window.float({ action = "toggle" }))
 hl.bind(mainMod .. " + W", hl.dsp.window.float({ action = "toggle" }))
 hl.bind(mainMod .. " + SHIFT + S", hl.dsp.exec_cmd("grim -g \"$(slurp)\" - | wl-copy --type image/png"))
 hl.bind(mainMod .. " + CONTROL + E", hl.dsp.exit())
-hl.bind(mainMod .. " + SHIFT + R", hl.dsp.exec_cmd("hyprctl reload"))
+-- Reload de Hyprland + restart del shell de Caelestia (barra/lock/wallpapers
+-- leen su config al arrancar; -k lo mata y -d lo revive detached).
+hl.bind(mainMod .. " + SHIFT + R", hl.dsp.exec_cmd("hyprctl reload; caelestia shell -k; sleep 0.5; caelestia shell -d"))
 -- Energia (global): SUPER+CTRL+S = HIBERNATE directo: escribe la RAM al
 -- swapfile de 40G y apaga del todo (luces off). Al prender, el initrd
 -- (systemd-hibernate-resume) restaura la sesion tal cual. Para pausa corta
