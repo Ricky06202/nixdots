@@ -26,7 +26,12 @@
 
   # Swap en disco, dentro del subvolúmen @swap (instalación Btrfs):
   # es el dispositivo donde systemd-hibernate escribe la imagen de la RAM.
-  swapDevices = [ { device = "/swap/swapfile"; size = 40960; } ];
+  # priority=100: el kernel escribe la imagen de hibernacion en el swap de
+  # MAYOR prioridad. zramSwap viene con prio 5 y zram es RAM volatil: con el
+  # swapfile a -1 la cabecera caia en zram y el resume moria ("Unable to
+  # resume ... continuing boot process"). Con 100 la imagen va al disco y
+  # sobrevive al apagado.
+  swapDevices = [ { device = "/swap/swapfile"; size = 40960; priority = 100; } ];
 
   # initrd con systemd: systemd-hibernate-resume lee la EFI var
   # "HibernateLocation" que deja el hibernate y restaura la imagen al boot
