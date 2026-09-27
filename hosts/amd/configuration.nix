@@ -8,6 +8,53 @@
 
 { pkgs, ... }:
 
+let
+  # Usuario de la sesión gráfica (greetd -> cage -> Hyprland).
+  guiUser = "ricky";
+
+  # Hook post-resume. Patrón documentado en systemd.special(7) para enganchar
+  # código ANTES de dormir (ExecStart) y DESPUÉS de despertar (ExecStop):
+  # el unit se activa con sleep.target y se para al deshacerlo.
+  resumeHeal = pkgs.writeShellScript "amdgpu-resume-heal" ''
+    set -euo pipefail
+
+    runtime_dir="/run/user/$(id -u ${guiUser})"
+
+    # margen para que el MODE1 reset asiente antes de tocar la KMS
+    sleep 4
+
+    # La dGPU (Navi 23 / SOC21) se resetea en cada resume de s2idle: el driver
+    # lee dos veces el sign-of-life register del PSP (soc21_need_reset_on_resume)
+    # y si cambió asume "suspend abortado" => MODE1 reset. El reset es correcto
+    # en kernel, pero aquamarine no re-adquiere el estado de KMS, así que la
+    # CRTC se queda con el framebuffer anterior al suspend. Un reload fuerza un
+    # modeset limpio y repinta la pantalla.
+    sig="$(ls "$runtime_dir"/hypr/ 2>/dev/null | grep -v '\.socket' | head -n1 || true)"
+
+    if [ -n "$sig" ]; then
+      for _ in 1 2 3; do
+        if runuser -u ${guiUser} -- env \
+             HYPRLAND_INSTANCE_SIGNATURE="$sig" \
+             XDG_RUNTIME_DIR="$runtime_dir" \
+             hyprctl reload
+        then
+          break
+        fi
+        sleep 3
+      done
+    else
+      echo "amdgpu-resume-heal: Hyprland no corre, nada que re-modesetear" >&2
+    fi
+
+    # El xhci_hcd tambien se resetea al despertar ("xHC error in resume, Reinit")
+    # y Hyprland se queda sin teclado/ratón. Re-disparar udev (solo input de
+    # usuario, no power-button/video-bus) para que libinput los vuelva a leer.
+    udevadm trigger --subsystem-match=input --property-match=ID_INPUT_KEYBOARD=1 || true
+    udevadm trigger --subsystem-match=input --property-match=ID_INPUT_MOUSE=1 || true
+    udevadm settle || true
+  '';
+in
+
 {
   imports = [
     ../../shared
@@ -74,9 +121,39 @@
   #   (p.ej. GnuPG >=2.4), hibernation_available() del kernel 7.x se vuelve
   #   false => /sys/power/disk=[disabled] y suspend-then-hibernate muere con
   #   EPERM. Apagandolo, esos usuarios caen a mlock y la hibernacion revierte.
+  # - amdgpu.aspm=0 + pcie_aspm.policy=performance: la dGPU mantiene vivo el
+  #   firmware TOS del PSP a traves del s2idle, que es lo que hace que el driver
+  #   detecte el "suspend abortado" al despertar. Sin ASPM la cadena no se
+  #   apaga y el abort es menos frecuente. NO lo elimina: el MODE1 reset es una
+  #   mitigacion deliberada de upstream, asi que ademas hace falta el heal de
+  #   abajo para que el modo1 reset no rompa el escritorio.
   boot.kernelParams = [
     "mem_sleep_default=s2idle"
     "amdgpu.sg_display=0"
     "secretmem.enable=false"
+    "amdgpu.aspm=0"
+    "pcie_aspm.policy=performance"
   ];
+
+  # El MODE1 reset de amdgpu al despertar es correcto en kernel, pero el backend
+  # DRM de Hyprland (aquamarine) no lo maneja: tras el reset la CRTC conserva el
+  # framebuffer previo al suspend y el escritorio queda congelado, y el xhci_hcd
+  # tambien se resetea dejando a Hyprland sin teclado/ratón. Este unit se
+  # engancha a sleep.target y devuelve la sesion sola al despertar, sin TTY.
+  systemd.services.amdgpu-resume-heal = {
+    description = "Re-modeset del compositor tras el MODE1 reset de amdgpu";
+    wantedBy = [ "sleep.target" ];
+    before = [ "sleep.target" ];
+    unitConfig = {
+      DefaultDependencies = false;
+      StopWhenUnneeded = true;
+    };
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      ExecStart = "${pkgs.coreutils}/bin/true";
+      ExecStop = "${resumeHeal}";
+    };
+    path = with pkgs; [ coreutils hyprland udev util-linux ];
+  };
 }

@@ -412,6 +412,10 @@ RUSTEOF
 #    al resume, y mataba el shell a mitad de suspension)
 #  - el script/manual "reshell" (era pasivo, no toca suspend, pero se retira
 #    para volver de lleno al sistema tal como estaba).
-# El freeze al suspender/despertar es un bug del firmware/kernel de la placa
-# (journal cortado sin logs PM), independiente de estos extras.
+# El freeze al despertar NO es un bug de firmware de la placa: el journal si
+# tiene los logs. Es el MODE1 reset que amdgpu hace en cada resume de s2idle
+# (soc21_need_reset_on_resume => "S3 suspend aborted, resetting..."), que
+# aquamarine no re-adquiere => CRTC congelada en el framebuffer viejo. Se
+# auto-cura con el unit "amdgpu-resume-heal" de hosts/amd/configuration.nix,
+# asi que aqui no hace falta ninguna pieza extra de suspend/resume.
 }
