@@ -131,23 +131,38 @@ RUSTEOF
       #   ytdl <url>                     -> mejor video+audio a ~/Downloads
       #   ytdl "ytsearch5:query"        -> los 5 primeros resultados de una busqueda
       #   ytdl --mp3 <url>              -> solo audio en MP3 (mismo flujo que spotdl)
+      #   ytdl --subs <url>             -> ademas descarga subtitulos (es/en)
       # Si YouTube responde "Sign in to confirm you're not a bot", usar
       # `ytdl --cookies-from-browser librewolf <url>`.
       ytdl() {
         local fmt="bv*+ba/b" extra=()
-        if [[ "$1" == "--mp3" ]]; then
-          fmt="bestaudio/best"
-          extra=( -x --audio-format mp3 --audio-quality 0 --embed-thumbnail )
+        while [[ "$1" == "--mp3" || "$1" == "--subs" ]]; do
+          case "$1" in
+            --mp3)
+              fmt="bestaudio/best"
+              extra+=( -x --audio-format mp3 --audio-quality 0 --embed-thumbnail )
+              ;;
+            --subs)
+              # OJO: el endpoint de subtitulos de YouTube (timedtext) se
+              # rate-limita aparte y devuelve 429 con facilidad; en esta version
+              # ese error es FATAL y cancela el video entero. Por eso los subs
+              # son opt-in y no el default.
+              extra+=( --write-subs --write-auto-subs
+                       --sub-langs "es.*,en.*,es-orig,en-orig" --embed-subs )
+              ;;
+          esac
           shift
-        fi
+        done
         command yt-dlp \
           -f "$fmt" \
           ''${extra[@]} \
           --merge-output-format mkv \
           -o "$HOME/Downloads/%(uploader,artist)s - %(title).180B [%(id)s].%(ext)s" \
           --embed-metadata --embed-thumbnail --embed-chapters \
-          --write-subs --write-auto-subs --sub-langs "es.*,en.*,es-orig,en-orig" \
           --no-overwrites \
+          --sleep-requests 1 --sleep-interval 5 \
+          --retries 10 --fragment-retries 10 --extractor-retries 3 \
+          --retry-sleep "http:exp=1:20" --retry-sleep "extractor:exp=1:10" \
           "$@"
       }
       # Prompt personalizado
