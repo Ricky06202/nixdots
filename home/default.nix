@@ -126,6 +126,30 @@ RUSTEOF
       eval "$(zoxide init zsh)"
       # fzf
       eval "$(fzf --zsh)"
+
+      # ytdl: wrapper de yt-dlp (el "spotdl" de YouTube).
+      #   ytdl <url>                     -> mejor video+audio a ~/Downloads
+      #   ytdl "ytsearch5:query"        -> los 5 primeros resultados de una busqueda
+      #   ytdl --mp3 <url>              -> solo audio en MP3 (mismo flujo que spotdl)
+      # Si YouTube responde "Sign in to confirm you're not a bot", usar
+      # `ytdl --cookies-from-browser librewolf <url>`.
+      ytdl() {
+        local fmt="bv*+ba/b" extra=()
+        if [[ "$1" == "--mp3" ]]; then
+          fmt="bestaudio/best"
+          extra=( -x --audio-format mp3 --audio-quality 0 --embed-thumbnail )
+          shift
+        fi
+        command yt-dlp \
+          -f "$fmt" \
+          ''${extra[@]} \
+          --merge-output-format mkv \
+          -o "$HOME/Downloads/%(uploader,artist)s - %(title).180B [%(id)s].%(ext)s" \
+          --embed-metadata --embed-thumbnail --embed-chapters \
+          --write-subs --write-auto-subs --sub-langs "es.*,en.*,es-orig,en-orig" \
+          --no-overwrites \
+          "$@"
+      }
       # Prompt personalizado
       export PROMPT='%F{cyan}%n@%m%f:%F{green}%~%f %F{yellow}❯%f '
       export RPROMPT='%(?.%F{green}✓.%F{red}✗)%f'
@@ -145,6 +169,7 @@ RUSTEOF
     motrix-next # gestor de descargas (HTTP/FTP/BitTorrent) vía aria2, sustituto de Free Download Manager
     jellyfin-desktop # cliente de Jellyfin (ver el servidor desde el PC)
     spotdl # descarga canciones de Spotify (lo resuelve vía YouTube) con metadatos
+    yt-dlp # descarga de YouTube (y 1000 sitios más); el wrapper `ytdl` de .zshrc lo endulza
     feishin # cliente de escritorio para Navidrome/Subsonic (Jellyfin de música)
     libnotify # notify-send para la acción "Montar imagen" de Nemo y scripts
     dconf   # necesario para forzar tema GTK en home.activation
