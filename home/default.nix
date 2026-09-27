@@ -180,6 +180,12 @@ RUSTEOF
   xdg.mimeApps = {
     enable = true;
     defaultApplications = {
+      # Navegador por defecto → Librewolf (el "principal" del repo). Sin estas
+      # 3 claves xdg-open agarra el primer .desktop con x-scheme-handler que
+      # encuentra en el perfil (antes cayó en chromium por accidente).
+      "x-scheme-handler/http" = [ "librewolf.desktop" ];
+      "x-scheme-handler/https" = [ "librewolf.desktop" ];
+      "text/html" = [ "librewolf.desktop" ];
       # Archivos/carpetas
       "inode/directory" = [ "nemo.desktop" ];
       # Imágenes → Loupe
