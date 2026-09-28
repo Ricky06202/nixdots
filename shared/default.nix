@@ -655,7 +655,6 @@ in
     libreoffice       # suite ofimática (escritor, planilha, presentación)
     evince            # visor de PDFs (GNOME, ligero, Wayland nativo)
     gnome-calculator  # calculadora
-    thunderbird       # cliente de correo
     thunar            # gestor de archivos (GTK, ligero, respaldo)
     nemo-with-extensions  # gestor de archivos principal (con extensiones GVFS: network, MTP, etc.)
     file-roller       # gestor de comprimidos — la extensión "Extraer aquí" de Nemo lo necesita
