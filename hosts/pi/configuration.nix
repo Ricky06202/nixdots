@@ -37,6 +37,9 @@
   hardware.enableAllHardware = lib.mkForce false;
   boot.initrd.includeDefaultModules = false;
   boot.initrd.availableKernelModules = [ "mmc_block" ];
+  # El systemd-initrd de sd-image trae soporte TPM2 activado por default y
+  # pide tpm-crb/tpm-tis, que no existen (ni TPM hay) en el Pi 3.
+  boot.initrd.systemd.tpm2.enable = false;
   sdImage.compressImage = false;
 
   # --- CUPS: impresoras locales/red ---
