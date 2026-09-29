@@ -25,6 +25,9 @@
 
   # La imagen del módulo sd-image-aarch64 ya arranca en Pi 3 (u-boot aarch64
   # + dtbs bcm2710 en populateFirmwareCommands).
+  # Kernel Raspberry Pi OS (rpt): soporta Pi 0–5, trae drivers/wifi/BT que el
+  # genérico puede tener sin habilitar. linuxPackages_rpi4 = "raspberrypicos kernel".
+  boot.kernelPackages = pkgs.linuxPackages_rpi4;
   sdImage.compressImage = false;
 
   # --- CUPS: impresoras locales/red ---
