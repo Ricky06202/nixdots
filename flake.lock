@@ -159,6 +159,24 @@
         "type": "github"
       }
     },
+    "impresiones": {
+      "inputs": {
+        "nixpkgs": "nixpkgs_3"
+      },
+      "locked": {
+        "lastModified": 1790639596,
+        "narHash": "sha256-s9L2fUii0pvTr3P73B9b/VU1fv7r0ZiBGLvGmOjl8eI=",
+        "ref": "refs/heads/main",
+        "rev": "c012ec732c707c6fd066447125b3c00982cb6f24",
+        "revCount": 25,
+        "type": "git",
+        "url": "file:///home/ricky/Dev/impresiones-online"
+      },
+      "original": {
+        "type": "git",
+        "url": "file:///home/ricky/Dev/impresiones-online"
+      }
+    },
     "m3shapes": {
       "inputs": {
         "nixpkgs": [
@@ -232,6 +250,22 @@
     },
     "nixpkgs_3": {
       "locked": {
+        "lastModified": 1790578696,
+        "narHash": "sha256-ZoxIApko70jCdbH3l20HWXOBaT2HZd87orzd2yJ9dVE=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "7a0f122f5090cf4c2ade2a13a0e229d4e19ba71f",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "nixpkgs_4": {
+      "locked": {
         "lastModified": 1790185690,
         "narHash": "sha256-xJ+X4hBtOcAFGBOe5nAMyMUeF9foJBmIOu3NjBqBycU=",
         "owner": "NixOS",
@@ -246,7 +280,7 @@
         "type": "github"
       }
     },
-    "nixpkgs_4": {
+    "nixpkgs_5": {
       "locked": {
         "lastModified": 1790185690,
         "narHash": "sha256-xJ+X4hBtOcAFGBOe5nAMyMUeF9foJBmIOu3NjBqBycU=",
@@ -312,8 +346,9 @@
         "caelestia-cli": "caelestia-cli_2",
         "caelestia-cli-aw": "caelestia-cli-aw",
         "home-manager": "home-manager",
+        "impresiones": "impresiones",
         "m3shapes": "m3shapes_2",
-        "nixpkgs": "nixpkgs_3",
+        "nixpkgs": "nixpkgs_4",
         "spotx-nix": "spotx-nix"
       }
     },
@@ -335,7 +370,7 @@
     },
     "spotx-nix": {
       "inputs": {
-        "nixpkgs": "nixpkgs_4",
+        "nixpkgs": "nixpkgs_5",
         "spotx-bash": "spotx-bash"
       },
       "locked": {

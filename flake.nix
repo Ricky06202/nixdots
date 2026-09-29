@@ -54,9 +54,16 @@
 
     # SpotX-Nix: parchea Spotify para bloquear anuncios (declarativo, NixOS-native).
     spotx-nix.url = "github:SpotX-Official/SpotX-Nix";
+
+    # Agente de impresiones de la oficina (repo PRIVADO: se lee por git+file
+    # desde el checkout local, no por https). Refrescarlo:
+    #   cd ~/Dev/impresiones-online  (commit)  &&  nix flake lock --update-input impresiones
+    # Expone packages.*.agentd, packages.x86_64-linux.agentd-aarch64 (cross)
+    # y nixosModules.agente-impresiones (usado por hosts/pi).
+    impresiones.url = "git+file:///home/ricky/Dev/impresiones-online";
   };
 
-  outputs = { self, nixpkgs, caelestia, m3shapes, caelestia-cli, home-manager, spotx-nix, caelestia-aw, caelestia-cli-aw }:
+  outputs = { self, nixpkgs, caelestia, m3shapes, caelestia-cli, home-manager, spotx-nix, caelestia-aw, caelestia-cli-aw, impresiones }:
     let
       system = "x86_64-linux";
       pkgs = nixpkgs.legacyPackages.${system};
@@ -161,5 +168,20 @@
       nixosConfigurations.laptop = mkHost "laptop";
       nixosConfigurations.amd = mkHost "amd";
       nixosConfigurations.omen = mkHost "omen";
+
+      # Raspberry Pi 3 de la oficina (agente de impresiones headless).
+      # Sin home-manager ni Caelestia: servidor mínimo. hostPlatform aarch64,
+      # buildPlatform x86_64 (default) → cross-compilado, sin qemu/binfmt.
+      # OJO: usar nixpkgs.hostPlatform, NO system (system fija localSystem y
+      # mataría el cross). Imagen:
+      #   nix build .#nixosConfigurations.pi.config.system.build.sdImage
+      nixosConfigurations.pi = nixpkgs.lib.nixosSystem {
+        specialArgs = { inherit impresiones; hostName = "pi"; };
+        modules = [
+          ./hosts/pi/configuration.nix
+          impresiones.nixosModules.agente-impresiones
+          { nixpkgs.hostPlatform = "aarch64-linux"; nixpkgs.buildPlatform = "x86_64-linux"; }
+        ];
+      };
     };
 }
