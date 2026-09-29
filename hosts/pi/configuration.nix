@@ -28,6 +28,13 @@
   # Kernel Raspberry Pi OS (rpt): soporta Pi 0–5, trae drivers/wifi/BT que el
   # genérico puede tener sin habilitar. linuxPackages_rpi4 = "raspberrypicos kernel".
   boot.kernelPackages = pkgs.linuxPackages_rpi4;
+  # El initrd default de nixpkgs para aarch64 (all-hardware) pide módulos
+  # Rockchip/Allwinner que el kernel RPi no trae: en 6.12 rpt ya no existe
+  # "dw-hdmi" y el shrink de módulos revienta. Apagando los defaults el initrd
+  # solo lleva lo del Pi 3: SD/MMC (root) y vc4 (video). Si uno de esos dos
+  # tampoco existiera, nix lo dice en el error y se quita.
+  boot.initrd.includeDefaultModules = false;
+  boot.initrd.availableKernelModules = [ "vc4" "mmc_block" "mmc_bcm2835" ];
   sdImage.compressImage = false;
 
   # --- CUPS: impresoras locales/red ---
