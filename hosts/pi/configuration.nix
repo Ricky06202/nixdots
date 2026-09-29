@@ -29,13 +29,14 @@
   # genérico puede tener sin habilitar. linuxPackages_rpi4 = "raspberrypicos kernel".
   boot.kernelPackages = pkgs.linuxPackages_rpi4;
   # El initrd default de nixpkgs para aarch64 (all-hardware) pide módulos
-  # Rockchip/Allwinner que el kernel RPi no trae: en 6.12 rpt ya no existe
-  # "dw-hdmi" y el shrink de módulos revienta. sd-image lo prende por ser
-  # imagen genérica → se apaga y el initrd lleva solo lo del Pi 3: SD/MMC
-  # (root) y vc4 (video).
+  # Rockchip/Allwinner que el kernel RPi no trae (dw-hdmi no existe en rpt
+  # 6.12) y sd-image lo prende por ser genérica → apagado. Verificado contra
+  # los módulos reales del rpt 6.12: toda la stack MMC host (sdhci,
+  # bcm2835-mmc, mmc_core) es built-in; solo mmc_block es .ko y el initrd lo
+  # necesita para montar la root en la SD. vc4 no hace falta temprano (headless).
   hardware.enableAllHardware = lib.mkForce false;
   boot.initrd.includeDefaultModules = false;
-  boot.initrd.availableKernelModules = [ "vc4" "mmc_block" "mmc_bcm2835" ];
+  boot.initrd.availableKernelModules = [ "mmc_block" ];
   sdImage.compressImage = false;
 
   # --- CUPS: impresoras locales/red ---
