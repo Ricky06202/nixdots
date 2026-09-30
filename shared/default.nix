@@ -594,6 +594,9 @@ in
     librewolf         # navegador principal (fork de Firefox con uBlock Origin preinstalado + privacidad)
     chromium          # navegador Chromium puro (compatibilidad web sin capas extra)
     karere            # whatsapp (whatsapp-for-linux se retiró de nixpkgs)
+    tor-browser       # navegador Tor (bundle oficial con Tor+Torbutton)
+    session-desktop   # Session: mensajería cifrada sin número de teléfono
+    element-desktop   # Element (Matrix) — Element X no existe en desktop (solo Android/iOS)
     spotify-spotx     # spotify con anuncios bloqueados (vía SpotX-Nix, flake externo)
     lutris            # gestor de juegos
     wineWow64Packages.stableFull  # wine completo (wow64: 32+64 bits) para ejecutar .exe
