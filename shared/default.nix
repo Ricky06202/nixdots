@@ -383,9 +383,20 @@ in
 
   # Configure keymap in X11
   services.xserver.xkb = {
-    layout = "us";
-    variant = "";
+    # ANTERIOR: QWERTY US
+    # layout = "us";
+    # variant = "";
+
+    # COLEMAK-DH ANSI por defecto; US como segunda opción.
+    # El toggle SUPER+Space se hace en Hyprland/Lua; no se usa grp:win_space_toggle.
+    layout = "us,us";
+    variant = "colemak_dh,";
+    options = "terminate:ctrl_alt_bksp";
   };
+
+  # ANTERIOR: la consola no usaba el keymap de X11.
+  # console.useXkbConfig = false;
+  console.useXkbConfig = true;
 
   # Enable CUPS to print documents.
   services.printing.enable = true;
@@ -771,6 +782,12 @@ in
   environment.sessionVariables = {
     XCURSOR_THEME = "Bibata-Modern-Classic";
     XCURSOR_SIZE = "24";
+    # ANTERIOR: sesión Wayland/X11 en QWERTY US
+    # XKB_DEFAULT_LAYOUT = "us";
+    # XKB_DEFAULT_VARIANT = "";
+    XKB_DEFAULT_LAYOUT = "us,us";
+    XKB_DEFAULT_VARIANT = "colemak_dh,";
+    XKB_DEFAULT_OPTIONS = "terminate:ctrl_alt_bksp";
     # Android (Godot/Tauri export): ruta del JDK. Godot 4.7 y Tauri v2 exigen
     # OpenJDK 17 (no 21). PrismLauncher/Minecraft siguen con jdk21 (programs.java).
     JAVA_HOME = "${pkgs.jdk17}";

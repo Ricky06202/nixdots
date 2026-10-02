@@ -59,6 +59,18 @@ hl.config({
     },
     -- ===== INPUT =====
     input = {
+        -- ANTERIOR: QWERTY US
+        -- kb_layout = "us",
+        -- kb_variant = "",
+
+        -- COLEMAK-DH (mod-dh ANSI) por defecto, con US seleccionable.
+        -- Cambiar entre Colemak-DH y US con un toggle custom en Lua (SUPER + Space).
+        kb_layout = "us,us",
+        kb_variant = "colemak_dh,",
+        kb_options = "terminate:ctrl_alt_bksp",
+        -- true: los atajos letter-based siguen el layout activo.
+        resolve_binds_by_sym = true,
+
         repeat_delay = 200,
         repeat_rate = 50,
     },
@@ -74,9 +86,70 @@ hl.animation({ leaf = "workspaces", enabled = true, speed = 6, bezier = "default
 -- ===== ATAJOS =====
 local mainMod = "SUPER"
 
+local kbLayout = "colemak"
+
+-- Mapeo fisico QWERTY -> keysym que produce ese MISMO punto del teclado en
+-- Colemak-DH ANSI. Ej: la vieja F fisica escribe T en Colemak-DH; HJKL -> MNEI.
+local colemakEquivalent = {
+    A = "A", B = "Z", C = "D", D = "S", E = "F", F = "T", G = "G",
+    H = "M", I = "U", J = "N", K = "E", L = "I", M = "H", N = "K",
+    O = "Y", P = "semicolon", Q = "Q", R = "P", S = "R", T = "B", U = "L",
+    V = "V", W = "W", X = "C", Y = "J", Z = "X",
+}
+
+local function run_action(action)
+    if type(action) == "function" then
+        action()
+    else
+        hl.dispatch(action)
+    end
+end
+
+local function bind_physical(mods, original, action, opts)
+    local upper = string.upper(original)
+    local mapped = colemakEquivalent[upper]
+    local oldKey = mods .. " + " .. original
+    local newKey = mods .. " + " .. mapped
+
+    local function do_bind(key, fn)
+        if opts then
+            hl.bind(key, fn, opts)
+        else
+            hl.bind(key, fn)
+        end
+    end
+
+    if not mapped or mapped == upper then
+        do_bind(oldKey, action)
+        return
+    end
+
+    do_bind(oldKey, function()
+        if kbLayout == "us" then
+            run_action(action)
+        end
+    end)
+
+    do_bind(newKey, function()
+        if kbLayout == "colemak" then
+            run_action(action)
+        end
+    end)
+end
+
+local function set_kb_layout(layout)
+    kbLayout = layout
+    local idx = layout == "colemak" and 0 or 1
+    hl.exec_cmd("hyprctl switchxkblayout all " .. idx)
+end
+
+local function toggle_kb_layout()
+    set_kb_layout(kbLayout == "colemak" and "us" or "colemak")
+end
+
 hl.bind(mainMod .. " + Return", hl.dsp.exec_cmd("wezterm"))
-hl.bind(mainMod .. " + E", hl.dsp.exec_cmd("nemo"))
-hl.bind(mainMod .. " + Q", hl.dsp.window.close())
+bind_physical(mainMod, "E", hl.dsp.exec_cmd("nemo"))
+bind_physical(mainMod, "Q", hl.dsp.window.close())
 -- ===== FULLSCREEN (percepcion por niveles) =====
 -- Boton de la app -> IN-PLACE determinista (internal=0 client=2): la ventana se
 --                    queda en su hueco del layout y la app cree que esta a
@@ -160,7 +233,7 @@ hl.on("window.destroy", function(w)
     end
 end)
 
-hl.bind(mainMod .. " + F", function()
+local function toggle_big_fullscreen()
     local w = hl.get_active_window()
     if not w then return end
     if mode[w.address] == "big" then
@@ -168,9 +241,9 @@ hl.bind(mainMod .. " + F", function()
         return
     end
     set_window_mode(w, "big")
-end)
+end
 
-hl.bind(mainMod .. " + SHIFT + F", function()
+local function toggle_conc_fullscreen()
     local w = hl.get_active_window()
     if not w then return end
     if mode[w.address] == "conc" then
@@ -178,9 +251,9 @@ hl.bind(mainMod .. " + SHIFT + F", function()
     else
         set_window_mode(w, "conc")
     end
-end)
+end
 
-hl.bind(mainMod .. " + CONTROL + F", function()
+local function toggle_trad_fullscreen()
     local w = hl.get_active_window()
     if not w then return end
     if mode[w.address] == "trad" then
@@ -188,7 +261,13 @@ hl.bind(mainMod .. " + CONTROL + F", function()
     else
         set_window_mode(w, "trad")
     end
-end)
+end
+
+hl.bind(mainMod .. " + Space", toggle_kb_layout)
+
+bind_physical(mainMod, "F", toggle_big_fullscreen)
+bind_physical(mainMod .. " + SHIFT", "F", toggle_conc_fullscreen)
+bind_physical(mainMod .. " + CONTROL", "F", toggle_trad_fullscreen)
 
 -- Cuando la app pide fullscreen real -> la convertimos a IN-PLACE determinista
 -- (internal=0 client=2): la ventana conserva su hueco y la app ve fullscreen.
@@ -214,24 +293,24 @@ hl.on("window.fullscreen", function(w)
     end
 end)
 
-hl.bind(mainMod .. " + V", hl.dsp.window.float({ action = "toggle" }))
-hl.bind(mainMod .. " + W", hl.dsp.window.float({ action = "toggle" }))
-hl.bind(mainMod .. " + SHIFT + S", hl.dsp.exec_cmd("grim -g \"$(slurp)\" - | wl-copy --type image/png"))
-hl.bind(mainMod .. " + CONTROL + E", hl.dsp.exit())
+bind_physical(mainMod, "V", hl.dsp.window.float({ action = "toggle" }))
+bind_physical(mainMod, "W", hl.dsp.window.float({ action = "toggle" }))
+bind_physical(mainMod .. " + SHIFT", "S", hl.dsp.exec_cmd("grim -g \"$(slurp)\" - | wl-copy --type image/png"))
+bind_physical(mainMod .. " + CONTROL", "E", hl.dsp.exit())
 -- Reload de Hyprland + restart del shell de Caelestia (barra/lock/wallpapers
 -- leen su config al arrancar; -k lo mata y -d lo revive detached).
-hl.bind(mainMod .. " + SHIFT + R", hl.dsp.exec_cmd("hyprctl reload; caelestia shell -k; sleep 0.5; caelestia shell -d"))
+bind_physical(mainMod .. " + SHIFT", "R", hl.dsp.exec_cmd("hyprctl reload; caelestia shell -k; sleep 0.5; caelestia shell -d"))
 -- Energia (global): SUPER+CTRL+S = HIBERNATE directo: escribe la RAM al
 -- swapfile de 40G y apaga del todo (luces off). Al prender, el initrd
 -- (systemd-hibernate-resume) restaura la sesion tal cual. Para pausa corta
 -- con despertar instantaneo: `systemctl suspend` por consola o el idle de
 -- Caelestia (lock 3min, dpms 5min, suspend-then-hibernate a los 10min).
-hl.bind(mainMod .. " + CONTROL + S", hl.dsp.exec_cmd("systemctl hibernate"))
+bind_physical(mainMod .. " + CONTROL", "S", hl.dsp.exec_cmd("systemctl hibernate"))
 hl.bind(mainMod .. " + CONTROL + ESCAPE", hl.dsp.exec_cmd("$HOME/.config/hypr/session-action.sh poweroff"))
-hl.bind(mainMod .. " + CONTROL + R", hl.dsp.exec_cmd("$HOME/.config/hypr/session-action.sh reboot"))
-hl.bind(mainMod .. " + L", hl.dsp.global("caelestia:lock"))
-hl.bind(mainMod .. " + SHIFT + P", hl.dsp.exec_cmd("hyprpicker"))
-hl.bind(mainMod .. " + R", hl.dsp.global("caelestia:launcher"), { release = true })
+bind_physical(mainMod .. " + CONTROL", "R", hl.dsp.exec_cmd("$HOME/.config/hypr/session-action.sh reboot"))
+bind_physical(mainMod, "L", hl.dsp.global("caelestia:lock"))
+bind_physical(mainMod .. " + SHIFT", "P", hl.dsp.exec_cmd("hyprpicker"))
+bind_physical(mainMod, "R", hl.dsp.global("caelestia:launcher"), { release = true })
 
 -- Guardar clip del buffer de repeticion de OBS (tecla grave `)
 hl.bind("grave", hl.dsp.exec_cmd("OBS_WEBSOCKET_URL=obsws://localhost:4444/btL9G6EhSPwg2U0q obs-cmd replay save"))
@@ -252,8 +331,8 @@ hl.bind(mainMod .. " + mouse_down", hl.dsp.focus({ workspace = "e+1" }))
 hl.bind(mainMod .. " + mouse_up", hl.dsp.focus({ workspace = "e-1" }))
 
 -- mover ventana a workspace siguiente/anterior (SUPER + SHIFT + J/K)
-hl.bind(mainMod .. " + SHIFT + J", hl.dsp.window.move({ workspace = "+1" }))
-hl.bind(mainMod .. " + SHIFT + K", hl.dsp.window.move({ workspace = "-1" }))
+bind_physical(mainMod .. " + SHIFT", "J", hl.dsp.window.move({ workspace = "+1" }))
+bind_physical(mainMod .. " + SHIFT", "K", hl.dsp.window.move({ workspace = "-1" }))
 
 -- enfocar con flechas
 hl.bind(mainMod .. " + left", hl.dsp.focus({ direction = "left" }))
@@ -267,15 +346,15 @@ hl.bind(mainMod .. " + SHIFT + right", hl.dsp.window.move({ direction = "right" 
 hl.bind(mainMod .. " + SHIFT + up", hl.dsp.window.move({ direction = "up" }))
 hl.bind(mainMod .. " + SHIFT + down", hl.dsp.window.move({ direction = "down" }))
 
--- navegacion con vim (h, j, k, l)
-hl.bind(mainMod .. " + H", hl.dsp.focus({ direction = "left" }))
-hl.bind(mainMod .. " + L", hl.dsp.focus({ direction = "right" }))
-hl.bind(mainMod .. " + K", hl.dsp.focus({ direction = "up" }))
-hl.bind(mainMod .. " + J", hl.dsp.focus({ direction = "down" }))
+-- navegacion con vim (HJKL -> MNEI en Colemak-DH)
+bind_physical(mainMod, "H", hl.dsp.focus({ direction = "left" }))
+bind_physical(mainMod, "L", hl.dsp.focus({ direction = "right" }))
+bind_physical(mainMod, "K", hl.dsp.focus({ direction = "up" }))
+bind_physical(mainMod, "J", hl.dsp.focus({ direction = "down" }))
 
--- mover ventanas con vim (SUPER + SHIFT + h/j/k/l)
-hl.bind(mainMod .. " + SHIFT + H", hl.dsp.window.move({ direction = "left" }))
-hl.bind(mainMod .. " + SHIFT + L", hl.dsp.window.move({ direction = "right" }))
+-- mover ventanas con vim (SUPER + SHIFT + h/j/k/l -> MNEI en Colemak-DH)
+bind_physical(mainMod .. " + SHIFT", "H", hl.dsp.window.move({ direction = "left" }))
+bind_physical(mainMod .. " + SHIFT", "L", hl.dsp.window.move({ direction = "right" }))
 
 -- rotar entre ventanas del workspace (Alt + Tab), funciona incluso en fullscreen
 hl.bind("ALT + Tab", hl.dsp.window.cycle_next(), { dont_inhibit = true })
@@ -292,6 +371,7 @@ hl.window_rule({ match = { class = "^com.obsproject.Studio$" }, workspace = 5 })
 
 -- ===== INICIO (autostart) =====
 hl.on("hyprland.start", function()
+    set_kb_layout("colemak")
     hl.exec_cmd("caelestia-shell -d")
     hl.exec_cmd("/home/ricky/.config/hypr/autostart.sh")
     hl.exec_cmd("/home/ricky/.config/hypr/wallpaper-pick.sh")
