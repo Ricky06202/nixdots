@@ -164,11 +164,11 @@
         "nixpkgs": "nixpkgs_3"
       },
       "locked": {
-        "lastModified": 1790659642,
-        "narHash": "sha256-2LE9K8HCylC6zTM0YpeZa3GNbNMga2j1n11U0A5U7i4=",
+        "lastModified": 1790970847,
+        "narHash": "sha256-aN9rFHQXQ+jNO4PjR7N3X6cTT/leiVn5kRnvVyKEwR4=",
         "ref": "refs/heads/main",
-        "rev": "e63e1037cf3263654fbe49e9793312c77cddc950",
-        "revCount": 44,
+        "rev": "9a755095c4a09a433ed7c6a699c76bf209144fe9",
+        "revCount": 48,
         "type": "git",
         "url": "file:///home/ricky/Dev/impresiones-online"
       },
