@@ -43,12 +43,15 @@ hl.window_rule({
   match = { class = "^gamescope$" },
   workspace = 6,
   fullscreen = true,       -- FS al mapear (bool rule)
-  fullscreen_state = 1,    -- interno/compositor (el client FS de gamescope no hace falta)
+  fullscreen_state = 2,    -- nivel TRAD del sistema propio de hyprland.lua: cubre TODA
+                           -- la pantalla (ignora el area reservada de las barras de
+                           -- Caelestia). Con 1 (=maximizar) gamescope se quedaba en
+                           -- 1830x1040 y el stream salia con barras negras.
   decorate = false,
   no_focus = true,         -- nunca roba el foco local al nacer (ni despues)
   -- NO_FOCUS (2026-10): su ventana NO toca el teclado/raton locales de Ricky.
   -- El teclado/raton inyectados por sunshine (fake-input, via foco) TAMPOCO
-  -- le llegan: ella juega con el mando x360 (uinput = evdev global, ignora el
+  -- le llegan: ella juega con el mando xone (uinput = evdev global, ignora el
   -- foco) y con el raton del stream (eventos de puntero, tampoco dependen del
   -- foco teclado). Costo: nada del teclado del stream para ella.
 })

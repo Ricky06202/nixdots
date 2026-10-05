@@ -122,7 +122,8 @@ in
   # fantasma donde la window rule class=gamescope mapea
   # su ventana (ws 6, fullscreen, no_focus).
   #   max_bitrate: kbps; el default (~1Mbps) se veia a tirones.
-  #   gamepad: xone via /dev/uinput (requiere ricky en grupo uinput, abajo).
+  #   gamepad: xone (mando Xbox One) via /dev/uinput (requiere ricky
+  #   en grupo uinput, abajo).
   #   stream_audio=false: sin audio en el stream y sin fugas de tu escritorio.
   #   keyboard=false / mouse=false: NO se inyecta teclado ni raton del stream
   #   (los toggles "Keyboard/Mouse passthrough" de la web UI son EFIMEROS: el
