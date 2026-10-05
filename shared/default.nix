@@ -453,9 +453,12 @@ in
     };
   };
 
-  # ANTERIOR: la consola no usaba el keymap de X11.
-  # console.useXkbConfig = false;
-  console.useXkbConfig = true;
+  # ANTERIOR: la consola usaba el keymap de X11 (colemak_dh -> con keyd activo
+  # se aplicaba DOS veces: XKB colemak + keyd colemak = doble mapa en TTY).
+  # console.useXkbConfig = true;
+  # AHORA: consola en US plano; el Colemak-DH de la TTY lo hace keyd a nivel
+  # evdev (funciona en consola, X11, Wayland y juegos por igual).
+  console.useXkbConfig = false;
 
   # Enable CUPS to print documents.
   services.printing.enable = true;
