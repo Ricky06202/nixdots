@@ -146,6 +146,10 @@ in
     # Apps del menu Moonlight. Envuelta en gamescope => window rule
     # class=gamescope => ws 6 / HEADLESS-1 fullscreen. steam a secas: es TU
     # steam (wrapper PRIME offload solo existe en laptop; aqui no aplica).
+    # Singleton Steam: si ya hay un cliente corriendo, `steam` solo despierta
+    # al existente y gamescope muere en <5s ("App exited gracefully"). Regla
+    # de uso: Ricky CIERRA su Steam manualmente antes de que ella lance la
+    # app. NO auto-cerrar desde el cmd: nunca se le cierra el Steam a Ricky.
     # OJO: con esto declarado, el editor "Applications" de la web UI deja de
     # guardar; se edita aqui.
     applications = {
