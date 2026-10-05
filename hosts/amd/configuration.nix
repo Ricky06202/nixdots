@@ -153,13 +153,17 @@ in
     #   - Primer arranque: login de SU cuenta (una vez, local).
     #   - Para ver tus juegos: ella anade tu Library Folder (Settings >
     #     Storage) y usa Family Sharing si aplica.
+    # CRITICO: sunshine ejecuta cmd SIN SHELL (argv directo). Nada de `&&`,
+    # `;` ni `VAR=` inline ahi (mkdir con && como operando muria en 0.4s el
+    # 2026-10-05). Las variables van en applications.env (apps.json "env").
     # OJO: con esto declarado, el editor "Applications" de la web UI deja de
     # guardar; se edita aqui.
     applications = {
+      env = { HOME = "/home/ricky/steam-ella"; };
       apps = [
         {
           name = "Steam";
-          cmd = "mkdir -p /home/ricky/steam-ella && HOME=/home/ricky/steam-ella ${pkgs.gamescope}/bin/gamescope -w 1920 -h 1080 --force-windows-fullscreen -- steam";
+          cmd = "${pkgs.gamescope}/bin/gamescope -w 1920 -h 1080 --force-windows-fullscreen -- steam";
         }
       ];
     };
