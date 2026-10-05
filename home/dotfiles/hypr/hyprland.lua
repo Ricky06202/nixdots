@@ -21,6 +21,9 @@ hl.env("HYPRCURSOR_THEME", "Bibata-Modern-Classic")
 hl.env("HYPRCURSOR_SIZE", "24")
 hl.env("XCURSOR_THEME", "Bibata-Modern-Classic")
 hl.env("XCURSOR_SIZE", "24")
+-- ~/.local/bin primero (scripts locales). La sesion grafica (ReGreet->cage)
+-- no importa sessionPath de HM, por eso va aqui.
+hl.env("PATH", (os.getenv("HOME") or "") .. "/.local/bin:" .. (os.getenv("PATH") or ""))
 
 -- ===== GENERAL =====
 hl.config({
