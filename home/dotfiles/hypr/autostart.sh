@@ -18,6 +18,7 @@ disown -a
 # cliente, y quien lo abra define la cuenta online. Arrancandolo desde el menu
 # de Moonlight, ella inicia/usa SU cuenta; Ricky abre el suyo cuando juega
 # (cambiar de cuenta = Steam > Salir, sin matar nada). Un Steam online a la vez.
+nohup feishin >/dev/null 2>&1 &
 
 # --- Motrix (gestor de descargas) ----------------------------------------------
 nohup motrix-next >/dev/null 2>&1 &
