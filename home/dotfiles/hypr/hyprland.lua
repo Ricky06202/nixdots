@@ -277,6 +277,13 @@ bind_physical(mainMod .. " + CONTROL", "F", toggle_trad_fullscreen)
 -- Si la app sale sola del fullscreen -> limpiamos el estado (forzamos (0,0)).
 hl.on("window.fullscreen", function(w)
     if not w then return end
+    -- EXENCION ws6 (HEADLESS-1): la ventana de ella SI conserva fullscreen
+    -- REAL (internal=2, cubre el monitor entero incluidas las zonas que
+    -- Caelestia reserva: sin barras negras en el stream). El modo in-place
+    -- (0,2) de abajo es solo para el escritorio de Ricky.
+    if w.workspace and (w.workspace.id == 6 or w.workspace.name == "6") then
+        return
+    end
     if mode[w.address] then
         if mode[w.address] == "big" then
             -- Estando en SUPER+F, CUALQUIER cambio de fullscreen de la app
