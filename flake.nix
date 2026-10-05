@@ -102,7 +102,7 @@
           mkQs [ ];
 
       # Caelestia-AW: fork con live wallpapers (video .mp4/.webm/etc.).
-      # Mismo enfoque que caelestiaShell (qsPrebuilt), pero:
+      # Mismo enfoque (wrapper qsPrebuilt), pero:
       #  - el wrapper quickshell lleva qt6.qtmultimedia (el fork NO lo declara,
       #    aunque VideoWallpaper.qml importa QtMultimedia)
       #  - CLI = fork caelestia-cli-aw (añade pillow + genera thumbnails con ffmpeg)
@@ -126,16 +126,6 @@
             extraRuntimeDeps = [ pkgs.ffmpeg ];
           }).override { withCli = true; };
 
-      # Caelestia shell usando nuestro quickshell precompilado.
-      # Es el mismo callPackage ./nix del flake oficial; conCli incluye la CLI
-      # de Caelestia (colores/material you/wallpapers) como runtime dep.
-      caelestiaShell = (pkgs.callPackage "${caelestia}/nix" {
-        stdenv = pkgs.clangStdenv;
-        inherit m3shapes;
-        quickshell = qsPrebuilt;
-        caelestia-cli = caelestia-cli.packages.${system}.default;
-        rev = caelestia.sourceInfo.rev or "unknown";
-      }).override { withCli = true; };
 
       mkHost = name: nixpkgs.lib.nixosSystem {
         inherit system;
@@ -158,10 +148,9 @@
     in
     {
       # Paquetes standalone para probar/distribuir sin rebuild de host.
-      # caelestia-shell = vanilla (referencia); caelestia-shell-aw = el de los
-      # hosts (live wallpapers).
+      # (El vanilla fue eliminado: el callPackage ${caelestia}/nix rompió contra
+      #  qsPrebuilt tras update del input y NINGUN host lo usa - todos van por AW.)
       packages.${system} = {
-        caelestia-shell = caelestiaShell;
         caelestia-shell-aw = caelestiaShellAW;
       };
 
