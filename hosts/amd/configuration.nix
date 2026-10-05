@@ -6,7 +6,7 @@
 #   SSD:  ADATA LEGEND 860 500GB NVMe PCIe 4.0
 #   PSU:  MSI MAG A550BN 550W 80+ Bronze
 
-{ pkgs, ... }:
+{ pkgs, config, ... }:
 
 let
   # Usuario de la sesión gráfica (greetd -> cage -> Hyprland).
@@ -106,6 +106,60 @@ in
     OLLAMA_KEEP_ALIVE = "0";
     OLLAMA_MAX_LOADED_MODELS = "1";
   };
+
+  # Sunshine: host de game-streaming para Moonlight — la laptop de ella
+  # recibe el video de la RX 7600 por LAN y devuelve teclado/mouse/mando como
+  # dispositivos virtuales.
+  #
+  # MODO SIMPLE (2026-10): TODO bajo ricky. Ella juega con SU cuenta de Steam
+  # dentro del stream pero en TU usuario Linux: mismo HOME, mismos prefijos
+  # Proton tuyos (el "pfx is not owned by you" que mataba Goofy Gorillas
+  # desaparece), sin ACLs ni linger ni unidades system. Costo aceptado: un
+  # solo Steam online a la vez en esta maquina — mientras ella juega, tu no.
+  # El modulo crea USER-unit (corre en tu sesion grafica): captura
+  # wl-screencopy directo sobre TU Hyprland, y output_name "HEADLESS-1"
+  # (Display Id) transmite el monitor
+  # fantasma donde la window rule class=gamescope mapea
+  # su ventana (ws 6, fullscreen, no_focus).
+  #   max_bitrate: kbps; el default (~1Mbps) se veia a tirones.
+  #   gamepad: xone via /dev/uinput (requiere ricky en grupo uinput, abajo).
+  #   stream_audio=false: sin audio en el stream y sin fugas de tu escritorio.
+  #   keyboard=false / mouse=false: NO se inyecta teclado ni raton del stream
+  #   (los toggles "Keyboard/Mouse passthrough" de la web UI son EFIMEROS: el
+  #   conf es declarativo y los pisa). Sola queda el mando xone (evdev global,
+  #   ajeno al foco de Hyprland) => ella juega con mando y tu escritorio no se
+  #   entera. Keys verificadas en el binary sunshine (labels "Keyboard/Mouse
+  #   passthrough" -> conf keys `keyboard`/`mouse`).
+  services.sunshine = {
+    enable = true;
+    openFirewall = true;
+    capSysAdmin = true;
+    settings = {
+      output_name = "HEADLESS-1";
+      max_bitrate = 50000;
+      gamepad = "xone";
+      stream_audio = false;
+      keyboard = false;
+      mouse = false;
+    };
+    # Apps del menu Moonlight. Envuelta en gamescope => window rule
+    # class=gamescope => ws 6 / HEADLESS-1 fullscreen. steam a secas: es TU
+    # steam (wrapper PRIME offload solo existe en laptop; aqui no aplica).
+    # OJO: con esto declarado, el editor "Applications" de la web UI deja de
+    # guardar; se edita aqui.
+    applications = {
+      apps = [
+        {
+          name = "Steam";
+          cmd = "${pkgs.gamescope}/bin/gamescope -w 1920 -h 1080 --force-windows-fullscreen -- steam";
+        }
+      ];
+    };
+  };
+
+  # uinput: ricky (dueno del user-unit sunshine) crea el mando xone virtual.
+  # hardware.uinput.enable lo trae el propio modulo de sunshine.
+  users.users.ricky.extraGroups = [ "uinput" ];
 
   # Blacklistear nouveau: si hay una NVIDIA físicamente presente, no se usa y
   # nouveau solo gasta RAM/CPU.

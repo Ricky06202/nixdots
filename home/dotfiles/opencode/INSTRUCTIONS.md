@@ -7,7 +7,8 @@ Instrucciones globales para asistir en este equipo. Léelas siempre que trabajes
   (https://github.com/Ricky06202/nixdots), estructura multi-host.
 - Hosts definidos en un solo flake:
   - `laptop` — Intel HD 5500 (iGPU) + NVIDIA 940M (PRIME offload, driver legacy_580)
-  - `amd` — Ryzen 7 5700 (8c/16t) + RX 7600 8GB, B550M, 32GB DDR4, NVMe 1TB (amdgpu nativo)
+  - `amd` — Ryzen 5 5500 (6c/12t, sin iGPU — 1 sola GPU) + RX 7600 8GB, B550M, 32GB DDR4, NVMe 1TB (amdgpu nativo)
+  - `omen` — HP Omen 17t: i7-11800H + RTX 3070 Laptop (gaming machine, NVIDIA modesetting)
 - Home-manager integrado como módulo del flake (NO standalone).
 - Shell: zsh + oh-my-zsh (vía home-manager).
 - Escritorio: Hyprland (Wayland) + Caelestia Shell. Login gráfico: ReGreet sobre cage.
@@ -51,7 +52,18 @@ Instrucciones globales para asistir en este equipo. Léelas siempre que trabajes
 - La config real es `~/.config/hypr/hyprland.lua` (formato Lua de Hyprland 0.56);
   el `hyprland.conf` es un stub. Los dotfiles se gestionan desde `home/dotfiles/`.
 - En Hyprland 0.56 `hyprctl dispatch` interpreta args como Lua: usar
-  `hyprctl eval '...'` o `hl.dsp.*` dentro del lua.
+  `hyprctl eval '...'` o `hl.dsp.*` dentro del lua. OJO: los `hl.dsp.X{...}`
+  son FABRICAS de despachadores (devuelven objeto, no ejecutan). Ejecutar de
+  verdad: `hyprctl eval 'hl.dispatch(hl.dsp.focus({window = "address:0x..."}))'`
+  (patrón verificado en source v0.56.2 y en vivo 2026-10: es la forma de
+  reenfocar la ventana de ella si pierde el input). `hl.config` SOLO declara
+  opciones custom; setear en runtime no existe por Lua. Métodos w:focus NO hay.
+- API Lua 0.56 (verificado en source v0.56.2): `hl.dsp.focus{window="address:X"}`
+  NO ejecuta — devuelve un OBJETO dispatcher; ejecutar con
+  `hyprctl eval 'hl.dispatch(hl.dsp.focus({window="address:X"}))'`.
+  Mismo patron para todos los dsp con argumentos. `hl.config` es para DECLARAR
+  opciones custom, no para setear en runtime. Métodos de ventana (w:focus) NO
+  existen.
 
 ## Detalles por host / trampas conocidas
 - **RustDesk**: envuelto con `symlinkJoin + wrapProgram` para forzar XWayland
@@ -61,7 +73,34 @@ Instrucciones globales para asistir en este equipo. Léelas siempre que trabajes
   amd = sin límite. Vars `MANGOHUD_CONFIGFILE`/`MANGOHUD_DLSYM` son sessionVariables globales.
 - **zsh**: NO añadir alias `z` (pisa la función de zoxide y rompe el salto).
   Highlight/autosuggestions/zoxide/fzf son nativos de home-manager, NO plugins de omz.
-
+- **Sunshine (amd, MODO SIMPLE 2026-10)**: game-stream host para la laptop de
+  ella via Moonlight. TODO bajo el usuario **ricky** (user-unit del modulo,
+  autoStart default): captura wl-screencopy sobre TU Hyprland (socket propio,
+  sin ACLs), apps via gamescope => window rule class=gamescope (ws6,
+  HEADLESS-1, fullscreen, NO_FOCUS: nunca roba el teclado/raton locales).
+  Ella juega con SU cuenta de
+  Steam dentro de TU usuario: un solo Steam online a la vez (acordado).
+  - ricky necesita grupo `uinput` (mando xone) + `input`; lo pone
+    hosts/amd/configuration.nix (users.users.ricky.extraGroups) y el modulo
+    hardware.uinput.enable.
+  - **NO volver a la arquitectura de usuaria separada `ella`**: murio por (a)
+    wine exige pfx PROPIEDADE del usuario (los ACLs no valen) y (b) 2 steam
+    simultaneos exigen uid real. prefijos compartidos = sin sentido.
+  - Audio: stream_audio=false (juego mudo en stream, sin fugas).
+  - Sin guards/scripts de foco (focus-guard y pad-focus BORRADOS: fragiles
+    con la API Lua 0.56). La rule usa `no_focus = true` (campo Lua de
+    hl.window_rule en 0.56): la ventana gamescope jamas toma foco teclado.
+    Implicacion: teclado/raton INYECTADOS por sunshine (fake-input, siguen el
+    foco) no llegan a su Steam => ella juega con mando xone (uinput=evdev
+    global, ignora foco) y raton del stream (eventos de puntero, idem).
+  - Steam app del menu: gamescope -w 1920 -h 1080 --force-windows-fullscreen
+    -- steam (el anidado llena el area util; HEADLESS-1 es 1080p y es lo que
+    se captura). OJO: Caelestia reserva 60+10px en TODOS los monitores =>
+    la ventana util real es 1830x1040; el stream lo ve con barras. Para
+    1080p limpios habria que excluir HEADLESS-1 de las barras de caelestia.
+  - Web UI: https://127.0.0.1:47990. Logs: journalctl --user -u sunshine.
+    Apps se editan EN EL REPO (services.sunshine.applications); el editor
+    web deja de guardar cuando estan declaradas.
 ## Git
 - Identity se configura POR REPO (no global): user.name "Ricky06202",
   email ricardosanjurg@gmail.com.

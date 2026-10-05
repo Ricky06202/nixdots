@@ -12,11 +12,12 @@ vesktop &
 karere &
 disown -a
 
-# --- Feishin (música) y Steam al inicio ---------------------------------------
-# Feishin (cliente Navidrome) reemplazó a Spotify; Steam vía steam-launcher.sh
-# (espera PipeWire + red).
-nohup feishin >/dev/null 2>&1 &
-nohup "$HOME/.config/hypr/steam-launcher.sh" >/dev/null 2>&1 &
+# --- Feishin (musica) al inicio ------------------------------------------------
+# Feishin (cliente Navidrome) reemplazo a Spotify.
+# Steam ya NO auto-arranca (modo simple 2026-10): con UN solo uid hay UN solo
+# cliente, y quien lo abra define la cuenta online. Arrancandolo desde el menu
+# de Moonlight, ella inicia/usa SU cuenta; Ricky abre el suyo cuando juega
+# (cambiar de cuenta = Steam > Salir, sin matar nada). Un Steam online a la vez.
 
 # --- Motrix (gestor de descargas) ----------------------------------------------
 nohup motrix-next >/dev/null 2>&1 &
