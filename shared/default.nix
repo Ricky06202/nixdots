@@ -393,15 +393,64 @@ in
 
   # Configure keymap in X11
   services.xserver.xkb = {
-    # ANTERIOR: QWERTY US
-    # layout = "us";
-    # variant = "";
+    # ANTERIOR: Colemak-DH vía XKB (no aplicaba en juegos: leen scancodes crudos).
+    # layout = "us,us";
+    # variant = "colemak_dh,";
 
-    # COLEMAK-DH ANSI por defecto; US como segunda opción.
-    # El toggle SUPER+Space se hace en Hyprland/Lua; no se usa grp:win_space_toggle.
-    layout = "us,us";
-    variant = "colemak_dh,";
+    # XKB en US PURO: el Colemak-DH ahora lo hace keyd a nivel evdev
+    # (ver services.keyd abajo), así aplica también en juegos/SDL/Wine.
+    layout = "us";
+    variant = "";
     options = "terminate:ctrl_alt_bksp";
+  };
+
+  # keyd: mapea posiciones Colemak-DH ANSI -> códigos US a nivel de kernel.
+  # Los juegos (SDL/raw evdev) ignoran XKB, pero ven los códigos que keyd
+  # inyecta, así que el mapeo funciona también en fullscreen/EXE.
+  # Toggle nativo de keyd: SUPER+Space cambia default<->special
+  # (special = US crudo para juegos que pidan QWERTY literal tipo WASD).
+  services.keyd = {
+    enable = true;
+    keyboards.default = {
+      ids = [ "*" ];
+      settings = {
+        main = {
+          # fila superior: q w f p b j l u y ;
+          e = "f";
+          r = "p";
+          t = "b";
+          y = "j";
+          u = "l";
+          i = "u";
+          o = "y";
+          p = "semicolon";
+          # fila media: a r s t g h n e i o
+          s = "r";
+          d = "s";
+          f = "t";
+          h = "m";
+          j = "n";
+          k = "e";
+          l = "i";
+          semicolon = "o";
+          # fila inferior: x c d v z k h
+          z = "x";
+          x = "c";
+          c = "d";
+          b = "z";
+          n = "k";
+          m = "h";
+        };
+        # SUPER+Space -> US crudo (revierte cada remapa de main).
+        special = {
+          e = "e"; r = "r"; t = "t"; y = "y"; u = "u"; i = "i";
+          o = "o"; p = "p"; semicolon = "semicolon";
+          s = "s"; d = "d"; f = "f"; h = "h"; j = "j"; k = "k";
+          l = "l";
+          z = "z"; x = "x"; c = "c"; b = "b"; n = "n"; m = "m";
+        };
+      };
+    };
   };
 
   # ANTERIOR: la consola no usaba el keymap de X11.
@@ -792,11 +841,11 @@ in
   environment.sessionVariables = {
     XCURSOR_THEME = "Bibata-Modern-Classic";
     XCURSOR_SIZE = "24";
-    # ANTERIOR: sesión Wayland/X11 en QWERTY US
-    # XKB_DEFAULT_LAYOUT = "us";
-    # XKB_DEFAULT_VARIANT = "";
-    XKB_DEFAULT_LAYOUT = "us,us";
-    XKB_DEFAULT_VARIANT = "colemak_dh,";
+    # ANTERIOR: sesión con Colemak-DH vía XKB (ahora lo hace keyd a nivel evdev).
+    # XKB_DEFAULT_LAYOUT = "us,us";
+    # XKB_DEFAULT_VARIANT = "colemak_dh,";
+    XKB_DEFAULT_LAYOUT = "us";
+    XKB_DEFAULT_VARIANT = "";
     XKB_DEFAULT_OPTIONS = "terminate:ctrl_alt_bksp";
     # Android (Godot/Tauri export): ruta del JDK. Godot 4.7 y Tauri v2 exigen
     # OpenJDK 17 (no 21). PrismLauncher/Minecraft siguen con jdk21 (programs.java).
