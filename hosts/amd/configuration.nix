@@ -159,7 +159,7 @@ in
       apps = [
         {
           name = "Steam";
-          cmd = "HOME=/home/ricky/steam-ella ${pkgs.gamescope}/bin/gamescope -w 1920 -h 1080 --force-windows-fullscreen -- steam";
+          cmd = "mkdir -p /home/ricky/steam-ella && HOME=/home/ricky/steam-ella ${pkgs.gamescope}/bin/gamescope -w 1920 -h 1080 --force-windows-fullscreen -- steam";
         }
       ];
     };
