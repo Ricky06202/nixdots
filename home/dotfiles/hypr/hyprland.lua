@@ -67,7 +67,7 @@ hl.config({
         -- kb_variant = "colemak_dh,",
 
         -- XKB US puro: Colemak-DH lo hace keyd a nivel evdev (aplica en juegos).
-        -- El toggle SUPER+Space ahora es nativo de keyd (default<->special).
+        -- SUPER+Space hace toggle Colemak<->QWERTY dentro de keyd (capa us).
         kb_layout = "us",
         kb_variant = "",
         kb_options = "terminate:ctrl_alt_bksp",

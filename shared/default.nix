@@ -404,17 +404,19 @@ in
     options = "terminate:ctrl_alt_bksp";
   };
 
-  # keyd: mapea posiciones Colemak-DH ANSI -> códigos US a nivel de kernel.
-  # Los juegos (SDL/raw evdev) ignoran XKB, pero ven los códigos que keyd
-  # inyecta, así que el mapeo funciona también en fullscreen/EXE.
-  # Toggle nativo de keyd: SUPER+Space cambia default<->special
-  # (special = US crudo para juegos que pidan QWERTY literal tipo WASD).
+  # keyd: mapea posiciones Colemak-DH ANSI -> códigos US a nivel de kernel
+  # (capa main = COLEMAK por defecto). Los juegos (SDL/raw evdev) ignoran XKB,
+  # pero ven los códigos que keyd inyecta, así que Colemak aplica también ahí.
+  # SUPER+Space = toggle a la capa "us" (QWERTY puro, literal en escritorio
+  # Y juegos). keyd 2.6 no trae toggle nativo: se define con toggle(<capa>).
   services.keyd = {
     enable = true;
     keyboards.default = {
       ids = [ "*" ];
       settings = {
         main = {
+          # SUPER+Space -> QWERTY puro (capa us)
+          "M-space" = "toggle(us)";
           # fila superior: q w f p b j l u y ;
           e = "f";
           r = "p";
@@ -441,8 +443,9 @@ in
           n = "k";
           m = "h";
         };
-        # SUPER+Space -> US crudo (revierte cada remapa de main).
-        special = {
+        # QWERTY puro: revierte cada remapa y devuelve con SUPER+Space.
+        us = {
+          "M-space" = "toggle(us)";
           e = "e"; r = "r"; t = "t"; y = "y"; u = "u"; i = "i";
           o = "o"; p = "p"; semicolon = "semicolon";
           s = "s"; d = "d"; f = "f"; h = "h"; j = "j"; k = "k";
