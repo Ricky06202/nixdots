@@ -39,6 +39,16 @@ in
     experimental-features = [ "nix-command" "flakes" ];
   };
 
+  # GC automatico: /nix/store comparte el btrfs con /home, y sin esto se llena
+  # de generaciones viejas (04-10: 138G con 4081 rutas recuperables tras un
+  # dia de rebuilds). Weekly + 30 dias de margen = nunca toca el sistema
+  # activo ni generation de boot reciente.
+  nix.gc = {
+    automatic = true;
+    dates = "weekly";
+    options = "--delete-older-than 30d";
+  };
+
   # Bootloader: GRUB con tema Himeko-Nova.
   boot.loader.grub.enable = true;
   boot.loader.grub.device = "nodev";
