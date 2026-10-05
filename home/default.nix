@@ -339,6 +339,22 @@ RUSTEOF
     executable = true;
     force = true;
   };
+  # session-action.sh: lo enlazan los binds SUPER+CTRL+ESC / SUPER+CTRL+R de
+  # hyprland.lua (poweroff/reboot). NO quitar el registro o los binds quedan
+  # apuntando a un archivo inexistente.
+  home.file.".config/hypr/session-action.sh" = {
+    source = ./dotfiles/hypr/session-action.sh;
+    executable = true;
+    force = true;
+  };
+  # headless-setup.sh: crea HEADLESS-1 al iniciar la sesion (lo ejecuta el
+  # exec_cmd de monitors-amd.lua). Sin registro, el monitor fantasma de
+  # Moonlight no aparece tras un boot limpio.
+  home.file.".config/hypr/headless-setup.sh" = {
+    source = ./dotfiles/hypr/headless-setup.sh;
+    executable = true;
+    force = true;
+  };
   home.file.".config/hypr/warmup.sh" = {
     source = ./dotfiles/hypr/warmup.sh;
     executable = true;
@@ -364,33 +380,6 @@ RUSTEOF
     executable = true;
     force = true;
   };
-  home.file.".config/hypr/session-action.sh" = {
-    source = ./dotfiles/hypr/session-action.sh;
-    executable = true;
-    force = true;
-  };
-  # Acción "Montar imagen" de Nemo: script + definición en ~/.local/share/nemo/actions/
-  home.file.".local/share/nemo/actions/mount-iso.sh" = {
-    source = ./dotfiles/nemo/mount-iso.sh;
-    executable = true;
-    force = true;
-  };
-  home.file.".local/share/nemo/actions/mount-iso.nemo_action" = {
-    source = ./dotfiles/nemo/mount-iso.nemo_action;
-    force = true;
-  };
-  # Acción "Desmontar y quitar imagen": desmonta + borra el loop (el eject de
-  # Nemo solo desmonta y deja el /dev/loopX colgado en Dispositivos).
-  home.file.".local/share/nemo/actions/unmount-iso.sh" = {
-    source = ./dotfiles/nemo/unmount-iso.sh;
-    executable = true;
-    force = true;
-  };
-  home.file.".local/share/nemo/actions/unmount-iso.nemo_action" = {
-    source = ./dotfiles/nemo/unmount-iso.nemo_action;
-    force = true;
-  };
-  # nini — DeepSeek CLI para NixOS/Hyprland
   home.file.".local/bin/nini" = {
     source = ./scripts/nini;
     executable = true;
