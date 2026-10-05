@@ -393,75 +393,20 @@ in
 
   # Configure keymap in X11
   services.xserver.xkb = {
-    # ANTERIOR: Colemak-DH vía XKB (no aplicaba en juegos: leen scancodes crudos).
-    # layout = "us,us";
-    # variant = "colemak_dh,";
+    # ANTERIOR: QWERTY US
+    # layout = "us";
+    # variant = "";
 
-    # XKB en US PURO: el Colemak-DH ahora lo hace keyd a nivel evdev
-    # (ver services.keyd abajo), así aplica también en juegos/SDL/Wine.
-    layout = "us";
-    variant = "";
+    # COLEMAK-DH ANSI por defecto; US como segunda opción.
+    # El toggle SUPER+Space se hace en Hyprland/Lua; no se usa grp:win_space_toggle.
+    layout = "us,us";
+    variant = "colemak_dh,";
     options = "terminate:ctrl_alt_bksp";
   };
 
-  # keyd: mapea posiciones Colemak-DH ANSI -> códigos US a nivel de kernel
-  # (capa main = COLEMAK por defecto). Los juegos (SDL/raw evdev) ignoran XKB,
-  # pero ven los códigos que keyd inyecta, así que Colemak aplica también ahí.
-  # SUPER+Space = toggle a la capa "us" (QWERTY puro, literal en escritorio
-  # Y juegos). keyd 2.6 no trae toggle nativo: se define con toggle(<capa>).
-  services.keyd = {
-    enable = true;
-    keyboards.default = {
-      ids = [ "*" ];
-      settings = {
-        main = {
-          # SUPER+Space -> QWERTY puro (capa us)
-          "M-space" = "toggle(us)";
-          # fila superior: q w f p b j l u y ;
-          e = "f";
-          r = "p";
-          t = "b";
-          y = "j";
-          u = "l";
-          i = "u";
-          o = "y";
-          p = "semicolon";
-          # fila media: a r s t g h n e i o
-          s = "r";
-          d = "s";
-          f = "t";
-          h = "m";
-          j = "n";
-          k = "e";
-          l = "i";
-          semicolon = "o";
-          # fila inferior: x c d v z k h
-          z = "x";
-          x = "c";
-          c = "d";
-          b = "z";
-          n = "k";
-          m = "h";
-        };
-        # QWERTY puro: revierte cada remapa y devuelve con SUPER+Space.
-        us = {
-          "M-space" = "toggle(us)";
-          e = "e"; r = "r"; t = "t"; y = "y"; u = "u"; i = "i";
-          o = "o"; p = "p"; semicolon = "semicolon";
-          s = "s"; d = "d"; f = "f"; h = "h"; j = "j"; k = "k";
-          l = "l";
-          z = "z"; x = "x"; c = "c"; b = "b"; n = "n"; m = "m";
-        };
-      };
-    };
-  };
-
-  # ANTERIOR: la consola usaba el keymap de X11 (colemak_dh -> con keyd activo
-  # se aplicaba DOS veces: XKB colemak + keyd colemak = doble mapa en TTY).
-  # console.useXkbConfig = true;
-  # AHORA: consola en US plano; el Colemak-DH de la TTY lo hace keyd a nivel
-  # evdev (funciona en consola, X11, Wayland y juegos por igual).
-  console.useXkbConfig = false;
+  # ANTERIOR: la consola no usaba el keymap de X11.
+  # console.useXkbConfig = false;
+  console.useXkbConfig = true;
 
   # Enable CUPS to print documents.
   services.printing.enable = true;
@@ -847,11 +792,11 @@ in
   environment.sessionVariables = {
     XCURSOR_THEME = "Bibata-Modern-Classic";
     XCURSOR_SIZE = "24";
-    # ANTERIOR: sesión con Colemak-DH vía XKB (ahora lo hace keyd a nivel evdev).
-    # XKB_DEFAULT_LAYOUT = "us,us";
-    # XKB_DEFAULT_VARIANT = "colemak_dh,";
-    XKB_DEFAULT_LAYOUT = "us";
-    XKB_DEFAULT_VARIANT = "";
+    # ANTERIOR: sesión Wayland/X11 en QWERTY US
+    # XKB_DEFAULT_LAYOUT = "us";
+    # XKB_DEFAULT_VARIANT = "";
+    XKB_DEFAULT_LAYOUT = "us,us";
+    XKB_DEFAULT_VARIANT = "colemak_dh,";
     XKB_DEFAULT_OPTIONS = "terminate:ctrl_alt_bksp";
     # Android (Godot/Tauri export): ruta del JDK. Godot 4.7 y Tauri v2 exigen
     # OpenJDK 17 (no 21). PrismLauncher/Minecraft siguen con jdk21 (programs.java).

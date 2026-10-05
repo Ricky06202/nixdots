@@ -62,14 +62,14 @@ hl.config({
     },
     -- ===== INPUT =====
     input = {
-        -- ANTERIOR: Colemak-DH vía XKB + toggle en Lua (no aplicaba en juegos).
-        -- kb_layout = "us,us",
-        -- kb_variant = "colemak_dh,",
+        -- ANTERIOR: QWERTY US
+        -- kb_layout = "us",
+        -- kb_variant = "",
 
-        -- XKB US puro: Colemak-DH lo hace keyd a nivel evdev (aplica en juegos).
-        -- SUPER+Space hace toggle Colemak<->QWERTY dentro de keyd (capa us).
-        kb_layout = "us",
-        kb_variant = "",
+        -- COLEMAK-DH (mod-dh ANSI) por defecto, con US seleccionable.
+        -- Cambiar entre Colemak-DH y US con un toggle custom en Lua (SUPER + Space).
+        kb_layout = "us,us",
+        kb_variant = "colemak_dh,",
         kb_options = "terminate:ctrl_alt_bksp",
         -- true: los atajos letter-based siguen el layout activo.
         resolve_binds_by_sym = true,
@@ -89,10 +89,10 @@ hl.animation({ leaf = "workspaces", enabled = true, speed = 6, bezier = "default
 -- ===== ATAJOS =====
 local mainMod = "SUPER"
 
+local kbLayout = "colemak"
+
 -- Mapeo fisico QWERTY -> keysym que produce ese MISMO punto del teclado en
--- Colemak-DH ANSI. keyd ya convierte posicion->letra a nivel evdev, asi que
--- el keysym que llega a Hyprland es esta letra; los binds se declaran en la
--- tecla LOGICA correspondiente (ej: "E" fisica dispara el bind SUPER+F).
+-- Colemak-DH ANSI. Ej: la vieja F fisica escribe T en Colemak-DH; HJKL -> MNEI.
 local colemakEquivalent = {
     A = "A", B = "Z", C = "D", D = "S", E = "F", F = "T", G = "G",
     H = "M", I = "U", J = "N", K = "E", L = "I", M = "H", N = "K",
@@ -100,14 +100,54 @@ local colemakEquivalent = {
     V = "V", W = "W", X = "C", Y = "J", Z = "X",
 }
 
-local function bind_physical(mods, original, action, opts)
-    local mapped = colemakEquivalent[string.upper(original)] or string.upper(original)
-    local key = mods .. " + " .. mapped
-    if opts then
-        hl.bind(key, action, opts)
+local function run_action(action)
+    if type(action) == "function" then
+        action()
     else
-        hl.bind(key, action)
+        hl.dispatch(action)
     end
+end
+
+local function bind_physical(mods, original, action, opts)
+    local upper = string.upper(original)
+    local mapped = colemakEquivalent[upper]
+    local oldKey = mods .. " + " .. original
+    local newKey = mods .. " + " .. mapped
+
+    local function do_bind(key, fn)
+        if opts then
+            hl.bind(key, fn, opts)
+        else
+            hl.bind(key, fn)
+        end
+    end
+
+    if not mapped or mapped == upper then
+        do_bind(oldKey, action)
+        return
+    end
+
+    do_bind(oldKey, function()
+        if kbLayout == "us" then
+            run_action(action)
+        end
+    end)
+
+    do_bind(newKey, function()
+        if kbLayout == "colemak" then
+            run_action(action)
+        end
+    end)
+end
+
+local function set_kb_layout(layout)
+    kbLayout = layout
+    local idx = layout == "colemak" and 0 or 1
+    hl.exec_cmd("hyprctl switchxkblayout all " .. idx)
+end
+
+local function toggle_kb_layout()
+    set_kb_layout(kbLayout == "colemak" and "us" or "colemak")
 end
 
 hl.bind(mainMod .. " + Return", hl.dsp.exec_cmd("wezterm"))
@@ -226,6 +266,8 @@ local function toggle_trad_fullscreen()
     end
 end
 
+hl.bind(mainMod .. " + Space", toggle_kb_layout)
+
 bind_physical(mainMod, "F", toggle_big_fullscreen)
 bind_physical(mainMod .. " + SHIFT", "F", toggle_conc_fullscreen)
 bind_physical(mainMod .. " + CONTROL", "F", toggle_trad_fullscreen)
@@ -340,6 +382,7 @@ hl.window_rule({ match = { class = "^com.obsproject.Studio$" }, workspace = 5 })
 
 -- ===== INICIO (autostart) =====
 hl.on("hyprland.start", function()
+    set_kb_layout("colemak")
     hl.exec_cmd("caelestia-shell -d")
     hl.exec_cmd("/home/ricky/.config/hypr/autostart.sh")
     hl.exec_cmd("/home/ricky/.config/hypr/wallpaper-pick.sh")
