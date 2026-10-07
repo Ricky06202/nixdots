@@ -648,8 +648,8 @@ in
     inkscape          # diseno vectorial
     gimp              # edicion de imagenes
     krita             # pintura/dibujo digital
-    vscode            # editor de codigo (Microsoft oficial)
-    zed-editor        # editor secundario (open source, gratuito)
+    vscode            # editor legado (queda instalado como alternativa; NO es el default)
+    zed-editor        # editor PRINCIPAL (default en mimeApps text/* + $EDITOR + git core.editor)
     nodejs_24         # Node.js + npm
     bun               # runtime JS rapido
     # --- Lenguajes de programación ---
