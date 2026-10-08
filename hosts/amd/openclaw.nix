@@ -141,11 +141,16 @@ in
           allowFrom = [ "276103262875287553" ];
         };
 
-        # Provider qwen (plugin oficial): trae su propio catalogo de modelos,
-        # NO necesita entrada models.providers. Auth = QWEN_API_KEY (env).
-        # Modelos Standard segun docs: qwen3.8-flash (default, barato) y
-        # qwen3.8-max (fallback para tareas dificiles). Verificar slugs tras
-        # el primer arranque con: systemctl --user status openclaw-gateway
+        # Provider qwen (plugin oficial). OJO: el slug "qwen" resuelve por
+        # defecto al endpoint Coding Plan (subscription), donde qwen3.8-flash
+        # y qwen3.8-max estan SUPRIMIDOS (modelCatalog del plugin) => error
+        # "configured model is unavailable". La key es Standard pay-as-you-go,
+        # por eso se fuerza el endpoint estandar. Si la key saliera de la
+        # consola China (aliyun), trocar a dashscope.aliyuncs.com.
+        models.providers.qwen.baseUrl = "https://dashscope-intl.aliyuncs.com/compatible-mode/v1";
+
+        # Modelos Standard: qwen3.8-flash (default, barato) y qwen3.8-max
+        # (fallback para tareas dificiles). Auth = QWEN_API_KEY (env).
         agents.defaults.model = {
           primary = "qwen/qwen3.8-flash";
           fallbacks = [ "qwen/qwen3.8-max" ];
