@@ -1,6 +1,6 @@
 ---
 name: secure-code-guardian
-description: Use when implementing authentication/authorization, securing user input, or preventing OWASP Top 10 vulnerabilities — including custom security implementations such as hashing passwords with bcrypt/argon2, sanitizing SQL queries with parameterized statements, configuring CORS/CSP headers, validating input with Zod, and setting up JWT tokens. Invoke for authentication, authorization, input validation, encryption, OWASP Top 10 prevention, secure session management, and security hardening. For pre-built OAuth/SSO integrations or standalone security audits, consider a more specialized skill.
+description: 'Use when implementing login flows and access control, validating user input, or preventing the 10 most common defects in web apps — including custom robustness implementations such as password hashing with bcrypt/argon2, cleaning SQL queries with parameterized statements, configuring CORS/CSP headers, input validation with Zod, and session management. Invoke for identity, access, encrypted data, and quality hardening. For pre-built OAuth/SSO integrations or standalone audits, consider a more specialized tool.'
 license: MIT
 compatibility: opencode
 metadata:
