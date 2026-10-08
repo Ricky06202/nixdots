@@ -117,6 +117,9 @@ in
         tools = ./openclaw/workspace/TOOLS.md;
         identity = ./openclaw/workspace/IDENTITY.md;
         user = ./openclaw/workspace/USER.md;
+        # Guía del heartbeat periódico (sin este archivo el heartbeat no tiene
+        # nada que chequear; ver config.agents.defaults.heartbeat).
+        heartbeat = ./openclaw/workspace/HEARTBEAT.md;
       };
 
       environment = {
@@ -156,11 +159,68 @@ in
         # consola China (aliyun), trocar a dashscope.aliyuncs.com.
         models.providers.qwen.baseUrl = "https://dashscope-intl.aliyuncs.com/compatible-mode/v1";
 
+        # Precios Standard pay-as-you-go (USD por 1M tokens, 2026-10) para que
+        # /usage full / /usage cost muestren la plata de verdad: el catalogo
+        # del plugin qwen trae cost=0 en TODOS los modelos (esta pensado para
+        # el Coding Plan por suscripcion) => la estimacion siempre daba $0.
+        # Un cost explicito aqui tiene prioridad sobre el catalogo
+        # (resolveModelCostConfig). cacheRead = tarifa de implicit-cache hit
+        # (la que usa el endpoint standard); cacheWrite = explicit cache
+        # creation (casi no aplica, puesto por completitud).
+        models.providers.qwen.models = [
+          {
+            id = "qwen3.8-flash";
+            name = "qwen3.8-flash";
+            cost = {
+              input = 0.15;
+              output = 0.47;
+              cacheRead = 0.016;
+              cacheWrite = 0.2;
+            };
+          }
+          {
+            id = "qwen3.8-max";
+            name = "qwen3.8-max";
+            cost = {
+              input = 2;
+              output = 6;
+              cacheRead = 0.25;
+              cacheWrite = 2.5;
+            };
+          }
+        ];
+
+        # Footer de uso (tokens + costo) en cada respuesta, por defecto en
+        # todas las sesiones. Cada /usage por-session hace override;
+        # /usage reset vuelve a heredar este valor.
+        messages.responseUsage = "full";
+
+        # Solo Ricky usa a Molty: dueño unico = su ID de Discord. Comandos de
+        # admin (owner-only) restringidos a él; /restart deshabilitado desde
+        # chat (si el gateway cae, systemd lo levanta solo: Restart=always).
+        commands = {
+          restart = false;
+          ownerAllowFrom = [ "discord:276103262875287553" ];
+        };
+
         # Modelos Standard: qwen3.8-flash (default, barato) y qwen3.8-max
         # (fallback para tareas dificiles). Auth = QWEN_API_KEY (env).
         agents.defaults.model = {
           primary = "qwen/qwen3.8-flash";
           fallbacks = [ "qwen/qwen3.8-max" ];
+        };
+
+        # Heartbeat: cada 45m (solo de 7:00 a 23:30) Molty chequea HEARTBEAT.md
+        # y escribe a Discord SOLO si hay novedad (HEARTBEAT_OK = silencio).
+        # lightContext = contexto minimo, costo por ping ~$0.002.
+        agents.defaults.heartbeat = {
+          every = "45m";
+          activeHours = {
+            start = "07:00";
+            end = "23:30";
+            timezone = "America/Panama";
+          };
+          lightContext = true;
         };
 
         # Skills reactivadas con descripciones SANITIZADAS (2026-10-08): las
