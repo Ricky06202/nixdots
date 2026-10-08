@@ -28,12 +28,26 @@
   # Config de Caelestia. Se instalan como archivos REALES (editables)
   # porque Caelestia los escribe en runtime; un symlink de home-manager
   # causaría "Failed to write config".
+  # idle.timeouts SOLO lock(3m)+dpms(5m): el default tiene un tercer timeout
+  # suspend-then-hibernate a los 10m que apagaba la PC al apagar el monitor
+  # (rompía el gateway de Molty). Suspend/hibernate quedan solo manuales
+  # (menu de sesion o "apaga la PC" por Discord).
   home.activation.writeCaelestiaConfig = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
     mkdir -p "$HOME/.config/caelestia"
     cat > "$HOME/.config/caelestia/shell.json" << 'CAEL_EOF'
 {
   "services": {
     "useTwelveHourClock": false
+  },
+  "general": {
+    "idle": {
+      "lockBeforeSleep": true,
+      "inhibitWhenAudio": true,
+      "timeouts": [
+        { "timeout": 180, "idleAction": "lock" },
+        { "timeout": 300, "idleAction": "dpms off", "returnAction": "dpms on" }
+      ]
+    }
   }
 }
 CAEL_EOF
