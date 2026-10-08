@@ -163,10 +163,12 @@ in
           fallbacks = [ "qwen/qwen3.8-max" ];
         };
 
-        # Mismas skills de opencode (formato SKILL.md identico): copia
-        # declarada en el repo. Solo viaja nombre+descripcion al contexto;
-        # el cuerpo se carga cuando se usa.
-        skills.load.extraDirs = [ (toString ./openclaw/skills) ];
+        # SUSPENDIDO 2026-10-08: el filtro de contenido de DashScope
+        # (DataInspectionFailed 400) rechazo TODAS las conversaciones con
+        # estas skills en el system prompt (vocabulario security: attack,
+        # injection, payload, OWASP...). Skills en repositorio, por si se
+        # reactivan curadas o con otro provider sin censura.
+        # skills.load.extraDirs = [ (toString ./openclaw/skills) ];
       };
     };
 
