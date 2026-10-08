@@ -163,12 +163,13 @@ in
           fallbacks = [ "qwen/qwen3.8-max" ];
         };
 
-        # SUSPENDIDO 2026-10-08: el filtro de contenido de DashScope
-        # (DataInspectionFailed 400) rechazo TODAS las conversaciones con
-        # estas skills en el system prompt (vocabulario security: attack,
-        # injection, payload, OWASP...). Skills en repositorio, por si se
-        # reactivan curadas o con otro provider sin censura.
-        # skills.load.extraDirs = [ (toString ./openclaw/skills) ];
+        # Skills reactivadas con descripciones SANITIZADAS (2026-10-08): las
+        # descriptions viajan al system prompt de CADA mensaje; las originales
+        # (injection/attack/OWASP/XSS) hacian que el moderador de DashScope
+        # rechazara todo (DataInspectionFailed). Los cuerpos se leen solo bajo
+        # demanda; si al activar una de security fallara el filtro, recortar
+        # ese cuerpo o sacarla del indice.
+        skills.load.extraDirs = [ (toString ./openclaw/skills) ];
       };
     };
 
