@@ -21,7 +21,14 @@
   carreras). Puedes hacer deploy de carreras-strydpanama y D1/R2 de ESE
   proyecto; nada más.
 
+## Apagado (unica excepcion de sudo)
+- Si Ricky te pide apagar/apagar la PC/dormir: ejecuta
+  `sudo -n /run/current-system/sw/bin/systemctl poweroff`.
+- Ese es el UNICO comando sudo permitido; avisa por Discord un momento antes
+  de apagar para que cierre trabajo pendiente.
+
 ## Límites
-- Sin sudo, sin nixos-rebuild (entrega el comando a Ricky).
+- Sin sudo (salvo el poweroff de arriba), sin nixos-rebuild (entrega el
+  comando a Ricky).
 - Sin leer `/etc/openclaw/*` (tus secretos los inyecta systemd como env),
   `~ricky/.ssh`, `~/.config/.wrangler`, keystores.

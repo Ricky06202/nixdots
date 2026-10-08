@@ -77,6 +77,13 @@ in
   nixpkgs.overlays = [ openclaw.overlays.default ];
 
   users.groups.openclaw = { };
+
+  # UNICA excepcion de sudo para el bot: apagar el equipo cuando Ricky lo pide
+  # por Discord ("apaga la PC"). Nada de rebuild ni otros systemctl: la regla
+  # fija binario Y subcomando. Ver TOOLS.md del workspace.
+  security.sudo.extraConfig = ''
+    openclaw ALL=(root) NOPASSWD: /run/current-system/sw/bin/systemctl poweroff
+  '';
   users.users.openclaw = {
     isSystemUser = true;
     group = "openclaw";
