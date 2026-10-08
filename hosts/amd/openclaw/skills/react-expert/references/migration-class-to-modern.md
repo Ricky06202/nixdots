@@ -1,0 +1,1 @@
+/nix/store/zkmgz1wljklgjdn9gvfk6ldmmraxcp3h-home-manager-files/.config/opencode/skills/react-expert/references/migration-class-to-modern.md

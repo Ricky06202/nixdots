@@ -1,0 +1,1 @@
+/nix/store/zkmgz1wljklgjdn9gvfk6ldmmraxcp3h-home-manager-files/.config/opencode/skills/godot-gdscript-patterns/SKILL.md

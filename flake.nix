@@ -61,9 +61,14 @@
     # Expone packages.*.agentd, packages.x86_64-linux.agentd-aarch64 (cross)
     # y nixosModules.agente-impresiones (usado por hosts/pi).
     impresiones.url = "git+file:///home/ricky/Dev/impresiones-online";
+
+    # OpenClaw (asistente IA personal tipo gateway) — modulo HM first-party
+    # (nix-openclaw). Trae su propio nixpkgs pinneado para el paquete; NO lo
+    # hacemos follows del nuestro para no romper sus hashes de build.
+    openclaw.url = "github:openclaw/nix-openclaw";
   };
 
-  outputs = { self, nixpkgs, caelestia, m3shapes, caelestia-cli, home-manager, spotx-nix, caelestia-aw, caelestia-cli-aw, impresiones }:
+  outputs = { self, nixpkgs, caelestia, m3shapes, caelestia-cli, home-manager, spotx-nix, caelestia-aw, caelestia-cli-aw, impresiones, openclaw }:
     let
       system = "x86_64-linux";
       pkgs = nixpkgs.legacyPackages.${system};
@@ -132,7 +137,7 @@
         # Ambos hosts usan el fork AW (live wallpapers). Es un superconjunto de
         # vanilla: con wallpaper estático (default) se comporta idéntico, y el
         # vídeo solo carga MediaPlayer cuando se selecciona uno en el launcher.
-        specialArgs = { inherit caelestiaShellAW spotx-nix; hostName = name; };
+        specialArgs = { inherit caelestiaShellAW spotx-nix openclaw; hostName = name; };
         modules = [
           ./hosts/${name}/configuration.nix
           home-manager.nixosModules.home-manager

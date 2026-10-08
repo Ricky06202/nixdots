@@ -1,0 +1,1 @@
+/nix/store/zkmgz1wljklgjdn9gvfk6ldmmraxcp3h-home-manager-files/.config/opencode/skills/fastapi-expert/references/endpoints-routing.md

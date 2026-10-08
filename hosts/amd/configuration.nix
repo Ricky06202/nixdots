@@ -59,6 +59,7 @@ in
   imports = [
     ../../shared
     ./hardware-configuration.nix
+    ./openclaw.nix
   ];
 
   networking.hostName = "amd";
