@@ -14,7 +14,7 @@ let
   # Las unicas fuentes de trust son origin "bundled" (extension dentro del
   # arbol del paquete) o un install-record oficial (imposible en Nix mode).
   #
-  # Solucion: copiar discord+qwen DENTRO de dist/extensions/ del paquete
+  # Solucion: copiar discord+deepseek DENTRO de dist/extensions/ del paquete
   # openclaw-gateway (origin "bundled" => trusted, igual que telegram).
   # Ojo: el loader ESM del gateway no acepta node_modules anidados bajo
   # dist/ (los bundled oficiales llevan deps aplastadas), asi que las deps
@@ -27,7 +27,7 @@ let
       gw = pkgs.openclaw-gateway;
       base = pkgs.openclaw;
       discord = pkgs.openclawRuntimePlugins.discord;
-      qwen = pkgs.openclawRuntimePlugins.qwen;
+      deepseek = pkgs.openclawRuntimePlugins.deepseek;
     in
     pkgs.runCommand "openclaw-trusted-plugins" { }
       ''
@@ -41,11 +41,11 @@ let
         ext=$pkgdir/dist/extensions
         chmod u+w $ext
 
-        mkdir -p $ext/discord $ext/qwen
+        mkdir -p $ext/discord $ext/deepseek
         cp -a --reflink=auto ${discord}/. $ext/discord/
-        cp -a --reflink=auto ${qwen}/. $ext/qwen/
-        chmod -R u+w $ext/discord $ext/qwen
-        rm -rf $ext/discord/node_modules $ext/qwen/node_modules
+        cp -a --reflink=auto ${deepseek}/. $ext/deepseek/
+        chmod -R u+w $ext/discord $ext/deepseek
+        rm -rf $ext/discord/node_modules $ext/deepseek/node_modules
 
         # Fusionar deps del plugin en node_modules del core (el stub
         # "openclaw" anidado se omite: el core ya esta ahi).
@@ -103,7 +103,7 @@ in
 
     programs.openclaw = {
       enable = true;
-      # NO meter discord/qwen en runtimePlugins (bug #158, ver comentario de
+      # NO meter discord/deepseek en runtimePlugins (bug #158, ver comentario de
       # openclawTrusted arriba): van empaquetados como bundled/trusted en el
       # package envuelto. Esto también elimina plugins.load.paths del config.
       package = openclawTrusted;
@@ -123,7 +123,7 @@ in
       };
 
       environment = {
-        QWEN_API_KEY = "/etc/openclaw/qwen-key";
+        DEEPSEEK_API_KEY = "/etc/openclaw/deepseek-key";
         DISCORD_BOT_TOKEN = "/etc/openclaw/discord-token";
         OPENCLAW_GATEWAY_TOKEN = "/etc/openclaw/gateway-token";
         # Credenciales PROPIAS del bot (no las de ricky):
@@ -139,10 +139,10 @@ in
           auth.token = { source = "env"; provider = "default"; id = "OPENCLAW_GATEWAY_TOKEN"; };
         };
 
-        # Plugins bundled (trusted) que van en el package envuelto: qwen se
+        # Plugins bundled (trusted) que van en el package envuelto: deepseek se
         # auto-activa (enabledByDefault), discord hay que habilitarlo a mano.
         plugins.entries.discord.enabled = true;
-        plugins.entries.qwen.enabled = true;
+        plugins.entries.deepseek.enabled = true;
 
         channels.discord = {
           enabled = true;
@@ -151,44 +151,16 @@ in
           allowFrom = [ "276103262875287553" ];
         };
 
-        # Provider qwen (plugin oficial). OJO: el slug "qwen" resuelve por
-        # defecto al endpoint Coding Plan (subscription), donde qwen3.8-flash
-        # y qwen3.8-max estan SUPRIMIDOS (modelCatalog del plugin) => error
-        # "configured model is unavailable". La key es Standard pay-as-you-go,
-        # por eso se fuerza el endpoint estandar. Si la key saliera de la
-        # consola China (aliyun), trocar a dashscope.aliyuncs.com.
-        models.providers.qwen.baseUrl = "https://dashscope-intl.aliyuncs.com/compatible-mode/v1";
-
-        # Precios Standard pay-as-you-go (USD por 1M tokens, 2026-10) para que
-        # /usage full / /usage cost muestren la plata de verdad: el catalogo
-        # del plugin qwen trae cost=0 en TODOS los modelos (esta pensado para
-        # el Coding Plan por suscripcion) => la estimacion siempre daba $0.
-        # Un cost explicito aqui tiene prioridad sobre el catalogo
-        # (resolveModelCostConfig). cacheRead = tarifa de implicit-cache hit
-        # (la que usa el endpoint standard); cacheWrite = explicit cache
-        # creation (casi no aplica, puesto por completitud).
-        models.providers.qwen.models = [
-          {
-            id = "qwen3.8-flash";
-            name = "qwen3.8-flash";
-            cost = {
-              input = 0.15;
-              output = 0.47;
-              cacheRead = 0.016;
-              cacheWrite = 0.2;
-            };
-          }
-          {
-            id = "qwen3.8-max";
-            name = "qwen3.8-max";
-            cost = {
-              input = 2;
-              output = 6;
-              cacheRead = 0.25;
-              cacheWrite = 2.5;
-            };
-          }
-        ];
+        # Provider deepseek (plugin oficial): sin overrides. El plugin ya trae
+        # baseUrl https://api.deepseek.com, el catalogo de modelos con costos
+        # reales (deepseek-v4-flash / deepseek-v4-pro / deepseek-flash) y
+        # usageProviders => /usage muestra la plata sin config extra. La key
+        # va por env DEEPSEEK_API_KEY.
+        #
+        # Nota: el filtro DataInspectionFailed era del moderador de DashScope
+        # (Alibaba) sobre el input, no del modelo Qwen. deepseek no tiene ese
+        # filtro; por eso ya no hace falta sanitizar descripciones de skills
+        # (aunque se dejan neutras por si se vuelve a qwen como fallback).
 
         # Footer de uso (tokens + costo) en cada respuesta, por defecto en
         # todas las sesiones. Cada /usage por-session hace override;
@@ -203,11 +175,12 @@ in
           ownerAllowFrom = [ "discord:276103262875287553" ];
         };
 
-        # Modelos Standard: qwen3.8-flash (default, barato) y qwen3.8-max
-        # (fallback para tareas dificiles). Auth = QWEN_API_KEY (env).
+        # Modelos DeepSeek: deepseek-flash (default, barato) y deepseek-v4-pro
+        # (fallback para tareas dificiles). Auth = DEEPSEEK_API_KEY (env).
+        # Mismo par que opencode (deepseek/deepseek-flash + .../deepseek-v4-pro).
         agents.defaults.model = {
-          primary = "qwen/qwen3.8-flash";
-          fallbacks = [ "qwen/qwen3.8-max" ];
+          primary = "deepseek/deepseek-flash";
+          fallbacks = [ "deepseek/deepseek-v4-pro" ];
         };
 
         # Heartbeat: cada 45m (solo de 7:00 a 23:30) Molty chequea HEARTBEAT.md
@@ -260,7 +233,7 @@ in
 
 # --- Setup de secretos (una sola vez, en tu terminal) ---
 #   sudo mkdir -p /etc/openclaw
-#   echo "sk-TU-KEY-QWEN"  | sudo tee /etc/openclaw/qwen-key       >/dev/null
+#   echo "sk-TU-KEY-DEEPSEEK" | sudo tee /etc/openclaw/deepseek-key  >/dev/null
 #   echo "bot-token..."   | sudo tee /etc/openclaw/discord-token   >/dev/null
 #   openssl rand -hex 32  | sudo tee /etc/openclaw/gateway-token   >/dev/null
 #   echo "github_pat_..." | sudo tee /etc/openclaw/gh-token        >/dev/null

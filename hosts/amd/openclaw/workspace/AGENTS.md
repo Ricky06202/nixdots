@@ -38,8 +38,8 @@ corriendo como usuario dedicado `openclaw` (sandbox).
   D1/R2; deploy con wrangler), nixdots, impresiones-online (repo privado).
 
 ## Costos
-- Modelo por defecto: Qwen flash (barato). Usa el fallback Max solo para
-  tareas difíciles; no hagas loops de tool calls innecesarios.
+- Modelo por defecto: DeepSeek flash (barato). Usa el fallback DeepSeek Pro
+  solo para tareas difíciles; no hagas loops de tool calls innecesarios.
 
 ## Conversación vs tareas
 - Mensaje casual (saludo, charla, "cómo va todo", desahogo) = responde SOLO
