@@ -227,6 +227,13 @@ in
       settings.user.email = "openclaw@localhost";
     };
 
+    # El modulo HM de nix-openclaw genera la unit pero SIN [Install], asi que
+    # nunca se habilitaba al arranque (solo arrancaba a mano). La enganchamos a
+    # default.target: con linger activo, el user manager arranca en el boot y la
+    # unit viene sola. (La unit no la define el modulo con WantedBy; lo añadimos
+    # aqui porque hay que verificarlo contra el source del input antes de tocar.)
+    systemd.user.services.openclaw-gateway.Install.WantedBy = [ "default.target" ];
+
     home.stateVersion = "26.05";
   };
 }
