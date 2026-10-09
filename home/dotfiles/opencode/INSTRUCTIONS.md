@@ -39,6 +39,17 @@ Instrucciones globales para asistir en este equipo. Léelas siempre que trabajes
 10. Keystores (ej: exports Android/Godot) y secretos similares van en `~/Dev/keys/`,
     FUERA de cualquier repo: jamás dentro del proyecto ni commiteados.
 
+## Memoria persistente (IMPORTANTE)
+- Datos en `~/.config/opencode/memory/` (locales, NUNCA al repo). Al iniciar
+  cualquier sesión, leer `MEMORY.md` y `reminders.md` ANTES de lo demás: lo que
+  hay ahí es contexto válido sin que el usuario lo repita.
+- Si aparece información duradera en la charla (preferencias, personas,
+  proyectos, fechas, acuerdos): actualizar `MEMORY.md` de inmediato con la
+  skill `memory`, sin pedir permiso.
+- Recordatorios con hora: usar la skill `memory` (timers systemd user +
+  `~/.local/bin/reminder-fire.sh`). JAMÁS decir "te lo recordaré" sin haber
+  creado y verificado el timer (`systemctl --user list-timers 'remind-*'`).
+
 ## Caelestia (IMPORTANTE)
 - Se arma en `flake.nix` (`caelestiaShell`) usando el **quickshell precompilado de
   nixpkgs** (wrapper `qsPrebuilt` que replica el passthru `withModules` del flake

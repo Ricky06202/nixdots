@@ -439,6 +439,14 @@ RUSTEOF
     source = ./dotfiles/opencode/command/rebuild.md;
     force = true;
   };
+  # Script que disparan los timers de recordatorios (skill `memory`).
+  # La DATA de la memoria (~/.config/opencode/memory/) NO se declara aquí:
+  # es personal y sobrevive rebuilds intacta.
+  home.file.".local/bin/reminder-fire.sh" = {
+    source = ./dotfiles/opencode/scripts/reminder-fire.sh;
+    executable = true;
+    force = true;
+  };
 
   # Skills de OpenCode — todas las del repo se despliegan (públicas, sin secretos).
   home.file.".config/opencode/skills" = {
