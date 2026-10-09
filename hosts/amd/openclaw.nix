@@ -236,7 +236,16 @@ in
     # Herramientas del sandbox (además del toolchain interno del paquete:
     # node, pnpm, git, curl, jq, python3, ripgrep...). gh/bun/wrangler para
     # que opere los mismos proyectos que Ricky, openssh para su clave propia.
-    home.packages = with pkgs; [ gh bun openssh wrangler ];
+    # Generadores de PDF a elección del agente: typst (documentos nativos,
+    # liviano) y weasyprint (HTML/CSS a PDF, mismo motor de la web cotiza).
+    home.packages = with pkgs; [
+      gh
+      bun
+      openssh
+      wrangler
+      typst
+      (python3.withPackages (ps: [ ps.weasyprint ]))
+    ];
 
     # Identidad git propia (commits atribuibles al bot, no a Ricky).
     programs.git = {

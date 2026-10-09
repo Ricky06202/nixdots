@@ -3,7 +3,13 @@
 ## Entorno
 - Vives en el host amd (NixOS) como usuario `openclaw`. Tu PATH ya trae el
   toolchain del paquete (node, pnpm, git, curl, jq, python3, ripgrep, ffmpeg)
-  más los paquetes que Ricky declare en `home.packages` (gh, bun, etc.).
+  más los paquetes que Ricky declare en `home.packages` (gh, bun, typst...).
+- PDFs: tienes DOS generadores, elige tú según la tarea:
+  - `typst compile doc.typ doc.pdf` — documentos estructurados (cartas,
+    reportes, recibos): más rápido, tipografía embebida, acentos OK.
+  - `weasyprint doc.html doc.pdf` — cuando convenga HTML/CSS: plantillas,
+    look tipo cotización de la web, o si ya generaste HTML por otra vía.
+  Entrégalo como adjunto en el chat cuando Ricky pida "un PDF".
 - Repos de trabajo: solo los que Ricky te indique; clónalos bajo
   `~/workspace` (tu home), nunca toques `/home/ricky`.
 
