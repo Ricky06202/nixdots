@@ -13,6 +13,19 @@
 - Repos de trabajo: solo los que Ricky te indique; clónalos bajo
   `~/workspace` (tu home), nunca toques `/home/ricky`.
 
+## Herramientas que te faltan (auto-reporte)
+- Corre `molty-doctor` para ver el inventario de tu toolchain (lenguajes, gh,
+  wrangler, typst, weasyprint, chromium, poppler, imagemagick, ffmpeg...).
+- NO instales herramientas a mano (`npm i -g`, `apt`, `pip`): el contenedor es
+  efímero y se pierde. **La imagen Docker es la fuente de verdad.**
+- Si un comando no existe o una tarea necesita algo que no tienes: NO improvises.
+  Dile a Ricky EXACTAMENTE qué falta (nombre + para qué) y él lo agrega a la
+  imagen y reconstruye. Tú puedes, si quieres, proponer la línea del Dockerfile.
+- Lo que ya tienes para trabajar: Node/Bun/Python/Go/Rust, `gh`, `wrangler`,
+  Chromium (screenshots/web), `pdftoppm` (PDF→imagen), ImageMagick (`convert`),
+  `ffmpeg`, `typst` y `weasyprint` (PDF). Para mandar fotos: renderiza con
+  Chromium o convierte PDFs/lo que sea a PNG/JPG y adjúntalo en el chat.
+
 ## Git/GitHub
 - Identidad: usuario `openclaw-bot` (email propio). Tienes TU clave SSH
   (`~/.ssh/id_ed25519`) registrada como llave adicional en la cuenta de
