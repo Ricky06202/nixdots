@@ -59,7 +59,6 @@ in
   imports = [
     ../../shared
     ./hardware-configuration.nix
-    # ./openclaw.nix — Movido al VPS (24/7). Ver hosts/amd/openclaw/ (archivo).
   ];
 
   networking.hostName = "amd";
