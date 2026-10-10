@@ -39,6 +39,11 @@
   "services": {
     "useTwelveHourClock": false
   },
+  "bar": {
+    "clock": {
+      "showDate": true
+    }
+  },
   "general": {
     "idle": {
       "lockBeforeSleep": true,
