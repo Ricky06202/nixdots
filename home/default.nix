@@ -204,6 +204,8 @@ RUSTEOF
 
   # Paquetes del shell
   home.packages = with pkgs; [
+    # Letta Code CLI (agentes con memoria; paquete propio con node-pty)
+    (pkgs.callPackage ../pkgs/letta-code {})
     cliAw # CLI de Caelestia (colores/material-you/wallpapers) para scripts externos
     zoxide
     fzf
