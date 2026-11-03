@@ -614,7 +614,7 @@ in
     neovim            # editor
     librewolf         # navegador principal (fork de Firefox con uBlock Origin preinstalado + privacidad)
     chromium          # navegador Chromium puro (compatibilidad web sin capas extra)
-    karere            # whatsapp (whatsapp-for-linux se retiró de nixpkgs)
+    zapzap            # cliente de WhatsApp para Linux
     tor-browser       # navegador Tor (bundle oficial con Tor+Torbutton)
     session-desktop   # Session: mensajería cifrada sin número de teléfono
     element-desktop   # Element (Matrix) — Element X no existe en desktop (solo Android/iOS)

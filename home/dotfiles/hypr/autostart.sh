@@ -9,7 +9,7 @@ librewolf &
 blueman-applet &
 sleep 8
 vesktop &
-karere &
+zapzap &
 disown -a
 
 # --- Feishin (musica) al inicio ------------------------------------------------
