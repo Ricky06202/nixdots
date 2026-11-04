@@ -379,6 +379,7 @@ hl.window_rule({ match = { class = "^(steam|steamwebhelper)$" }, workspace = 3 }
 hl.window_rule({ match = { class = "^(feishin|Feishin)$" }, workspace = 4 })
 hl.window_rule({ match = { class = "^(motrix-next|MOTRIX|Motrix)$" }, workspace = 7 })
 hl.window_rule({ match = { class = "^com.obsproject.Studio$" }, workspace = 5 })
+hl.window_rule({ match = { class = "^com\\.rtosta\\.zapzap$" }, workspace = 2 })
 
 -- ===== INICIO (autostart) =====
 hl.on("hyprland.start", function()
