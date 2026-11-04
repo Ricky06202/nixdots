@@ -60,7 +60,7 @@
     #   cd ~/Dev/impresiones-online  (commit)  &&  nix flake lock --update-input impresiones
     # Expone packages.*.agentd, packages.x86_64-linux.agentd-aarch64 (cross)
     # y nixosModules.agente-impresiones (usado por hosts/pi).
-    impresiones.url = "git+file:///home/ricky/Dev/impresiones-online";
+    impresiones.url = "git+file:///home/ricky/Dev/impresiones-online?ref=letta/impresiones-online-pi-4ace7e4e";
   };
 
   outputs = { self, nixpkgs, caelestia, m3shapes, caelestia-cli, home-manager, spotx-nix, caelestia-aw, caelestia-cli-aw, impresiones }:

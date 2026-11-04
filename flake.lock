@@ -164,15 +164,16 @@
         "nixpkgs": "nixpkgs_3"
       },
       "locked": {
-        "lastModified": 1790970847,
-        "narHash": "sha256-aN9rFHQXQ+jNO4PjR7N3X6cTT/leiVn5kRnvVyKEwR4=",
-        "ref": "refs/heads/main",
-        "rev": "9a755095c4a09a433ed7c6a699c76bf209144fe9",
-        "revCount": 48,
+        "lastModified": 1793755532,
+        "narHash": "sha256-4n0A9zx7ALLLHWTFrNuc1rvJsjznTdcrVdE07vUQa8o=",
+        "ref": "letta/impresiones-online-pi-4ace7e4e",
+        "rev": "288021d75bceb2a7937976d200a15dec2ef4af93",
+        "revCount": 73,
         "type": "git",
         "url": "file:///home/ricky/Dev/impresiones-online"
       },
       "original": {
+        "ref": "letta/impresiones-online-pi-4ace7e4e",
         "type": "git",
         "url": "file:///home/ricky/Dev/impresiones-online"
       }
