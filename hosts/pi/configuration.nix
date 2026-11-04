@@ -57,6 +57,7 @@
   # --- Agente headless de impresiones ---
   services.agente-impresiones = {
     enable = true;
+    pollSeconds = 600; # HTTP de reserva solo si cae el WebSocket: 144 consultas/día.
     # Binario aarch64 cross-compilado (se construye aquí, en x86_64).
     package = impresiones.packages.x86_64-linux.agentd-aarch64;
     tokenFile = "/var/secrets/impresiones-admin-token";
