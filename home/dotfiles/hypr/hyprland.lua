@@ -303,6 +303,24 @@ hl.on("window.fullscreen", function(w)
     end
 end)
 
+-- `hyprctl reload` (rotacion de wallpaper, SUPER+SHIFT+R, ...) reinicia el
+-- estado Lua: `mode` queda vacio y sync_perception no corre, asi que una
+-- ventana en SHIFT+F pierde gaps=0/borde=0 y "parece" SUPER+F. El fullscreen
+-- real sigue en el compositor: reconstruimos `mode` infiriendolo de las
+-- ventanas y re-aplicamos la percepcion global.
+hl.on("config.reloaded", function()
+    for _, w in ipairs(hl.get_windows()) do
+        if w.fullscreen == 1 and w.fullscreen_client == 1 then
+            mode[w.address] = "big"
+        elseif w.fullscreen == 1 and w.fullscreen_client == 2 then
+            mode[w.address] = "conc"
+        elseif w.fullscreen == 2 and w.fullscreen_client == 2 then
+            mode[w.address] = "trad"
+        end
+    end
+    sync_perception()
+end)
+
 bind_physical(mainMod, "V", hl.dsp.window.float({ action = "toggle" }))
 bind_physical(mainMod, "W", hl.dsp.window.float({ action = "toggle" }))
 bind_physical(mainMod .. " + SHIFT", "S", hl.dsp.exec_cmd("grim -g \"$(slurp)\" - | wl-copy --type image/png"))
@@ -318,7 +336,7 @@ bind_physical(mainMod .. " + SHIFT", "R", hl.dsp.exec_cmd("hyprctl reload; caele
 bind_physical(mainMod .. " + CONTROL", "S", hl.dsp.exec_cmd("systemctl hibernate"))
 hl.bind(mainMod .. " + CONTROL + ESCAPE", hl.dsp.exec_cmd("$HOME/.config/hypr/session-action.sh poweroff"))
 bind_physical(mainMod .. " + CONTROL", "R", hl.dsp.exec_cmd("$HOME/.config/hypr/session-action.sh reboot"))
-bind_physical(mainMod, "L", hl.dsp.global("caelestia:lock"))
+bind_physical(mainMod, "L", hl.dsp.exec_cmd("$HOME/.config/hypr/lock-screen.sh"))
 bind_physical(mainMod .. " + SHIFT", "P", hl.dsp.exec_cmd("hyprpicker"))
 bind_physical(mainMod, "R", hl.dsp.global("caelestia:launcher"), { release = true })
 

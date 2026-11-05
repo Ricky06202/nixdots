@@ -28,10 +28,11 @@
   # Config de Caelestia. Se instalan como archivos REALES (editables)
   # porque Caelestia los escribe en runtime; un symlink de home-manager
   # causaría "Failed to write config".
-  # idle.timeouts SOLO lock(3m)+dpms(5m): el default tiene un tercer timeout
-  # suspend-then-hibernate a los 10m que apagaba la PC al apagar el monitor
-  # (rompía el gateway de Molty). Suspend/hibernate quedan solo manuales
-  # (menu de sesion o "apaga la PC" por Discord).
+  # idle.timeouts VACIO: la pantalla ya NO se apaga ni bloquea sola. Antes
+  # tenia lock(3m)+dpms(5m); apagar por inactividad era molesto (leer sin
+  # teclear = pantalla negra). Ahora la pantalla solo se apaga al bloquear a
+  # mano (SUPER+L -> lock-screen.sh: lock + dpms off tras 3s). Suspend e
+  # hibernate quedan manuales (menu de sesion o "apaga la PC" por Discord).
   home.activation.writeCaelestiaConfig = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
     mkdir -p "$HOME/.config/caelestia"
     cat > "$HOME/.config/caelestia/shell.json" << 'CAEL_EOF'
@@ -48,10 +49,7 @@
     "idle": {
       "lockBeforeSleep": true,
       "inhibitWhenAudio": true,
-      "timeouts": [
-        { "timeout": 180, "idleAction": "lock" },
-        { "timeout": 300, "idleAction": "dpms off", "returnAction": "dpms on" }
-      ]
+      "timeouts": []
     }
   }
 }
@@ -412,6 +410,11 @@ RUSTEOF
   };
   home.file.".config/hypr/rotate-wallpaper.sh" = {
     source = ./dotfiles/hypr/rotate-wallpaper.sh;
+    executable = true;
+    force = true;
+  };
+  home.file.".config/hypr/lock-screen.sh" = {
+    source = ./dotfiles/hypr/lock-screen.sh;
     executable = true;
     force = true;
   };
