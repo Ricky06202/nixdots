@@ -140,15 +140,60 @@ local function bind_physical(mods, original, action, opts)
     end)
 end
 
-local function set_kb_layout(layout)
-    kbLayout = layout
+local function switch_layout_only(layout)
     local idx = layout == "colemak" and 0 or 1
     hl.exec_cmd("hyprctl switchxkblayout all " .. idx)
+end
+
+local function set_kb_layout(layout)
+    kbLayout = layout
+    switch_layout_only(layout)
 end
 
 local function toggle_kb_layout()
     set_kb_layout(kbLayout == "colemak" and "us" or "colemak")
 end
+
+-- Crystar (Unity) y Code Vein (UE4) traducen las teclas segun el layout XKB
+-- activo: con Colemak-DH los binds por defecto (WASD, etc.) no responden.
+-- Mientras una ventana de esos juegos tiene el foco forzamos US; al salir
+-- restauramos el layout elegido por el usuario (kbLayout). No tocamos kbLayout
+-- para no perder el toggle manual con SUPER+Space.
+local force_us_layout = false
+
+local function is_layout_game(w)
+    if not w then return false end
+    local s = string.lower((w.initial_title or "") .. " " .. (w.title or "") .. " " ..
+                           (w.initial_class or "") .. " " .. (w.class or ""))
+    return s:find("crystar", 1, true) ~= nil
+        or s:find("code vein", 1, true) ~= nil
+        or s:find("codevein", 1, true) ~= nil
+        or s:find("981750", 1, true) ~= nil
+        or s:find("678960", 1, true) ~= nil
+end
+
+local function sync_game_layout(w)
+    if is_layout_game(w) then
+        if not force_us_layout then
+            switch_layout_only("us")
+            force_us_layout = true
+        end
+    elseif force_us_layout then
+        switch_layout_only(kbLayout)
+        force_us_layout = false
+    end
+end
+
+hl.on("window.active", function(w) sync_game_layout(w) end)
+hl.on("window.title", function(w)
+    if w and w.active then sync_game_layout(w) end
+end)
+hl.on("window.destroy", function(w)
+    if force_us_layout and w and is_layout_game(w) then
+        switch_layout_only(kbLayout)
+        force_us_layout = false
+    end
+end)
 
 hl.bind(mainMod .. " + Return", hl.dsp.exec_cmd("wezterm"))
 bind_physical(mainMod, "E", hl.dsp.exec_cmd("nemo"))
@@ -319,6 +364,9 @@ hl.on("config.reloaded", function()
         end
     end
     sync_perception()
+    -- Re-sincronizar el layout US de juegos: al recargar se pierde
+    -- `force_us_layout`. Si hay un juego con foco, la ventana sigue en US.
+    sync_game_layout(hl.get_active_window())
 end)
 
 bind_physical(mainMod, "V", hl.dsp.window.float({ action = "toggle" }))
@@ -398,6 +446,14 @@ hl.window_rule({ match = { class = "^(feishin|Feishin)$" }, workspace = 4 })
 hl.window_rule({ match = { class = "^(motrix-next|MOTRIX|Motrix)$" }, workspace = 7 })
 hl.window_rule({ match = { class = "^com.obsproject.Studio$" }, workspace = 5 })
 hl.window_rule({ match = { class = "^com\\.rtosta\\.zapzap$" }, workspace = 2 })
+
+-- Crystar (Unity) corre en ventana y no captura el puntero: el raton se sale
+-- al escritorio. Con confine_pointer el cursor queda atrapado en su ventana
+-- mientras esta tiene foco (Alt+Tab sigue funcionando).
+hl.window_rule({
+    match = { title = "(?i).*crystar.*" },
+    confine_pointer = true,
+})
 
 -- ===== INICIO (autostart) =====
 hl.on("hyprland.start", function()
