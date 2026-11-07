@@ -171,7 +171,7 @@ in
 
   # uinput: ricky (dueno del user-unit sunshine) crea el mando xone virtual.
   # hardware.uinput.enable lo trae el propio modulo de sunshine.
-  users.users.ricky.extraGroups = [ "uinput" ];
+  users.users.ricky.extraGroups = [ "uinput" "dialout" ];
 
   # Blacklistear nouveau: si hay una NVIDIA físicamente presente, no se usa y
   # nouveau solo gasta RAM/CPU.
