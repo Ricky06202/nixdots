@@ -418,6 +418,11 @@ RUSTEOF
     executable = true;
     force = true;
   };
+  home.file.".config/hypr/game-us.sh" = {
+    source = ./dotfiles/hypr/game-us.sh;
+    executable = true;
+    force = true;
+  };
   home.file.".config/hypr/steam-launcher.sh" = {
     source = ./dotfiles/hypr/steam-launcher.sh;
     executable = true;
