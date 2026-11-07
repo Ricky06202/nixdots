@@ -1,29 +1,26 @@
 #!/usr/bin/env bash
-# Lanza un juego con el layout US activo desde ANTES de arrancar.
-# Crystar y Code Vein leen el layout XKB al iniciar el proceso y no reaccionan
-# a cambios posteriores (por eso forzarlo al enfocar la ventana no servia).
-# Restaura el layout previo al cerrar el juego.
+# Los juegos de Proton corren en XWayland y leen el keymap del servidor X.
+# Hyprland lo inicializa en Colemak-DH (XKB_DEFAULT_VARIANT), y cambiar el
+# layout del compositor con `hyprctl switchxkblayout` NO toca ese keymap: hay
+# que usar `setxkbmap`. Este wrapper pone US en XWayland ANTES de lanzar el
+# juego y restaura Colemak al salir. Las apps Wayland no se tocan.
 #
 # Uso en Steam (Propiedades > Opciones de lanzamiento):
-#   ~/.config/hypr/game-us.sh %command%
+#   /home/ricky/.config/hypr/game-us.sh %command%
 
-if [ -z "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]; then
-    SOCK=$(ls -d "${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"/hypr/*/ 2>/dev/null | head -n1)
-    [ -n "$SOCK" ] && export HYPRLAND_INSTANCE_SIGNATURE="$(basename "$SOCK")"
-fi
-
-prev=0
-if hyprctl devices 2>/dev/null | grep -q "Colemak"; then
-    prev=0
-else
-    prev=1
-fi
-
-hyprctl switchxkblayout all 1 >/dev/null 2>&1
+layout="${XKB_DEFAULT_LAYOUT:-us,us}"
+variant="${XKB_DEFAULT_VARIANT:-colemak_dh,}"
+options="${XKB_DEFAULT_OPTIONS:-}"
 
 restore() {
-    hyprctl switchxkblayout all "$prev" >/dev/null 2>&1
+    if [ -n "$options" ]; then
+        setxkbmap -layout "$layout" -variant "$variant" -option "$options" >/dev/null 2>&1
+    else
+        setxkbmap -layout "$layout" -variant "$variant" >/dev/null 2>&1
+    fi
 }
 trap restore EXIT INT TERM HUP
+
+setxkbmap -layout us >/dev/null 2>&1 || true
 
 "$@"
