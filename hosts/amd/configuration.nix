@@ -63,6 +63,11 @@ in
 
   networking.hostName = "amd";
 
+  # App oficial ChatGPT: solo en la PC principal (clausura Nix ~2.7 GiB).
+  environment.systemPackages = [
+    (pkgs.callPackage ../../packages/chatgpt-official { inherit pkgs; })
+  ];
+
   # Microcode AMD (estabilidad/seguridad del CPU).
   hardware.cpu.amd.updateMicrocode = true;
 

@@ -67,6 +67,11 @@
     let
       system = "x86_64-linux";
       pkgs = nixpkgs.legacyPackages.${system};
+      # Paquete oficial propietario aislado del set libre por defecto.
+      pkgsUnfree = import nixpkgs.outPath {
+        inherit system;
+        config.allowUnfree = true;
+      };
 
       # CLI de Caelestia (fork AW: pillow + thumbnails por ffmpeg). Se expone
       # además como paquete del usuario para scripts exteriores (p.ej.
@@ -152,6 +157,7 @@
       #  qsPrebuilt tras update del input y NINGUN host lo usa - todos van por AW.)
       packages.${system} = {
         caelestia-shell-aw = caelestiaShellAW;
+        chatgpt-official = pkgsUnfree.callPackage ./packages/chatgpt-official { pkgs = pkgsUnfree; };
       };
 
       nixosConfigurations.laptop = mkHost "laptop";
