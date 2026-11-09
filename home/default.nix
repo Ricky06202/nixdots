@@ -210,6 +210,7 @@ RUSTEOF
     ripgrep
     xdg-desktop-portal # portal principal (captura de pantalla/ventana)
     xdg-desktop-portal-hyprland # implementación de captura para Hyprland
+    freecad # CAD 3D paramétrico
     shotcut # editor de video para clips/shorts
     chatterino2 # cliente ligero de chat de Twitch (sin navegador)
     motrix-next # gestor de descargas (HTTP/FTP/BitTorrent) vía aria2, sustituto de Free Download Manager
