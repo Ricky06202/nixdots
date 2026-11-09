@@ -10,6 +10,7 @@ blueman-applet &
 sleep 8
 vesktop &
 zapzap &
+chatgpt &
 disown -a
 
 # --- Feishin (musica) al inicio ------------------------------------------------
