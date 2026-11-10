@@ -1,7 +1,7 @@
 { pkgs }:
 
 let
-  version = "26.1103.32239";
+  version = "26.1103.60933";
   inherit (pkgs) lib;
   runtimeLibraries = with pkgs; [
     alsa-lib
@@ -53,7 +53,7 @@ let
       # Exact URL observed on OpenAI's Linux download page; the fixed hash pins
       # the downloaded artifact even though this endpoint is named /latest.
       url = "https://persistent.oaistatic.com/codex-app-prod/linux/deb/latest/chatgpt_amd64.deb";
-      hash = "sha256-GMEIgI6ixS+42/ktM2LSd0HjOCxYkb1K6QOptXgTZO8=";
+      hash = "sha256-B0bpuldRgvXb4yYXuCpkXrk61XyliOWpNYaVprZa7nE=";
     };
 
     nativeBuildInputs = [ pkgs.dpkg ];
@@ -113,7 +113,7 @@ pkgs.buildFHSEnv {
 
   passthru = {
     unwrapped = chatgptUnwrapped;
-    debianPackageSha256 = "18c108808ea2c52fb8dbf92d3362d27741e3382c5891bd4ae903a9b5781364ef";
+    debianPackageSha256 = "0746e9ba575182f5dbe32617b82a645eb93ad57ca588e5a9358695a6b65aee71";
   };
 
   meta = {
