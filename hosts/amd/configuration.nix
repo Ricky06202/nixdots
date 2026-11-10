@@ -85,10 +85,9 @@ in
   # sobrevive al apagado.
   swapDevices = [ { device = "/swap/swapfile"; size = 40960; priority = 100; } ];
 
-  # initrd con systemd: systemd-hibernate-resume lee la EFI var
-  # "HibernateLocation" que deja el hibernate y restaura la imagen al boot
-  # (funciona con swapfile, sin tocar GRUB ni hardcoded offsets).
-  boot.initrd.systemd.enable = true;
+  # systemd-hibernate-resume lee la EFI var "HibernateLocation" que deja el
+  # hibernate y restaura la imagen al boot (funciona con swapfile, sin tocar
+  # GRUB ni hardcoded offsets).
 
   # Comportamiento de suspend/hibernate de logind.
   systemd.sleep.settings.Sleep = {

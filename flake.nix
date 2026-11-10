@@ -77,6 +77,7 @@
       # además como paquete del usuario para scripts exteriores (p.ej.
       # wallpaper-pick.sh) sin depender del PATH del wrapper del shell.
       cliAw = caelestia-cli-aw.packages.${system}.default;
+      m3shapesPkg = pkgs.callPackage "${m3shapes}/nix" { stdenv = pkgs.clangStdenv; };
 
       # Quickshell precompilado de nixpkgs (+ módulos QML extra).
       # Replica el wrapper del flake oficial de outfoxxed, incluyendo su
@@ -121,7 +122,7 @@
         in
           (pkgs.callPackage "${caelestia-aw}/nix" {
             stdenv = pkgs.clangStdenv;
-            inherit m3shapes;
+            m3shapes = m3shapesPkg;
             quickshell = qsAw;
             caelestia-cli = cliAw;
             rev = caelestia-aw.sourceInfo.rev or "unknown";
