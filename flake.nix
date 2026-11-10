@@ -76,7 +76,14 @@
       # CLI de Caelestia (fork AW: pillow + thumbnails por ffmpeg). Se expone
       # además como paquete del usuario para scripts exteriores (p.ej.
       # wallpaper-pick.sh) sin depender del PATH del wrapper del shell.
-      cliAw = caelestia-cli-aw.packages.${system}.default;
+      cliAw =
+        caelestia-cli-aw.packages.${system}.default.overrideAttrs (old: {
+          patchPhase = (old.patchPhase or "") + ''
+            substituteInPlace pyproject.toml \
+              --replace-fail 'dynamic = ["version"]' 'version = "1"'
+            sed -i '/^\[tool\.hatch\.version\]$/,/^source = "vcs"$/d' pyproject.toml
+          '';
+        });
       m3shapesPkg = pkgs.callPackage "${m3shapes}/nix" { stdenv = pkgs.clangStdenv; };
 
       # Quickshell precompilado de nixpkgs (+ módulos QML extra).
