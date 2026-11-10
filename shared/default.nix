@@ -507,15 +507,19 @@ in
   nixpkgs.overlays = [
     spotx-nix.overlays.default
     (final: prev: {
-      opencode = prev.opencode.override {
-        bun = prev.bun.overrideAttrs (_: {
-          version = "1.3.13";
-          src = prev.fetchurl {
-            url = "https://github.com/oven-sh/bun/releases/download/bun-v1.3.13/bun-linux-x64-baseline.zip";
-            hash = "sha256-nYokKSpwaAkCBdqsCloiP19pc29Sh+N7+I07QDHtx1A=";
-          };
-        });
-      };
+      opencode =
+        let
+          bunForBuild = prev.bun.overrideAttrs (_: {
+            version = "1.3.13";
+            src = prev.fetchurl {
+              url = "https://github.com/oven-sh/bun/releases/download/bun-v1.3.13/bun-linux-x64-baseline.zip";
+              hash = "sha256-nYokKSpwaAkCBdqsCloiP19pc29Sh+N7+I07QDHtx1A=";
+            };
+          });
+        in
+          (prev.opencode.override { bun = bunForBuild; }).overrideAttrs (_: {
+            node_modules = prev.opencode.node_modules;
+          });
     })
   ];
 
