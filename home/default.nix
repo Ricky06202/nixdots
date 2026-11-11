@@ -323,6 +323,7 @@ RUSTEOF
     text = ''
       #!/usr/bin/env bash
       set -euo pipefail
+      export PATH="${pkgs.python3}/bin:$PATH"
 
       if [ "$#" -lt 1 ]; then
         echo "Uso: proton-run archivo.exe [args]" >&2
