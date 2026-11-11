@@ -75,13 +75,6 @@ let
       cp -a usr/lib/chatgpt "$out/lib/"
       cp -a usr/share/applications usr/share/pixmaps "$out/share/"
 
-      # The current .deb moved Tectonic to resources/tectonic. Replace only
-      # that helper with nixpkgs' CLI; leave Electron and its native modules
-      # untouched.
-      tectonic="$out/lib/chatgpt/resources/tectonic/tectonic"
-      rm "$tectonic"
-      ln -s ${pkgs.tectonic-unwrapped}/bin/tectonic "$tectonic"
-
       # Keep Codex deep-links and file associations, but leave HTTP(S) with
       # Librewolf, the user's configured default browser.
       substituteInPlace "$out/share/applications/chatgpt.desktop" \
