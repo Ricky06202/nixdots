@@ -303,6 +303,75 @@ RUSTEOF
     terminal = false;
   };
 
+  # Acceso directo "Abrir con Proton" para ejecutar .exe con el Proton de Steam.
+  xdg.desktopEntries.proton = {
+    name = "Proton";
+    comment = "Ejecuta programas de Windows con el Proton de Steam";
+    exec = "proton-run %f";
+    icon = "steam";
+    categories = [ "Utility" ];
+    mimeType = [
+      "application/x-msdownload"
+      "application/vnd.microsoft.portable-executable"
+      "application/x-ms-dos-executable"
+    ];
+    terminal = false;
+  };
+
+  home.file.".local/bin/proton-run" = {
+    executable = true;
+    text = ''
+      #!/usr/bin/env bash
+      set -euo pipefail
+
+      if [ "$#" -lt 1 ]; then
+        echo "Uso: proton-run archivo.exe [args]" >&2
+        exit 1
+      fi
+
+      exe="$1"
+      shift
+      if [ ! -f "$exe" ]; then
+        echo "No existe: $exe" >&2
+        exit 1
+      fi
+
+      steam="$HOME/.steam/steam"
+      if [ -x "$steam/steamapps/common/Proton - Experimental/proton" ]; then
+        proton="$steam/steamapps/common/Proton - Experimental/proton"
+      elif [ -x "$steam/steamapps/common/Proton 9.0 (Beta)/proton" ]; then
+        proton="$steam/steamapps/common/Proton 9.0 (Beta)/proton"
+      else
+        echo "No encontré Proton en $steam/steamapps/common" >&2
+        exit 1
+      fi
+
+      base="$(basename "$exe")"
+      prefix="$HOME/.local/share/proton-prefixes/''${base%.*}"
+      mkdir -p "$prefix"
+
+      export STEAM_COMPAT_CLIENT_INSTALL_PATH="$steam"
+      export STEAM_COMPAT_DATA_PATH="$prefix"
+      export SteamAppId=0
+      export SteamGameId=0
+
+      exec "$proton" run "$exe" "$@"
+    '';
+  };
+
+  home.file.".local/share/nemo/actions/proton-run.nemo_action" = {
+    text = ''
+      [Nemo Action]
+      Name=Ejecutar con Proton
+      Comment=Ejecutar .exe con el Proton de Steam
+      Exec=proton-run %F
+      Icon-Name=steam
+      Selection=s
+      Extensions=exe;msi;bat;cmd;
+      Quote=double
+    '';
+  };
+
   # Config de Hyprland (force: sobrescribe los archivos manuales existentes).
   # La cabecera de monitores es POR HOST: en amd los puertos del laptop
   # (HDMI-A-2/eDP-1) no existen y rompen el arranque. El cuerpo de
