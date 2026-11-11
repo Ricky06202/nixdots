@@ -456,6 +456,18 @@ in
             node_modules = prev.opencode.node_modules;
           });
     })
+    (final: prev:
+      let
+        lutris-unwrapped = prev.lutris-unwrapped.overrideAttrs (old: {
+          postPatch = (old.postPatch or "") + ''
+            substituteInPlace lutris/util/display.py \
+              --replace-fail 'LIB_GNOME_DESKTOP_AVAILABLE = True' 'LIB_GNOME_DESKTOP_AVAILABLE = hasattr(GnomeDesktop, "RRScreen")'
+          '';
+        });
+      in {
+        inherit lutris-unwrapped;
+        lutris = prev.lutris.override { inherit lutris-unwrapped; };
+      })
   ];
 
   # nix-ld: permite correr binarios dinámicos "tal cual vienen de internet"
