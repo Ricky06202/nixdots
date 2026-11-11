@@ -356,7 +356,7 @@ RUSTEOF
       export SteamAppId=0
       export SteamGameId=0
 
-      exec "$proton" run "$exe" "$@"
+      exec "$HOME/.config/hypr/game-us.sh" "$proton" run "$exe" "$@"
     '';
   };
 
