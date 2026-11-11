@@ -95,22 +95,6 @@ in
     HibernateDelaySec = "30min";
   };
 
-  # IA local (ollama) — la RX 7600 lo acelera vía Vulkan.
-  services.ollama = {
-    enable = true;
-    package = pkgs.ollama-vulkan;
-    host = "127.0.0.1";
-    port = 11434;
-    loadModels = [ "qwen3:8b" ];
-  };
-
-  # Auto-descargar el modelo tras cada consulta: libera VRAM/RAM al momento,
-  # así no hay que desmontarlo a mano para jugar (solo se sube mientras se usa).
-  systemd.services.ollama.environment = {
-    OLLAMA_KEEP_ALIVE = "0";
-    OLLAMA_MAX_LOADED_MODELS = "1";
-  };
-
   # Sunshine: host de game-streaming para Moonlight — la laptop de ella
   # recibe el video de la RX 7600 por LAN y devuelve teclado/mouse/mando como
   # dispositivos virtuales.

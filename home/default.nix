@@ -202,8 +202,6 @@ RUSTEOF
 
   # Paquetes del shell
   home.packages = with pkgs; [
-    # Letta Code CLI (agentes con memoria; paquete propio con node-pty)
-    (pkgs.callPackage ../pkgs/letta-code {})
     cliAw # CLI de Caelestia (colores/material-you/wallpapers) para scripts externos
     zoxide
     fzf
@@ -211,11 +209,6 @@ RUSTEOF
     xdg-desktop-portal # portal principal (captura de pantalla/ventana)
     xdg-desktop-portal-hyprland # implementación de captura para Hyprland
     freecad # CAD 3D paramétrico
-    shotcut # editor de video para clips/shorts
-    chatterino2 # cliente ligero de chat de Twitch (sin navegador)
-    rayburst # gestor de descargas (HTTP/FTP/BitTorrent) vía aria2, sustituto de Free Download Manager
-    jellyfin-desktop # cliente de Jellyfin (ver el servidor desde el PC)
-    spotdl # descarga canciones de Spotify (lo resuelve vía YouTube) con metadatos
     yt-dlp # descarga de YouTube (y 1000 sitios más); el wrapper `ytdl` de .zshrc lo endulza
     feishin # cliente de escritorio para Navidrome/Subsonic (Jellyfin de música)
     libnotify # notify-send para la acción "Montar imagen" de Nemo y scripts

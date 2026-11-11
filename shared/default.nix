@@ -4,29 +4,6 @@
 { config, pkgs, lib, caelestiaShellAW, spotx-nix, ... }:
 
 let
-  # --- Android SDK declarativo (sin abrir Android Studio nunca) ---
-  # Compone el SDK como paquete inmutable del store con EXACTAMENTE lo que
-  # piden Godot 4.7 y Tauri v2 en 2026:
-  #   Godot: platform android-35, build-tools 35.0.1, NDK r28b (28.1.13356709)
-  #   Tauri: platform android-36, NDK 29 (mayor instalado → 16KB pages)
-  # platform-tools del catálogo actual = 37.0.1 (único; Godot pide "35.0.0+").
-  # catálogo consultado: androidenv/repo.json del nixpkgs del lock (8ce4ef6).
-  # OJO: Godot pide CMake 3.10.2.4988404 (solo existe 3.10.2 en el catálogo) y
-  # el NDK 29.0.13846066 que pide Tauri-cli NO existe estable (solo -rc); lo
-  # cubrimos con el 29.0.14206865 estable. CMake solo lo usa el Gradle build
-  # custom de Godot (≠ export APK directo).
-  androidSdk =
-    (pkgs.androidenv.composeAndroidPackages {
-      platformVersions = [ "35" "36" ];
-      buildToolsVersions = [ "35.0.1" "36.0.0" ];
-      includeNDK = true;
-      ndkVersions = [ "28.1.13356709" "28.2.13676358" "29.0.14206865" ];
-      includeCmake = true;
-      cmakeVersions = [ "3.10.2" ];
-      platformToolsVersion = "37.0.1";
-      includeEmulator = false;
-      includeSystemImages = false;
-    }).androidsdk;
 
   # Shares CIFS del NAS (192.168.2.90, TrueNAS). Única fuente de verdad: de
   # aquí salen el fstab (fileSystems) y los drop-ins systemd (systemd.mounts /
@@ -37,16 +14,6 @@ in
   # Nix con flakes y nix-command habilitados (necesario para home-manager y caelestia)
   nix.settings = {
     experimental-features = [ "nix-command" "flakes" ];
-  };
-
-  # GC automatico: /nix/store comparte el btrfs con /home, y sin esto se llena
-  # de generaciones viejas (04-10: 138G con 4081 rutas recuperables tras un
-  # dia de rebuilds). Weekly + 30 dias de margen = nunca toca el sistema
-  # activo ni generation de boot reciente.
-  nix.gc = {
-    automatic = true;
-    dates = "weekly";
-    options = "--delete-older-than 30d";
   };
 
   # Bootloader: GRUB con tema Himeko-Nova.
@@ -197,27 +164,6 @@ in
   zramSwap.enable = true;
   zramSwap.algorithm = "zstd";
   boot.kernel.sysctl."vm.swappiness" = 10;
-
-  # --- VirtualBox (PROVISIONAL) ---
-  # Necesario para el proyecto de la VM de Windows XP con Sight Survey
-  # (para el abuelo). El módulo instala el paquete y crea el grupo
-  # `vboxusers`; el usuario ricky ya está en ese grupo (ver users).
-  # Para quitarlo: borrar este bloque y el grupo extra de ricky.
-  virtualisation.virtualbox.host.enable = true;
-
-  # --- QEMU/KVM + virt-manager (libvirt) ---
-  # Para VMs con KVM nativo (rendimiento casi real). virtiofs para carpeta
-  # compartida bidireccional y SPICE para drag&drop/clipboard bidireccional.
-  virtualisation.libvirtd = {
-    enable = true;
-    qemu = {
-      package = pkgs.qemu_kvm;
-      runAsRoot = true;
-    };
-  };
-  services.spice-vdagentd.enable = true;
-  users.groups.libvirtd.members = [ "ricky" ];
-  users.groups.qemu-libvirtd.members = [ "ricky" ];
 
   # Set your time zone.
   time.timeZone = "America/Panama";
@@ -472,7 +418,7 @@ in
     isNormalUser = true;
     description = "Ricardo A Sanjur G";
     shell = pkgs.zsh; # shell por defecto: zsh (con plugins de home-manager)
-    extraGroups = [ "networkmanager" "wheel" "input" "vboxusers" ];
+    extraGroups = [ "networkmanager" "wheel" "input" ];
     packages = with pkgs; [
       #  thunderbird
     ];
@@ -486,17 +432,6 @@ in
 
   # Allow unfree packages
   nixpkgs.config.allowUnfree = true;
-  # Licencia del Android SDK (aceptada declarativamente; sin esto androidsdk no evalúa).
-  nixpkgs.config.android_sdk.accept_license = true;
-
-  # --- Waydroid: Android en contenedor LXC (probar juegos/apps móviles) ---
-  # El módulo habilita automáticamente: binder (ANDROID_BINDER_IPC/BINDERFS/MEMFD),
-  # LXC, firewall trustedInterface waydroid0, servicio waydroid-container y
-  # tmpfiles. Tras el rebuild hay que inicializar UNA vez con GApps:
-  #   sudo waydroid init -f -s GAPPS
-  # y luego iniciar la sesión:  systemctl --user start waydroid-session
-  virtualisation.waydroid.enable = true;
-  virtualisation.waydroid.package = pkgs.waydroid-nftables;
 
   # SpotX-Nix overlay: parchea Spotify para bloquear anuncios.
   # + opencode: la versión sale de nixpkgs (se actualiza con `nix flake update`),
@@ -615,25 +550,16 @@ in
     vulkan-tools       # vulkaninfo: Lutris lo consulta para listar GPUs
     gamescope          # capa de juego: FSR1 universal + FSR3 FG en algunos títulos (útil en amd)
     opencode          # asistente de IA (este)
-    neovim            # editor
     librewolf         # navegador principal (fork de Firefox con uBlock Origin preinstalado + privacidad)
-    chromium          # navegador Chromium puro (compatibilidad web sin capas extra)
     zapzap            # cliente de WhatsApp para Linux
-    tor-browser       # navegador Tor (bundle oficial con Tor+Torbutton)
-    session-desktop   # Session: mensajería cifrada sin número de teléfono
-    element-desktop   # Element (Matrix) — Element X no existe en desktop (solo Android/iOS)
-    spotify-spotx     # spotify con anuncios bloqueados (vía SpotX-Nix, flake externo)
     lutris            # gestor de juegos
     wineWow64Packages.stableFull  # wine completo (wow64: 32+64 bits) para ejecutar .exe
     winetricks        # instala complementos de wine (DirectX, VC++, etc.)
-    virt-manager      # GUI de QEMU/KVM (libvirt): VMs con KVM nativo
-    virt-viewer       # visor SPICE/vnc para virt-manager (drag&drop bidireccional)
     wezterm           # terminal
     git
     grim              # captura de pantalla (wayland)
     slurp             # selector de región para grim
     wl-clipboard      # portapapeles wayland (wl-copy / wl-paste)
-    zellij            # multiplexor de terminal
     hyprpaper         # fondos de pantalla (wayland)
     swaynotificationcenter # notificaciones (sway notification center)
     hypridle          # daemon de inactividad (bloqueo automatico)
@@ -649,41 +575,13 @@ in
     blueman           # gestor de bluetooth (applet en bandeja + interfaz)
     nerd-fonts.iosevka-term # fuente Iosevka Term (Nerd Font) para terminal/wofi (también en fonts.packages)
     blender           # modelado 3D
-    inkscape          # diseno vectorial
-    gimp              # edicion de imagenes
-    krita             # pintura/dibujo digital
-    vscode            # editor legado (queda instalado como alternativa; NO es el default)
     zed-editor        # editor PRINCIPAL (default en mimeApps text/* + $EDITOR + git core.editor)
     nodejs_24         # Node.js + npm
     bun               # runtime JS rapido
-    # --- Lenguajes de programación ---
-    python3           # Python 3 (con pip)
-    rustc             # compilador de Rust
-    cargo             # gestor de paquetes de Rust
-    go                # lenguaje Go
-    gcc               # compilador C/C++
-    gdb               # debugger de C/C++
-    deno              # runtime de JS/TS alternativo
-    jdk               # Java (complemento al openjdk del sistema)
-    # --- Godot + Android (exportar APK) ---
-    godot             # motor de juegos 2D/3D (Godot 4.7)
-    android-tools     # adb, fastboot (para instalar APK en el teléfono)
-    androidSdk        # SDK declarativo (platforms 35/36, NDK 28.1+28.2, build-tools) — no requiere Android Studio
-    pkg-config        # detección de librerías (necesario para Tauri/build)
-    # --- Tauri (apps de escritorio con Rust + web) ---
-    cargo-tauri       # CLI de Tauri
-    webkitgtk_4_1     # WebView (motor de render de Tauri en Linux)
-    librsvg           # renderizado SVG (dependencia de Tauri)
-    gsettings-desktop-schemas # schemas GSettings para diálogos GTK nativos (GtkFileChooser de Tauri/rfd aborta sin ellos)
-    waydroid-nftables # Android en contenedor LXC (apps/juegos móviles) — variante para nftables (default de NixOS)
     prismlauncher     # launcher de Minecraft
     wofi              # lanzador de apps (wayland)
     winetricks        # utilidades wine (complemento de Lutris)
-    # --- Oficina / productividad ---
-    libreoffice       # suite ofimática (escritor, planilha, presentación)
     evince            # visor de PDFs (GNOME, ligero, Wayland nativo)
-    gnome-calculator  # calculadora
-    thunar            # gestor de archivos (GTK, ligero, respaldo)
     nemo-with-extensions  # gestor de archivos principal (con extensiones GVFS: network, MTP, etc.)
     file-roller       # gestor de comprimidos — la extensión "Extraer aquí" de Nemo lo necesita
     p7zip             # backends 7z/rar para file-roller (comprimir/extraer zip, rar, 7z...)
@@ -692,8 +590,6 @@ in
     loupe             # visor de imágenes (GNOME, ligero, Wayland nativo)
     gvfs              # daemon de red para Nemo (SMB, MTP, network browsing)
     cifs-utils        # mount.cifs para el NAS (/mnt/flix, ver fileSystems)
-    bitwarden-desktop # gestor de contraseñas (nube, encriptado, 2FA)
-    obs-studio        # OBS COMPLETO con obs-browser (overlays de Twitch, alertas) — la PC AMD lo aguanta
     vesktop           # Discord con Vencord (reemplaza a discord, más estable en Wayland)
     # Escritorio Caelestia AW (fork con live wallpapers; quickshell de nixpkgs
     # precompilado + CLI fork). Evita compilar el quickshell-git (~1h). Ver flake.nix.
@@ -802,70 +698,12 @@ in
     XKB_DEFAULT_LAYOUT = "us,us";
     XKB_DEFAULT_VARIANT = "colemak_dh,";
     XKB_DEFAULT_OPTIONS = "terminate:ctrl_alt_bksp";
-    # Android (Godot/Tauri export): ruta del JDK. Godot 4.7 y Tauri v2 exigen
-    # OpenJDK 17 (no 21). PrismLauncher/Minecraft siguen con jdk21 (programs.java).
-    JAVA_HOME = "${pkgs.jdk17}";
-    ANDROID_HOME = "${androidSdk}/libexec/android-sdk";
-    ANDROID_SDK_ROOT = "${androidSdk}/libexec/android-sdk";
-    # NDK para Tauri: usa el "mayor instalado" (29.0.14206865). Godot lee el
-    # suyo desde su propio editor (Android SDK Path → su NDK r28b).
-    NDK_HOME = "${androidSdk}/libexec/android-sdk/ndk/29.0.14206865";
-    ANDROID_NDK_HOME = "${androidSdk}/libexec/android-sdk/ndk/29.0.14206865";
     # MangoHUD: ruta del config + dlsym para OpenGL (juegos 2D/GameMaker)
     MANGOHUD_CONFIGFILE = "/home/ricky/.config/MangoHUD/MangoHUD.conf";
     MANGOHUD_DLSYM = "1";
-    # pkg-config: exponer los .pc de las libs Tauri (glib, gtk3, webkit2gtk,
-    # libsoup3, openssl, dbus) y sus dependencias transitivas
-    # (pango/cairo/zlib/etc.) para que Cargo encuentre las libs de sistema sin
-    # tener que entrar a un devShell ni exportar nada a mano. Así Tauri
-    # compila en cualquier proyecto en NixOS.
-    PKG_CONFIG_PATH = lib.concatStringsSep ":" [
-      (lib.makeSearchPathOutput "dev" "lib/pkgconfig" [
-        pkgs.glib
-        pkgs.gtk3
-        pkgs.webkitgtk_4_1
-        pkgs.libsoup_3
-        pkgs.openssl
-        pkgs.pango
-        pkgs.cairo
-        pkgs.gdk-pixbuf
-        pkgs.at-spi2-atk
-        pkgs.harfbuzz
-        pkgs.fontconfig
-        pkgs.freetype
-        pkgs.libepoxy
-        pkgs.dbus
-      ])
-      # zlib instala zlib.pc en share/pkgconfig, no en lib/pkgconfig
-      "${pkgs.zlib.dev}/share/pkgconfig"
-    ];
-    # GSETTINGS_SCHEMA_DIR: expone los schemas GSettings compilados de gtk3 y
-    # gsettings-desktop-schemas. Sin esto, los diálogos GTK nativos de Tauri
-    # (rfd → GtkFileChooser) abortan con "No GSettings schemas are installed".
-    # (pathsToLink no basta: GLib necesita el dir de schemas compilados directo)
-    GSETTINGS_SCHEMA_DIR = lib.concatStringsSep ":" [
-      "${pkgs.gtk3}/share/gsettings-schemas/${pkgs.gtk3.name}/glib-2.0/schemas"
-      "${pkgs.gsettings-desktop-schemas}/share/gsettings-schemas/${pkgs.gsettings-desktop-schemas.name}/glib-2.0/schemas"
-    ];
-    # Android SDK bin: sdkmanager, avdmanager, apkanalyzer (cmdline-tools),
-    # adb (platform-tools) para que scripts y herramientas los encuentren.
-    PATH = lib.mkBefore (lib.concatStringsSep ":" [
-      "${androidSdk}/libexec/android-sdk/cmdline-tools/latest/bin"
-      "${androidSdk}/libexec/android-sdk/platform-tools"
-      "${androidSdk}/libexec/android-sdk/emulator"
-    ]);
   };
 
-  # Symlink del SDK a ~/Android/Sdk (ruta estándar que esperan Godot y la
-  # mayoría de guías de Tauri): el SDK real vive en el store (inmutable); este
-  # enlace solo apunta ahí. Una vez hecho el rebuild, en Godot: Editor →
-  # Settings → Export → Android → "Android SDK Path" = ~/Android/Sdk.
-  home-manager.users.ricky.home.file."Android/Sdk".source = "${androidSdk}/libexec/android-sdk";
 
-  # Enlazar los esquemas GSettings (glib/gtk3/gsettings-desktop-schemas) al
-  # directorio accesible vía XDG_DATA_DIRS. Sin esto, los diálogos GTK nativos
-  # de Tauri (rfd → GtkFileChooser) abortan con g_error org.gtk.Settings.*
-  environment.pathsToLink = [ "/share/gsettings-schemas" ];
 
   # this value at the release version of the first install of this system.
   # Before changing this value read the documentation for this option
