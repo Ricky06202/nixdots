@@ -71,29 +71,9 @@ in
   # Microcode AMD (estabilidad/seguridad del CPU).
   hardware.cpu.amd.updateMicrocode = true;
 
-  # 32GB RAM física: zram al 25% (8GB, priority -1 => nunca es target de
-  # hibernación) + swapfile de disco de 40GB para poder hibernar (>= RAM de
-  # uso tipico con margen).
   zramSwap.memoryPercent = 25;
 
-  # Swap en disco, dentro del subvolúmen @swap (instalación Btrfs):
-  # es el dispositivo donde systemd-hibernate escribe la imagen de la RAM.
-  # priority=100: el kernel escribe la imagen de hibernacion en el swap de
-  # MAYOR prioridad. zramSwap viene con prio 5 y zram es RAM volatil: con el
-  # swapfile a -1 la cabecera caia en zram y el resume moria ("Unable to
-  # resume ... continuing boot process"). Con 100 la imagen va al disco y
-  # sobrevive al apagado.
-  swapDevices = [ { device = "/swap/swapfile"; size = 40960; priority = 100; } ];
-
-  # systemd-hibernate-resume lee la EFI var "HibernateLocation" que deja el
-  # hibernate y restaura la imagen al boot (funciona con swapfile, sin tocar
-  # GRUB ni hardcoded offsets).
-
-  # Comportamiento de suspend/hibernate de logind.
-  systemd.sleep.settings.Sleep = {
-    HibernateMode = "shutdown";
-    HibernateDelaySec = "30min";
-  };
+  swapDevices = [ { device = "/swap/swapfile"; size = 8192; } ];
 
   # Sunshine: host de game-streaming para Moonlight — la laptop de ella
   # recibe el video de la RX 7600 por LAN y devuelve teclado/mouse/mando como
