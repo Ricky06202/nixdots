@@ -596,13 +596,22 @@ in
     winetricks        # utilidades wine (complemento de Lutris)
     evince            # visor de PDFs (GNOME, ligero, Wayland nativo)
     nemo-with-extensions  # gestor de archivos principal (con extensiones GVFS: network, MTP, etc.)
+    # Visor 3D (VTK): abre modelos al doble clic y aporta los thumbnailers de
+    # Nemo (stl, obj, 3mf, ply, gltf/glb, fbx, dae, step/iges/brep, fcstd, usd).
+    f3d
     # Vista previa rápida de Nemo: Espacio sobre un archivo abre un visor
     # (código/texto, imágenes, audio, vídeo, fuentes, HTML, PDF y ebooks via
     # xreader). Es X11 puro (clutter + move_to_current_desktop): con el backend
     # Wayland de GTK SEGFAULTEA al mostrar, así que el script fuerza XWayland.
+    # Además se le añade pkgs/nemo-preview/model.js: viewer propio que renderiza
+    # modelos 3D con f3d (offscreen) para que Espacio también sirva en STL/STEP.
     (nemo-preview.overrideAttrs (oa: {
       postInstall = (oa.postInstall or "") + ''
         sed -i '2i export GDK_BACKEND=x11' $out/bin/nemo-preview
+        install -Dm644 ${../pkgs/nemo-preview/model.js} \
+          $out/share/nemo-preview/js/viewers/model.js
+        substituteInPlace $out/share/nemo-preview/js/viewers/model.js \
+          --replace-fail "@f3d@" "${f3d}/bin/f3d"
       '';
     }))
     file-roller       # gestor de comprimidos — la extensión "Extraer aquí" de Nemo lo necesita

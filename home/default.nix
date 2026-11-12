@@ -270,6 +270,30 @@ EOF
       "image/svg+xml" = [ "org.gnome.Loupe.desktop" ];
       # PDFs → Evince
       "application/pdf" = [ "org.gnome.Evince.desktop" ];
+      # Modelos 3D → F3D. Los .desktop "plugin" son los que declaran MimeType
+      # (el f3d.desktop pelado no trae ninguno); el plugin importa el formato:
+      # native = mallas (stl/obj/ply/gltf), assimp = 3mf/fbx/dae/off, occt =
+      # CAD (step/iges/brep), usd = usd/usdz. .FCStd se deja en FreeCAD.
+      "model/stl" = [ "f3d-plugin-native.desktop" ];
+      "model/obj" = [ "f3d-plugin-native.desktop" ];
+      "application/vnd.ply" = [ "f3d-plugin-native.desktop" ];
+      "model/gltf-binary" = [ "f3d-plugin-native.desktop" ];
+      "model/gltf+json" = [ "f3d-plugin-native.desktop" ];
+      "application/vnd.3ds" = [ "f3d-plugin-native.desktop" ];
+      "application/vnd.vtk" = [ "f3d-plugin-native.desktop" ];
+      "model/vrml" = [ "f3d-plugin-native.desktop" ];
+      "model/3mf" = [ "f3d-plugin-assimp.desktop" ];
+      "application/vnd.fbx" = [ "f3d-plugin-assimp.desktop" ];
+      "application/vnd.dae" = [ "f3d-plugin-assimp.desktop" ];
+      "application/vnd.off" = [ "f3d-plugin-assimp.desktop" ];
+      "image/vnd.dxf" = [ "f3d-plugin-assimp.desktop" ];
+      "model/step" = [ "f3d-plugin-occt.desktop" ];
+      "application/vnd.step" = [ "f3d-plugin-occt.desktop" ];
+      "model/iges" = [ "f3d-plugin-occt.desktop" ];
+      "application/vnd.brep" = [ "f3d-plugin-occt.desktop" ];
+      "application/vnd.usd" = [ "f3d-plugin-usd.desktop" ];
+      "model/vnd.usda" = [ "f3d-plugin-usd.desktop" ];
+      "model/vnd.usdz+zip" = [ "f3d-plugin-usd.desktop" ];
       # Comprimidos → File Roller (y "Extraer aquí" de Nemo)
       "application/zip" = [ "org.gnome.FileRoller.desktop" ];
       "application/x-compressed-tar" = [ "org.gnome.FileRoller.desktop" ];
