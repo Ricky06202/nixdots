@@ -594,7 +594,16 @@ in
     prismlauncher     # launcher de Minecraft
     wofi              # lanzador de apps (wayland)
     winetricks        # utilidades wine (complemento de Lutris)
-    evince            # visor de PDFs (GNOME, ligero, Wayland nativo)
+    # Evince YA NO es el visor de PDFs (eso lo hace Okular); sigue instalado
+    # solo porque su paquete trae el thumbnailer de Nemo para PDF, comics
+    # (cbz/cbr), djvu, dvi, ps/eps, tiff y xps. Okular no aporta thumbnailer
+    # de freedesktop, así que sin evince se perderían esas miniaturas.
+    evince
+    # Documentos: LibreOffice (docx/xlsx/pptx/odt/ods/odp, csv…). Pesado, pero
+    # es lo único que abre todo sin peleas.
+    libreoffice
+    # PDFs → Okular (anotaciones, formularios, firmas, render por página).
+    kdePackages.okular
     nemo-with-extensions  # gestor de archivos principal (con extensiones GVFS: network, MTP, etc.)
     # Visor 3D (VTK): abre modelos al doble clic y aporta los thumbnailers de
     # Nemo (stl, obj, 3mf, ply, gltf/glb, fbx, dae, step/iges/brep, fcstd, usd).

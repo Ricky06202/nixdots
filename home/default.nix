@@ -268,8 +268,20 @@ EOF
       "image/gif" = [ "org.gnome.Loupe.desktop" ];
       "image/webp" = [ "org.gnome.Loupe.desktop" ];
       "image/svg+xml" = [ "org.gnome.Loupe.desktop" ];
-      # PDFs → Evince
-      "application/pdf" = [ "org.gnome.Evince.desktop" ];
+      # PDFs → Okular
+      "application/pdf" = [ "org.kde.okular.desktop" ];
+      # Documentos de oficina → LibreOffice (por familia: writer/calc/impress)
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document" = [ "libreoffice-writer.desktop" ];
+      "application/msword" = [ "libreoffice-writer.desktop" ];
+      "application/rtf" = [ "libreoffice-writer.desktop" ];
+      "application/vnd.oasis.opendocument.text" = [ "libreoffice-writer.desktop" ];
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" = [ "libreoffice-calc.desktop" ];
+      "application/vnd.ms-excel" = [ "libreoffice-calc.desktop" ];
+      "application/vnd.oasis.opendocument.spreadsheet" = [ "libreoffice-calc.desktop" ];
+      "text/csv" = [ "libreoffice-calc.desktop" ];
+      "application/vnd.openxmlformats-officedocument.presentationml.presentation" = [ "libreoffice-impress.desktop" ];
+      "application/vnd.ms-powerpoint" = [ "libreoffice-impress.desktop" ];
+      "application/vnd.oasis.opendocument.presentation" = [ "libreoffice-impress.desktop" ];
       # Modelos 3D → F3D. Los .desktop "plugin" son los que declaran MimeType
       # (el f3d.desktop pelado no trae ninguno); el plugin importa el formato:
       # native = mallas (stl/obj/ply/gltf), assimp = 3mf/fbx/dae/off, occt =
