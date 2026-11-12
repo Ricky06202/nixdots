@@ -213,6 +213,7 @@ RUSTEOF
     feishin # cliente de escritorio para Navidrome/Subsonic (Jellyfin de música)
     libnotify # notify-send para la acción "Montar imagen" de Nemo y scripts
     dconf   # necesario para forzar tema GTK en home.activation
+    zenity  # diálogos para "Extraer RAR"
   ];
 
   # Config de Nemo (file manager): sort por fecha descendente, sin carpetas primero
@@ -370,6 +371,48 @@ EOF
       Icon-Name=steam
       Selection=s
       Extensions=exe;msi;bat;cmd;
+      Quote=double
+    '';
+  };
+
+  home.file.".local/bin/rar-extract" = {
+    executable = true;
+    text = ''
+      #!/usr/bin/env bash
+      set -euo pipefail
+
+      if [ "$#" -lt 1 ]; then
+        echo "Uso: rar-extract archivo.rar" >&2
+        exit 1
+      fi
+
+      archive="$1"
+      if [ ! -f "$archive" ]; then
+        zenity --error --text="No existe: $archive"
+        exit 1
+      fi
+
+      password="$(zenity --password --title="Contraseña del RAR")" || exit 1
+      dest="$(dirname "$archive")/$(basename "$archive" .rar)"
+      mkdir -p "$dest"
+
+      if unrar x -p"$password" "$archive" "$dest/" >/tmp/rar-extract.log 2>&1; then
+        zenity --info --text="Extraído en:\n$dest"
+      else
+        zenity --error --text="No se pudo extraer:\n$(tail -n 20 /tmp/rar-extract.log)"
+      fi
+    '';
+  };
+
+  home.file.".local/share/nemo/actions/rar-extract.nemo_action" = {
+    text = ''
+      [Nemo Action]
+      Name=Extraer RAR
+      Comment=Extrae un RAR pidiendo la contraseña
+      Exec=rar-extract %F
+      Icon-Name=package-x-generic
+      Selection=s
+      Extensions=rar;
       Quote=double
     '';
   };
