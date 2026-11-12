@@ -19,6 +19,9 @@ if command -v Jan-Desktop >/dev/null 2>&1; then
   systemd-run --user --unit=jan-desktop --collect \
     --description="Jan (asistente local)" \
     Jan-Desktop >/dev/null 2>&1 || true
+  # Precalienta TwIL cuando la sesion ya esta asentada: la carga satura la GPU
+  # unos segundos y asi no te pilla escribiendo (ver jan-preload.sh).
+  nohup "$HOME/.config/hypr/jan-preload.sh" >/dev/null 2>&1 &
 fi
 disown -a
 
