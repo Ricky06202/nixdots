@@ -582,6 +582,13 @@ EOF
     executable = true;
     force = true;
   };
+  # jan-preload.sh: precarga el modelo de Jan al inicio (cachea el tiron de
+  # carga). Lo lanza autostart.sh.
+  home.file.".config/hypr/jan-preload.sh" = {
+    source = ./dotfiles/hypr/jan-preload.sh;
+    executable = true;
+    force = true;
+  };
   home.file.".local/bin/nini" = {
     source = ./scripts/nini;
     executable = true;
