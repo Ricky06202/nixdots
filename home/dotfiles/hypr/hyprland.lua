@@ -400,6 +400,14 @@ hl.window_rule({ match = { class = "^chatgpt$" }, workspace = 5 })
 hl.window_rule({ match = { class = "^com.obsproject.Studio$" }, workspace = 5 })
 hl.window_rule({ match = { class = "^com\\.rtosta\\.zapzap$" }, workspace = 2 })
 
+-- Vista previa rápida de Nemo (Espacio en el gestor). Corre en XWayland y se
+-- abre flotando; sin la regla Hyprland la tilea y se ve a media pantalla.
+hl.window_rule({
+    match = { class = "^Nemo-preview-start$" },
+    float = true,
+    center = true,
+})
+
 -- Crystar (Unity) corre en ventana y no captura el puntero: el raton se sale
 -- al escritorio. Con confine_pointer el cursor queda atrapado en su ventana
 -- mientras esta tiene foco (Alt+Tab sigue funcionando).

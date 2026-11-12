@@ -595,6 +595,15 @@ in
     winetricks        # utilidades wine (complemento de Lutris)
     evince            # visor de PDFs (GNOME, ligero, Wayland nativo)
     nemo-with-extensions  # gestor de archivos principal (con extensiones GVFS: network, MTP, etc.)
+    # Vista previa rápida de Nemo: Espacio sobre un archivo abre un visor
+    # (código/texto, imágenes, audio, vídeo, fuentes, HTML, PDF y ebooks via
+    # xreader). Es X11 puro (clutter + move_to_current_desktop): con el backend
+    # Wayland de GTK SEGFAULTEA al mostrar, así que el script fuerza XWayland.
+    (nemo-preview.overrideAttrs (oa: {
+      postInstall = (oa.postInstall or "") + ''
+        sed -i '2i export GDK_BACKEND=x11' $out/bin/nemo-preview
+      '';
+    }))
     file-roller       # gestor de comprimidos — la extensión "Extraer aquí" de Nemo lo necesita
     p7zip             # backends 7z/rar para file-roller (comprimir/extraer zip, rar, 7z...)
     unrar             # soporte RAR en file-roller
