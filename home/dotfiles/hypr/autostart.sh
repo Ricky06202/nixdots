@@ -10,7 +10,16 @@ blueman-applet &
 sleep 8
 vesktop &
 zapzap &
-chatgpt &
+# Jan (asistente local: TwIL 8B + Qwen3-VL) sustituye a ChatGPT en el arranque
+# y en el ws 5. Su wrapper es bubblewrap con --die-with-parent: si se lanza como
+# hijo directo de este script muere al terminar (y `setsid` deja una carrera con
+# PDEATHSIG). Como unidad transitoria de systemd --user el padre es estable y
+# además queda el log en `journalctl --user -u jan-desktop`. Solo existe en amd.
+if command -v Jan-Desktop >/dev/null 2>&1; then
+  systemd-run --user --unit=jan-desktop --collect \
+    --description="Jan (asistente local)" \
+    Jan-Desktop >/dev/null 2>&1 || true
+fi
 disown -a
 
 # --- Feishin (musica) al inicio ------------------------------------------------
