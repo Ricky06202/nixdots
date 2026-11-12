@@ -408,6 +408,7 @@ in
   users.users.greeter = {
     isSystemUser = true;
     group = "greeter";
+    extraGroups = [ "input" "video" "render" ];
     description = "Greeter user for ReGreet";
   };
 
