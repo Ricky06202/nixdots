@@ -223,6 +223,11 @@ RUSTEOF
       "sort-favorites-first" = false;
       "default-sort-column" = "mtime";
       "default-sort-order" = "reverse";
+      # Nemo no genera miniatura de imágenes mayores que thumbnail-limit
+      # (por defecto 1 MB = 1048576), así que los PNG/screenshots grandes
+      # salían con icono genérico y en el preview no había miniatura. 50 MB
+      # cubre capturas 4K/8K sin que Nemo se coma la RAM con archivos absurdos.
+      "thumbnail-limit" = lib.hm.gvariant.mkUint64 52428800;
     };
   };
 
