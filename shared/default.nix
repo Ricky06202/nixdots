@@ -612,9 +612,10 @@ in
     # (código/texto, imágenes, audio, vídeo, fuentes, HTML, PDF y ebooks via
     # xreader). Es X11 puro (clutter + move_to_current_desktop): con el backend
     # Wayland de GTK SEGFAULTEA al mostrar, así que el script fuerza XWayland.
-    # Además se le añaden pkgs/nemo-preview/{model,doc}.js: viewers propios para
-    # que Espacio también sirva en modelos 3D (render con f3d) y en documentos
-    # de oficina (LibreOffice → PDF → páginas + barra lateral de miniaturas).
+    # Además se le añaden pkgs/nemo-preview/{model,doc,svg}.js: viewers propios
+    # para que Espacio también sirva en modelos 3D (render con f3d), documentos
+    # de oficina (LibreOffice → PDF → páginas + barra lateral de miniaturas) y
+    # SVG (rasterizado nítido con rsvg-convert + tablero de transparencia).
     (nemo-preview.overrideAttrs (oa: {
       postInstall = (oa.postInstall or "") + ''
         sed -i '2i export GDK_BACKEND=x11' $out/bin/nemo-preview
@@ -629,6 +630,11 @@ in
         substituteInPlace $out/share/nemo-preview/js/viewers/doc.js \
           --replace-fail "@soffice@" "${libreoffice}/bin/libreoffice" \
           --replace-fail "@pdftoppm@" "${poppler-utils}/bin/pdftoppm"
+
+        install -Dm644 ${../pkgs/nemo-preview/svg.js} \
+          $out/share/nemo-preview/js/viewers/svg.js
+        substituteInPlace $out/share/nemo-preview/js/viewers/svg.js \
+          --replace-fail "@rsvg@" "${librsvg}/bin/rsvg-convert"
       '';
     }))
     file-roller       # gestor de comprimidos — la extensión "Extraer aquí" de Nemo lo necesita
