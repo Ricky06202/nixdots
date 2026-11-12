@@ -204,7 +204,7 @@ in
 
     # cage usa solo el último monitor conectado (evita estirar el greeter
     # sobre ambas pantallas).
-    cageArgs = [ "-s" "-d" "-mlast" ];
+    cageArgs = [ "-s" "-d" ];
 
     # Tema GTK (Colloid-Dark ya instalado en systemPackages).
     theme = {
