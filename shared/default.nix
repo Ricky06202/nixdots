@@ -612,15 +612,23 @@ in
     # (código/texto, imágenes, audio, vídeo, fuentes, HTML, PDF y ebooks via
     # xreader). Es X11 puro (clutter + move_to_current_desktop): con el backend
     # Wayland de GTK SEGFAULTEA al mostrar, así que el script fuerza XWayland.
-    # Además se le añade pkgs/nemo-preview/model.js: viewer propio que renderiza
-    # modelos 3D con f3d (offscreen) para que Espacio también sirva en STL/STEP.
+    # Además se le añaden pkgs/nemo-preview/{model,doc}.js: viewers propios para
+    # que Espacio también sirva en modelos 3D (render con f3d) y en documentos
+    # de oficina (LibreOffice → PDF → páginas + barra lateral de miniaturas).
     (nemo-preview.overrideAttrs (oa: {
       postInstall = (oa.postInstall or "") + ''
         sed -i '2i export GDK_BACKEND=x11' $out/bin/nemo-preview
+
         install -Dm644 ${../pkgs/nemo-preview/model.js} \
           $out/share/nemo-preview/js/viewers/model.js
         substituteInPlace $out/share/nemo-preview/js/viewers/model.js \
           --replace-fail "@f3d@" "${f3d}/bin/f3d"
+
+        install -Dm644 ${../pkgs/nemo-preview/doc.js} \
+          $out/share/nemo-preview/js/viewers/doc.js
+        substituteInPlace $out/share/nemo-preview/js/viewers/doc.js \
+          --replace-fail "@soffice@" "${libreoffice}/bin/libreoffice" \
+          --replace-fail "@pdftoppm@" "${poppler-utils}/bin/pdftoppm"
       '';
     }))
     file-roller       # gestor de comprimidos — la extensión "Extraer aquí" de Nemo lo necesita
