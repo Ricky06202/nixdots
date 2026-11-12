@@ -64,8 +64,12 @@ in
   networking.hostName = "amd";
 
   # App oficial ChatGPT: solo en la PC principal (clausura Nix ~2.7 GiB).
+  # jan: asistente local de escritorio (llama.cpp + Vulkan bundled, AppImage
+  # envuelto). Los modelos GGUF viven FUERA del store, en
+  # ~/.local/share/Jan/data/llamacpp/models (TwIL 8B / Qwen3-VL 4B).
   environment.systemPackages = [
     (pkgs.callPackage ../../packages/chatgpt-official { inherit pkgs; })
+    pkgs.jan
   ];
 
   # Microcode AMD (estabilidad/seguridad del CPU).
