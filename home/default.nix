@@ -225,20 +225,21 @@ RUSTEOF
     };
   };
 
-  # Bookmarks de Nemo (barra lateral): los shares del NAS abren directo a los
-  # montajes CIFS reales /mnt/{flix,familia} (credencial en nas.cred) — el
-  # browsing smb:// de GVfs pide clave por share en cada entrada.
-  home.file.".config/gtk-3.0/bookmarks" = {
-    text = ''
-      file:///home/ricky/Downloads Downloads
-      file:///home/ricky/Documents Documents
-      file:///home/ricky/Dev Dev
-      file:///home/ricky/Games Games
-      file:///mnt/flix Flix
-      file:///mnt/familia Familia
-    '';
-    force = true;
-  };
+  home.activation.nemoBookmarks = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    bookmarks="$HOME/.config/gtk-3.0/bookmarks"
+    if [ -L "$bookmarks" ] || [ ! -e "$bookmarks" ]; then
+      mkdir -p "$(dirname "$bookmarks")"
+      rm -f "$bookmarks"
+      cat > "$bookmarks" <<'EOF'
+file:///home/ricky/Downloads Downloads
+file:///home/ricky/Documents Documents
+file:///home/ricky/Dev Dev
+file:///home/ricky/Games Games
+file:///mnt/flix Flix
+file:///mnt/familia Familia
+EOF
+    fi
+  '';
 
   # Aplicaciones predeterminadas: sin esto, xdg-open agarra al primer .desktop
   # que se registra (VSCode abre carpetas, PrismLauncher los zip, Librewolf las imágenes).
