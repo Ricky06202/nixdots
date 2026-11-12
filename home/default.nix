@@ -268,20 +268,25 @@ EOF
       "image/gif" = [ "org.gnome.Loupe.desktop" ];
       "image/webp" = [ "org.gnome.Loupe.desktop" ];
       "image/svg+xml" = [ "org.gnome.Loupe.desktop" ];
-      # PDFs → Okular
-      "application/pdf" = [ "org.kde.okular.desktop" ];
-      # Documentos de oficina → LibreOffice (por familia: writer/calc/impress)
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document" = [ "libreoffice-writer.desktop" ];
-      "application/msword" = [ "libreoffice-writer.desktop" ];
-      "application/rtf" = [ "libreoffice-writer.desktop" ];
-      "application/vnd.oasis.opendocument.text" = [ "libreoffice-writer.desktop" ];
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" = [ "libreoffice-calc.desktop" ];
-      "application/vnd.ms-excel" = [ "libreoffice-calc.desktop" ];
-      "application/vnd.oasis.opendocument.spreadsheet" = [ "libreoffice-calc.desktop" ];
-      "text/csv" = [ "libreoffice-calc.desktop" ];
-      "application/vnd.openxmlformats-officedocument.presentationml.presentation" = [ "libreoffice-impress.desktop" ];
-      "application/vnd.ms-powerpoint" = [ "libreoffice-impress.desktop" ];
-      "application/vnd.oasis.opendocument.presentation" = [ "libreoffice-impress.desktop" ];
+      # PDFs → Okular. OJO: org.kde.okular.desktop solo declara el formato de
+      # archivo propio de Okular; la asociación de PDF vive en el .desktop por
+      # mimetype (okularApplication_pdf.desktop, NoDisplay) que además hace que
+      # Okular salga en "Abrir con".
+      "application/pdf" = [ "okularApplication_pdf.desktop" "org.kde.okular.desktop" ];
+      # Documentos de oficina → LibreOffice (por familia: writer/calc/impress).
+      # OJO: en 26.8 los .desktop se llaman writer/calc/impress.desktop, sin el
+      # prefijo "libreoffice-".
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document" = [ "writer.desktop" ];
+      "application/msword" = [ "writer.desktop" ];
+      "application/rtf" = [ "writer.desktop" ];
+      "application/vnd.oasis.opendocument.text" = [ "writer.desktop" ];
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" = [ "calc.desktop" ];
+      "application/vnd.ms-excel" = [ "calc.desktop" ];
+      "application/vnd.oasis.opendocument.spreadsheet" = [ "calc.desktop" ];
+      "text/csv" = [ "calc.desktop" ];
+      "application/vnd.openxmlformats-officedocument.presentationml.presentation" = [ "impress.desktop" ];
+      "application/vnd.ms-powerpoint" = [ "impress.desktop" ];
+      "application/vnd.oasis.opendocument.presentation" = [ "impress.desktop" ];
       # Modelos 3D → F3D. Los .desktop "plugin" son los que declaran MimeType
       # (el f3d.desktop pelado no trae ninguno); el plugin importa el formato:
       # native = mallas (stl/obj/ply/gltf), assimp = 3mf/fbx/dae/off, occt =
