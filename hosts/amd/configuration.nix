@@ -11,6 +11,8 @@
 let
   # Usuario de la sesión gráfica (greetd -> cage -> Hyprland).
   guiUser = "ricky";
+  janRemoteIcon192 = ../../home/dotfiles/openhands/icons/jan-remoto-icon-192.png;
+  janRemoteIcon512 = ../../home/dotfiles/openhands/icons/jan-remoto-icon-512.png;
 
   # Manifest propio para que Canvas se pueda instalar como PWA desde el
   # teléfono. Las imágenes las sirve el frontend oficial de Agent Canvas.
@@ -27,12 +29,12 @@ let
     theme_color = "#15141b";
     icons = [
       {
-        src = "/android-chrome-192x192.png";
+        src = "/jan-remoto-icon-192.png";
         sizes = "192x192";
         type = "image/png";
       }
       {
-        src = "/android-chrome-512x512.png";
+        src = "/jan-remoto-icon-512.png";
         sizes = "512x512";
         type = "image/png";
         purpose = "any";
@@ -230,6 +232,20 @@ in
           add_header Cache-Control "no-cache";
         '';
       };
+      locations."= /jan-remoto-icon-192.png" = {
+        alias = "${janRemoteIcon192}";
+        extraConfig = ''
+          default_type image/png;
+          add_header Cache-Control "no-cache";
+        '';
+      };
+      locations."= /jan-remoto-icon-512.png" = {
+        alias = "${janRemoteIcon512}";
+        extraConfig = ''
+          default_type image/png;
+          add_header Cache-Control "no-cache";
+        '';
+      };
       locations."= /pwa-register.js" = {
         alias = "${janRemotePwaRegister}";
         extraConfig = ''
@@ -255,7 +271,8 @@ in
           ${canvasProxyHeaders}
           proxy_set_header Accept-Encoding "";
           sub_filter_once on;
-          sub_filter '</head>' '<link rel="manifest" href="/site.webmanifest"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><meta name="theme-color" content="#15141b"><meta name="apple-mobile-web-app-title" content="Jan"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><script src="/pwa-register.js" defer></script></head>';
+          sub_filter '<title>OpenHands</title>' '<title>Jan Remoto</title>';
+          sub_filter '</head>' '<link rel="manifest" href="/site.webmanifest"><link rel="icon" type="image/png" sizes="192x192" href="/jan-remoto-icon-192.png"><link rel="apple-touch-icon" href="/jan-remoto-icon-192.png"><meta name="theme-color" content="#15141b"><meta name="apple-mobile-web-app-title" content="Jan"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><script src="/pwa-register.js" defer></script></head>';
         '';
       };
     };
