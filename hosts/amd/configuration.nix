@@ -152,7 +152,7 @@ in
     wantedBy = [ "multi-user.target" ];
     wants = [ "network-online.target" ];
     after = [ "network-online.target" "systemd-tmpfiles-setup.service" ];
-    path = with pkgs; [ nodejs_24 uv bun git gh wrangler curl openssh ];
+    path = with pkgs; [ nodejs_24 uv bashInteractive bun git gh wrangler curl openssh ];
     environment = {
       HOME = "/var/lib/agent-canvas";
       NPM_CONFIG_CACHE = "/var/lib/agent-canvas/.npm";
@@ -170,7 +170,7 @@ in
       WorkingDirectory = "/srv/agent-canvas";
       ExecStart = "${pkgs.nodejs_24}/bin/npx --yes @openhands/agent-canvas@1.40.0 --host 127.0.0.1 --port 8000";
       Restart = "on-failure";
-      RestartSec = "10s";
+      RestartSec = "30s";
       UMask = "0007";
       StateDirectory = "agent-canvas";
       StateDirectoryMode = "0700";
