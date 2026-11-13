@@ -12,6 +12,62 @@ let
   # Usuario de la sesión gráfica (greetd -> cage -> Hyprland).
   guiUser = "ricky";
 
+  # Manifest propio para que Canvas se pueda instalar como PWA desde el
+  # teléfono. Las imágenes las sirve el frontend oficial de Agent Canvas.
+  janRemoteManifest = pkgs.writeText "jan-remoto.webmanifest" (builtins.toJSON {
+    id = "/";
+    name = "Jan Remoto";
+    short_name = "Jan";
+    description = "Jan local en la PC de Ricky";
+    start_url = "/";
+    scope = "/";
+    display = "standalone";
+    orientation = "any";
+    background_color = "#15141b";
+    theme_color = "#15141b";
+    icons = [
+      {
+        src = "/android-chrome-192x192.png";
+        sizes = "192x192";
+        type = "image/png";
+      }
+      {
+        src = "/android-chrome-512x512.png";
+        sizes = "512x512";
+        type = "image/png";
+        purpose = "any";
+      }
+    ];
+  });
+
+  # PWA installable, but intentionally no offline cache: the PC/model must be
+  # reachable for conversations, and private chats must not be cached on-phone.
+  janRemoteServiceWorker = pkgs.writeText "jan-remoto-service-worker.js" ''
+    self.addEventListener("install", (event) => event.waitUntil(self.skipWaiting()));
+    self.addEventListener("activate", (event) => event.waitUntil(self.clients.claim()));
+  '';
+  janRemotePwaRegister = pkgs.writeText "jan-remoto-pwa-register.js" ''
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/service-worker.js", { scope: "/" })
+        .catch((error) => console.warn("Jan Remote PWA registration failed", error));
+    }
+  '';
+
+  # El reverse proxy es loopback-only; Tailscale Serve añade HTTPS privado.
+  canvasProxyHeaders = ''
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto https;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection $connection_upgrade;
+    proxy_buffering off;
+    proxy_request_buffering off;
+    proxy_read_timeout 3600s;
+    proxy_send_timeout 3600s;
+  '';
+
   # Hook post-resume. Patrón documentado en systemd.special(7) para enganchar
   # código ANTES de dormir (ExecStart) y DESPUÉS de despertar (ExecStop):
   # el unit se activa con sleep.target y se para al deshacerlo.
@@ -71,6 +127,153 @@ in
     (pkgs.callPackage ../../packages/chatgpt-official { inherit pkgs; })
     pkgs.jan
   ];
+
+  # Canvas web privado para programar desde el celular. El agente corre como
+  # usuario sin privilegios; solo puede modificar /srv/agent-canvas y su estado
+  # privado. Los modelos siguen siendo los de Jan (puerto estable por el bridge).
+  services.tailscale.enable = true;
+
+  users.users.agentcanvas = {
+    isSystemUser = true;
+    group = "users";
+    home = "/var/lib/agent-canvas";
+    createHome = true;
+    homeMode = "0700";
+    description = "OpenHands Agent Canvas sin privilegios";
+  };
+
+  systemd.tmpfiles.rules = [
+    # Workspace compartido entre ricky y el agente, separado de ~/Dev/keys.
+    "d /srv/agent-canvas 2770 ricky users - -"
+  ];
+
+  systemd.services.agent-canvas = {
+    description = "OpenHands Agent Canvas (Jan Remoto)";
+    wantedBy = [ "multi-user.target" ];
+    wants = [ "network-online.target" ];
+    after = [ "network-online.target" "systemd-tmpfiles-setup.service" ];
+    path = with pkgs; [ nodejs_24 uv bun git gh wrangler curl openssh ];
+    environment = {
+      HOME = "/var/lib/agent-canvas";
+      NPM_CONFIG_CACHE = "/var/lib/agent-canvas/.npm";
+      UV_CACHE_DIR = "/var/lib/agent-canvas/.cache/uv";
+      UV_PYTHON_INSTALL_DIR = "/var/lib/agent-canvas/.local/share/uv/python";
+      # LiteLLM no reconoce todavía el ID local de Qwen3-VL; el usuario
+      # seleccionará el perfil Qwen antes de adjuntar fotos.
+      OPENHANDS_FORCE_VISION = "true";
+      CANVAS_VPS_KEY = "%d/vps_key";
+    };
+    serviceConfig = {
+      Type = "simple";
+      User = "agentcanvas";
+      Group = "users";
+      WorkingDirectory = "/srv/agent-canvas";
+      ExecStart = "${pkgs.nodejs_24}/bin/npx --yes @openhands/agent-canvas@1.40.0 --host 127.0.0.1 --port 8000";
+      Restart = "on-failure";
+      RestartSec = "10s";
+      UMask = "0007";
+      StateDirectory = "agent-canvas";
+      StateDirectoryMode = "0700";
+      LoadCredential = [ "vps_key:/home/ricky/Dev/keys/agent-canvas/vps_ed25519" ];
+      ProtectSystem = "strict";
+      ProtectHome = true;
+      PrivateTmp = true;
+      PrivateDevices = true;
+      NoNewPrivileges = true;
+      ProtectKernelTunables = true;
+      ProtectKernelModules = true;
+      ProtectControlGroups = true;
+      ProtectClock = true;
+      ProtectHostname = true;
+      RestrictSUIDSGID = true;
+      LockPersonality = true;
+      RestrictRealtime = true;
+      RestrictAddressFamilies = [ "AF_UNIX" "AF_INET" "AF_INET6" ];
+      ReadWritePaths = [ "/srv/agent-canvas" ];
+    };
+  };
+
+  # Stable, loopback-only OpenAI endpoint for OpenHands. It discovers Jan's
+  # random llama.cpp port/key and loads TwIL or Qwen on demand.
+  systemd.services.jan-openai-bridge = {
+    description = "OpenAI-compatible loopback bridge to Jan";
+    wantedBy = [ "multi-user.target" ];
+    after = [ "network.target" ];
+    path = [ pkgs.bun pkgs.iproute2 ];
+    serviceConfig = {
+      Type = "simple";
+      User = guiUser;
+      Group = "users";
+      ExecStart = "${pkgs.bun}/bin/bun run ${../../home/dotfiles/openhands/jan-api-bridge.ts}";
+      Restart = "on-failure";
+      RestartSec = "3s";
+      UMask = "0077";
+      NoNewPrivileges = true;
+      RestrictAddressFamilies = [ "AF_UNIX" "AF_INET" "AF_INET6" "AF_NETLINK" ];
+    };
+  };
+
+  # PWA façade: adds a named manifest/mobile metadata while proxying Canvas.
+  # Only loopback listens here; the phone will reach it through Tailscale Serve.
+  services.nginx = {
+    enable = true;
+    virtualHosts."jan-remoto" = {
+      serverName = "localhost";
+      listen = [ { addr = "127.0.0.1"; port = 8001; } ];
+      extraConfig = ''
+        client_max_body_size 25m;
+      '';
+      locations."= /site.webmanifest" = {
+        alias = "${janRemoteManifest}";
+        extraConfig = ''
+          default_type application/manifest+json;
+          add_header Cache-Control "no-cache";
+        '';
+      };
+      locations."= /pwa-register.js" = {
+        alias = "${janRemotePwaRegister}";
+        extraConfig = ''
+          default_type application/javascript;
+          add_header Cache-Control "no-cache";
+        '';
+      };
+      locations."= /service-worker.js" = {
+        alias = "${janRemoteServiceWorker}";
+        extraConfig = ''
+          default_type application/javascript;
+          add_header Service-Worker-Allowed "/" always;
+          add_header Cache-Control "no-cache";
+        '';
+      };
+      locations."/assets/" = {
+        proxyPass = "http://127.0.0.1:8000";
+        extraConfig = canvasProxyHeaders;
+      };
+      locations."/" = {
+        proxyPass = "http://127.0.0.1:8000";
+        extraConfig = ''
+          ${canvasProxyHeaders}
+          proxy_set_header Accept-Encoding "";
+          sub_filter_once on;
+          sub_filter '</head>' '<link rel="manifest" href="/site.webmanifest"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><meta name="theme-color" content="#15141b"><meta name="apple-mobile-web-app-title" content="Jan"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><script src="/pwa-register.js" defer></script></head>';
+        '';
+      };
+    };
+  };
+
+  # The systemd unit is deliberately not enabled: first join the PC to your
+  # tailnet with `tailscale up`, then start this once. Serve stays private and
+  # Tailscale persists the HTTPS route across reboots.
+  systemd.services.jan-remoto-tailscale-serve = {
+    description = "Expose Jan Remoto PWA over private Tailscale HTTPS";
+    after = [ "tailscaled.service" "nginx.service" ];
+    requires = [ "tailscaled.service" "nginx.service" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      ExecStart = "${pkgs.tailscale}/bin/tailscale serve --bg http://127.0.0.1:8001";
+    };
+  };
 
   # Microcode AMD (estabilidad/seguridad del CPU).
   hardware.cpu.amd.updateMicrocode = true;
