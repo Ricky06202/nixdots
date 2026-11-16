@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # oc-web [puerto] — interfaz web de opencode (v2) contra el modelo local.
 #
-# Hace las tres cosas: levanta Spark en :8091 si hace falta (`local-ai chat`,
-# que apara Jan), arranca `opencode serve` en :4096 y abre el navegador.
+# Hace las tres cosas: levanta Spark en :8091 si hace falta (`local-ai chat`),
+# arranca `opencode serve` en :4096 y abre el navegador.
 # Es la misma config de opencode (agentes, provider `local`, permisos): solo
 # cambia la interfaz.
 set -uo pipefail

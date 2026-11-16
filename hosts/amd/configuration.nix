@@ -125,12 +125,12 @@ in
   networking.hostName = "amd";
 
   # App oficial ChatGPT: solo en la PC principal (clausura Nix ~2.7 GiB).
-  # jan: asistente local de escritorio (llama.cpp + Vulkan bundled, AppImage
-  # envuelto). Los modelos GGUF viven FUERA del store, en
-  # ~/.local/share/Jan/data/llamacpp/models (TwIL 8B / Qwen3-VL 4B).
+  # Jan YA NO se instala (2026-11-16): era solo chat, no sirve como agente, y su
+  # unico modelo util (TwIL 8B) se borro. El modelo local es Spark-X2.6 4B
+  # servido por llama-server (:8091); la PWA del celular va derecho a ese
+  # endpoint via jan-openai-bridge, asi que NO depende de Jan.
   environment.systemPackages = [
     (pkgs.callPackage ../../packages/chatgpt-official { inherit pkgs; })
-    pkgs.jan
   ];
 
   # Canvas web privado para programar desde el celular. El agente corre como

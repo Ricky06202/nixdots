@@ -10,9 +10,8 @@ blueman-applet &
 sleep 8
 vesktop &
 zapzap &
-# Jan ya NO arranca solo: sus modelos (TwIL 8B y Qwen3-VL) se borraron el
-# 2026-11-16 y el unico modelo local es Spark-X2.6 4B, que se levanta a mano con
-# `local-ai chat` (ocupa la GPU entera). Jan queda instalado pero vacio.
+# Jan esta desinstalado (2026-11-16): era solo chat, sin herramientas. El unico
+# modelo local es Spark-X2.6 4B y se levanta a mano con `local-ai chat`.
 disown -a
 
 # --- Feishin (musica) al inicio ------------------------------------------------

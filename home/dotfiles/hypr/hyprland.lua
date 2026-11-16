@@ -396,8 +396,7 @@ hl.window_rule({ match = { class = "io.github.tobagin.karere" }, workspace = 2 }
 hl.window_rule({ match = { class = "^(steam|steamwebhelper)$" }, workspace = 3 })
 hl.window_rule({ match = { class = "^(feishin|Feishin)$" }, workspace = 4 })
 hl.window_rule({ match = { class = "^(motrix-next|MOTRIX|Motrix)$" }, workspace = 7 })
--- ws 5: asistente local (Jan). ChatGPT queda instalado pero ya no se fija aquí.
-hl.window_rule({ match = { class = "^Jan-Desktop$" }, workspace = 5 })
+-- ws 5: sin asistente de chat local desde 2026-11-16 (Jan desinstalado).
 hl.window_rule({ match = { class = "^com.obsproject.Studio$" }, workspace = 5 })
 hl.window_rule({ match = { class = "^com\\.rtosta\\.zapzap$" }, workspace = 2 })
 
