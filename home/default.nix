@@ -593,8 +593,9 @@ EOF
     executable = true;
     force = true;
   };
-  # jan-preload.sh: precarga el modelo de Jan al inicio (cachea el tiron de
-  # carga). Lo lanza autostart.sh.
+  # jan-preload.sh se conserva por si vuelve a haber un modelo en Jan, pero ya
+  # nada lo lanza: autostart.sh no arranca Jan (sus modelos se borraron el
+  # 2026-11-16; el unico local es Spark, que levanta `local-ai chat`).
   home.file.".config/hypr/jan-preload.sh" = {
     source = ./dotfiles/hypr/jan-preload.sh;
     executable = true;
