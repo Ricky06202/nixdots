@@ -131,6 +131,10 @@ in
   # endpoint via jan-openai-bridge, asi que NO depende de Jan.
   environment.systemPackages = [
     (pkgs.callPackage ../../packages/chatgpt-official { inherit pkgs; })
+    # opencode-desktop: la app oficial (Electron) de opencode, misma versión que
+    # la CLI y mismo config/agentes/provider `local`. Empaqueta el binario de
+    # `opencode`, así que hereda el override de bun 1.3.13 (ver shared/default.nix).
+    pkgs.opencode-desktop
   ];
 
   # Canvas web privado para programar desde el celular. El agente corre como
