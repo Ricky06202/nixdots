@@ -40,7 +40,7 @@ let chats = loadChats();
 let activeId = chats[0]?.id ?? null;
 let pendingPhoto = null;
 let activeRequest = null;
-let currentAssistantNode = null;
+let currentAssistantNodes = null;
 
 function getChat() {
   return chats.find((chat) => chat.id === activeId) ?? null;
@@ -58,6 +58,7 @@ function persist() {
       text: message.text,
       hasImage: Boolean(message.hasImage),
       speed: message.speed ?? null,
+      reasoning: (message.reasoning ?? "").slice(0, 4000),
     })),
   }));
   try {
@@ -145,16 +146,34 @@ function renderMessage(message, index) {
     body.append(placeholder);
   }
 
+  // TwIL (reasoning_format=deepseek) streams the whole thought process in
+  // `reasoning_content`; the final answer arrives later in `content`.
+  let reasoningText = null;
+  if (message.reasoning) {
+    const details = document.createElement("details");
+    details.className = "reasoning";
+    details.open = Boolean(message.streaming);
+    const summary = document.createElement("summary");
+    summary.textContent = message.streaming ? "Razonando…" : "Razonamiento";
+    const reasoning = document.createElement("div");
+    reasoning.className = "reasoning-text";
+    reasoning.textContent = message.reasoning;
+    details.append(summary, reasoning);
+    body.append(details);
+    reasoningText = reasoning;
+  }
+
   const text = document.createElement("div");
   text.className = "message-text";
   text.textContent = message.text || "";
   text.dataset.messageIndex = String(index);
   body.append(text);
-  if (message.streaming && !message.text) {
-    const thinking = document.createElement("div");
-    thinking.className = "typing-indicator";
-    thinking.innerHTML = "<i></i><i></i><i></i><span>Jan está pensando</span>";
-    body.append(thinking);
+  let thinkingNode = null;
+  if (message.streaming && !message.text && !message.reasoning) {
+    thinkingNode = document.createElement("div");
+    thinkingNode.className = "typing-indicator";
+    thinkingNode.innerHTML = "<i></i><i></i><i></i><span>Jan está pensando</span>";
+    body.append(thinkingNode);
   }
   if (message.speed) {
     const speed = document.createElement("div");
@@ -163,7 +182,7 @@ function renderMessage(message, index) {
     body.append(speed);
   }
   row.append(avatar, body);
-  return row;
+  return { row, text, reasoning: reasoningText, thinking: thinkingNode };
 }
 
 function render() {
@@ -175,7 +194,7 @@ function render() {
   messagesEl.replaceChildren();
   const list = document.createElement("div");
   list.className = "message-list";
-  chat.messages.forEach((message, index) => list.append(renderMessage(message, index)));
+  chat.messages.forEach((message, index) => list.append(renderMessage(message, index).row));
   messagesEl.append(list);
   messagesEl.scrollTop = messagesEl.scrollHeight;
 }
@@ -230,18 +249,55 @@ function apiMessage(message) {
 }
 
 function updateAssistantText(text) {
-  if (currentAssistantNode) {
-    currentAssistantNode.textContent = text;
-    currentAssistantNode.closest(".message-body")?.querySelector(".typing-indicator")?.remove();
-    messagesEl.scrollTop = messagesEl.scrollHeight;
+  if (!currentAssistantNodes?.text) return;
+  currentAssistantNodes.text.textContent = text;
+  if (currentAssistantNodes.thinking) {
+    currentAssistantNodes.thinking.remove();
+    currentAssistantNodes.thinking = null;
   }
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
+function ensureReasoningNode() {
+  const body = currentAssistantNodes?.text?.closest(".message-body");
+  if (!body) return null;
+  let node = body.querySelector(".reasoning-text");
+  if (node) return node;
+  const details = document.createElement("details");
+  details.className = "reasoning";
+  details.open = true;
+  const summary = document.createElement("summary");
+  summary.textContent = "Razonando…";
+  node = document.createElement("div");
+  node.className = "reasoning-text";
+  details.append(summary, node);
+  body.insertBefore(details, currentAssistantNodes.text);
+  currentAssistantNodes.reasoning = node;
+  return node;
+}
+
+function updateAssistantReasoning() {
+  if (!currentAssistantNodes || !currentAssistantNodes.reasoningText) return;
+  const node = ensureReasoningNode();
+  if (node) node.textContent = currentAssistantNodes.reasoningText;
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
+function settleReasoning() {
+  const details = currentAssistantNodes?.text?.closest(".message-body")?.querySelector(".reasoning");
+  if (!details) return;
+  details.open = false;
+  const summary = details.querySelector("summary");
+  if (summary) summary.textContent = `Razonamiento · ${details.querySelector(".reasoning-text")?.textContent.length ?? 0} caracteres`;
 }
 
 async function readCompletion(response, assistant) {
   const type = response.headers.get("content-type") || "";
   if (!type.includes("text/event-stream")) {
     const data = await response.json();
-    assistant.text = data.choices?.[0]?.message?.content ?? "";
+    const message = data.choices?.[0]?.message ?? {};
+    assistant.text = typeof message.content === "string" ? message.content : "";
+    assistant.reasoning = typeof message.reasoning_content === "string" ? message.reasoning_content : "";
     assistant.speed = data.timings?.predicted_per_second ?? null;
     updateAssistantText(assistant.text);
     return;
@@ -252,7 +308,7 @@ async function readCompletion(response, assistant) {
   let buffer = "";
   let completionTokens = null;
   let predictedPerSecond = null;
-  let firstContentAt = null;
+  let firstTokenAt = null;
   while (true) {
     const part = await reader.read();
     buffer += decoder.decode(part.value ?? new Uint8Array(), { stream: !part.done });
@@ -267,16 +323,24 @@ async function readCompletion(response, assistant) {
       if (chunk.error) throw new Error(chunk.error.message || "Jan devolvió un error");
       if (Number.isFinite(chunk.timings?.predicted_per_second)) predictedPerSecond = chunk.timings.predicted_per_second;
       if (Number.isFinite(chunk.usage?.completion_tokens)) completionTokens = chunk.usage.completion_tokens;
-      const content = chunk.choices?.[0]?.delta?.content;
-      if (typeof content === "string") {
-        firstContentAt ??= performance.now();
+      const delta = chunk.choices?.[0]?.delta ?? {};
+      const reasoning = delta.reasoning_content;
+      if (typeof reasoning === "string" && reasoning) {
+        firstTokenAt ??= performance.now();
+        assistant.reasoning = (assistant.reasoning ?? "") + reasoning;
+        currentAssistantNodes.reasoningText = assistant.reasoning;
+        updateAssistantReasoning();
+      }
+      const content = delta.content;
+      if (typeof content === "string" && content) {
+        firstTokenAt ??= performance.now();
         assistant.text += content;
         updateAssistantText(assistant.text);
       }
     }
     if (part.done) break;
   }
-  const elapsed = firstContentAt === null ? 0 : Math.max((performance.now() - firstContentAt) / 1000, 0.001);
+  const elapsed = firstTokenAt === null ? 0 : Math.max((performance.now() - firstTokenAt) / 1000, 0.001);
   if (predictedPerSecond !== null) assistant.speed = predictedPerSecond;
   else if (completionTokens !== null && elapsed > 0) assistant.speed = completionTokens / elapsed;
 }
@@ -307,11 +371,17 @@ async function sendMessage() {
   promptEl.style.height = "auto";
   clearPendingPhoto();
 
-  const assistant = { role: "assistant", text: "", streaming: true };
+  const assistant = { role: "assistant", text: "", reasoning: "", streaming: true };
   chat.messages.push(assistant);
   render();
-  const responseNodes = messagesEl.querySelectorAll(".message.assistant .message-text");
-  currentAssistantNode = responseNodes[responseNodes.length - 1] ?? null;
+  const lastRow = messagesEl.querySelectorAll(".message.assistant");
+  const lastBody = lastRow[lastRow.length - 1];
+  currentAssistantNodes = {
+    text: lastBody?.querySelector(".message-text") ?? null,
+    thinking: lastBody?.querySelector(".typing-indicator") ?? null,
+    reasoningText: "",
+    reasoning: lastBody?.querySelector(".reasoning-text") ?? null,
+  };
   sendButton.disabled = true;
   activeRequest = new AbortController();
   setStatus(true, `Jan · ${MODELS[model].label}`);
@@ -327,7 +397,7 @@ async function sendMessage() {
         messages: [{ role: "system", content: SYSTEM_PROMPT }, ...history],
         temperature: settings.temperature,
         top_p: settings.top_p,
-        max_tokens: 2048,
+        max_tokens: 4096,
         stream: true,
         stream_options: { include_usage: true },
       }),
@@ -339,6 +409,12 @@ async function sendMessage() {
       throw new Error(detail.error?.message || `HTTP ${response.status}`);
     }
     await readCompletion(response, assistant);
+    if (!assistant.text.trim() && assistant.reasoning?.trim()) {
+      // Model exhausted the budget inside the reasoning channel: show what it
+      // did produce instead of an empty bubble.
+      assistant.text = assistant.reasoning.trim();
+      assistant.reasoning = "";
+    }
     if (!assistant.text.trim()) assistant.text = "Jan devolvió una respuesta vacía.";
   } catch (error) {
     assistant.error = true;
@@ -349,12 +425,13 @@ async function sendMessage() {
         : `No pude hablar con Jan: ${error.message || error}`;
   } finally {
     assistant.streaming = false;
+    settleReasoning();
     chat.updatedAt = Date.now();
     persist();
     render();
     sendButton.disabled = false;
     activeRequest = null;
-    currentAssistantNode = null;
+    currentAssistantNodes = null;
     await checkJan(false);
   }
 }
