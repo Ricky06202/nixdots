@@ -2,10 +2,9 @@ const API = "/jan-api/v1";
 const API_KEY = "jan-local";
 const STORAGE_KEY = "jan-remoto-chat-v1";
 const MODELS = {
-  "twil-8b": { label: "TwIL 8B · Razonamiento", temperature: 1, top_p: 0.95 },
-  "qwen3-vl-4b": { label: "Qwen3 VL · Fotos", temperature: 0.7, top_p: 0.8 },
+  "spark-4b": { label: "Spark 4B · local", temperature: 0.7, top_p: 0.95 },
 };
-const SYSTEM_PROMPT = "Eres Jan, un asistente local. Responde en el idioma del usuario, de forma clara y natural. Esta pantalla es solo para conversar: no afirmes haber ejecutado comandos ni editado archivos. Si recibes una imagen, analízala con atención.";
+const SYSTEM_PROMPT = "Eres Spark, un asistente local. Responde en el idioma del usuario, de forma clara y natural. Esta pantalla es solo para conversar: no afirmes haber ejecutado comandos ni editado archivos. Si recibes una imagen, analízala con atención.";
 const $ = (selector) => document.querySelector(selector);
 
 const sidebar = $("#sidebar");
@@ -104,7 +103,7 @@ function renderHistory() {
     button.append(icon, label);
     button.addEventListener("click", () => {
       activeId = chat.id;
-      modelSelect.value = chat.model in MODELS ? chat.model : "twil-8b";
+      modelSelect.value = chat.model in MODELS ? chat.model : "spark-4b";
       render();
       closeSidebar();
     });
@@ -189,7 +188,7 @@ function render() {
   renderHistory();
   const chat = getChat();
   if (!chat) return;
-  modelSelect.value = chat.model in MODELS ? chat.model : "twil-8b";
+  modelSelect.value = chat.model in MODELS ? chat.model : "spark-4b";
   welcomeEl.hidden = chat.messages.length > 0;
   messagesEl.replaceChildren();
   const list = document.createElement("div");
@@ -208,12 +207,12 @@ async function checkJan(showMessage = true) {
     const body = await response.json();
     if (!response.ok) throw new Error(body.error?.message || `HTTP ${response.status}`);
     const available = new Set((body.data ?? []).map((model) => model.id));
-    if (!available.has("twil-8b") || !available.has("qwen3-vl-4b")) throw new Error("Faltan modelos");
+    if (!available.has("spark-4b")) throw new Error("Falta el modelo");
     setStatus(true, "Jan local listo");
     return true;
   } catch {
     setStatus(false, "Jan desconectado");
-    if (showMessage) showToast("Abre Jan en la PC, carga TwIL o Qwen y vuelve a intentar.");
+    if (showMessage) showToast("Ejecuta 'local-ai chat' en el PC y vuelve a intentar.");
     return false;
   }
 }
@@ -355,7 +354,7 @@ async function sendMessage() {
     return;
   }
 
-  const model = modelSelect.value in MODELS ? modelSelect.value : "twil-8b";
+  const model = modelSelect.value in MODELS ? modelSelect.value : "spark-4b";
   chat.model = model;
   const userMessage = {
     role: "user",
@@ -440,7 +439,7 @@ function createChat() {
   const chat = {
     id: globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`,
     title: "Nuevo chat",
-    model: modelSelect.value || "twil-8b",
+    model: modelSelect.value || "spark-4b",
     updatedAt: Date.now(),
     messages: [],
   };
@@ -455,17 +454,17 @@ function createChat() {
 function selectChat(chatId) {
   activeId = chatId;
   const chat = getChat();
-  if (chat) modelSelect.value = chat.model in MODELS ? chat.model : "twil-8b";
+  if (chat) modelSelect.value = chat.model in MODELS ? chat.model : "spark-4b";
   render();
   closeSidebar();
 }
 
 function initialize() {
   if (!chats.length) {
-    chats = [{ id: makeId(), title: "Nuevo chat", model: "twil-8b", updatedAt: Date.now(), messages: [] }];
+    chats = [{ id: makeId(), title: "Nuevo chat", model: "spark-4b", updatedAt: Date.now(), messages: [] }];
     activeId = chats[0].id;
   }
-  modelSelect.value = getChat()?.model in MODELS ? getChat().model : "twil-8b";
+  modelSelect.value = getChat()?.model in MODELS ? getChat().model : "spark-4b";
   render();
   checkJan(false);
 }
@@ -482,15 +481,8 @@ photoInput.addEventListener("change", async () => {
   if (!["image/png", "image/jpeg", "image/gif", "image/webp"].includes(file.type)) { showToast("Adjunta PNG, JPG, GIF o WebP."); return; }
   if (file.size > 20 * 1024 * 1024) { showToast("La foto debe pesar menos de 20 MB."); return; }
   try {
-    const dataUrl = await readDataUrl(file);
-    pendingPhoto = { file, dataUrl };
-    attachmentImage.src = dataUrl;
-    attachmentName.textContent = file.name || "Foto";
-    attachmentBox.hidden = false;
-    modelSelect.value = "qwen3-vl-4b";
-    const chat = getChat();
-    if (chat) chat.model = modelSelect.value;
-    persist();
+    showToast("Spark no ve imágenes: este modelo es solo texto.");
+    photoInput.value = "";
   } catch (error) {
     showToast(error.message || "No pude leer la foto.");
   }
