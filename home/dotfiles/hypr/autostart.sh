@@ -10,8 +10,13 @@ blueman-applet &
 sleep 8
 vesktop &
 zapzap &
-# Jan esta desinstalado (2026-11-16): era solo chat, sin herramientas. El unico
-# modelo local es Spark-X2.6 4B y se levanta a mano con `local-ai chat`.
+# opencode (agente de codigo): ventana propia, siempre en el ws 5 por la regla de
+# hyprland.lua. OJO: el MODELO no arranca solo — Spark ocupa 7.5 de los 8 GB de
+# VRAM y compite con juegos/Sunshine; se levanta con `local-ai chat` cuando se va
+# a programar (sin eso la app abre pero el modelo local da error de conexión).
+if command -v opencode-desktop >/dev/null 2>&1; then
+  setsid nohup opencode-desktop >/dev/null 2>&1 &
+fi
 disown -a
 
 # --- Feishin (musica) al inicio ------------------------------------------------
