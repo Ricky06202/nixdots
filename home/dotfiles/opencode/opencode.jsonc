@@ -3,7 +3,11 @@
   "instructions": [
     "/home/ricky/.config/opencode/INSTRUCTIONS.md"
   ],
-  "model": "deepseek/deepseek-flash",
+  // Modelo por defecto: Spark local (sin razonar = mas rapido). Para tareas
+  // duras cambiar a local/spark-4b-think, o volver a deepseek/deepseek-flash.
+  "model": "local/spark-4b",
+  // Tareas cortas (titulos de sesion, resumenes): tambien local, $0.
+  "small_model": "local/spark-4b",
   "compaction": {
     "auto": true,
     "prune": true,
