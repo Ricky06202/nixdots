@@ -11,5 +11,31 @@
       "tokens": 50000
     },
     "buffer": 20000
+  },
+  // Coder local: llama.cpp + Qwen3-Coder-30B-A3B en la RX 7600 (host amd).
+  // No arranca solo: `coding on` apara Jan (TwIL usa la misma VRAM de 8 GB).
+  // Elegirlo en /models como `local/qwen3-coder`. Coste: $0/token.
+  "providers": {
+    "local": {
+      "name": "Coder local (RX 7600)",
+      "package": "@opencode/ai/providers/openai-compatible",
+      "settings": {
+        "baseURL": "http://127.0.0.1:8090/v1"
+      },
+      "models": {
+        "qwen3-coder": {
+          "name": "Qwen3-Coder 30B-A3B (local)",
+          "capabilities": {
+            "tools": true,
+            "input": ["text"],
+            "output": ["text"]
+          },
+          "limit": {
+            "context": 24576,
+            "output": 8192
+          }
+        }
+      }
+    }
   }
 }

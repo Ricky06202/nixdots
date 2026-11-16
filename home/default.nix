@@ -659,6 +659,30 @@ EOF
     };
   };
 
+  # --- Coder local (solo host amd) ---------------------------------------
+  # La RX 7600 tiene 8 GB: TwIL (ctx 131072) usa ~7.4 y el coder MoE ~7. Son
+  # excluyentes, por eso el servicio NO arranca solo (sin Install) y el swap lo
+  # hace `coding on|off` (home/dotfiles/hypr/coding.sh).
+  # Calibrado 2026-11: --n-cpu-moe 40 = 6.6 GB VRAM y 18 tok/s; 38 sube a 18.6
+  # pero deja la GPU sin margen; 36 se ahoga (7.6 tok/s).
+  systemd.user.services."llama-coder" = lib.mkIf (hostName == "amd") {
+    Unit.Description = "llama.cpp con Qwen3-Coder-30B-A3B (expertos MoE en RAM)";
+    Service = {
+      Type = "simple";
+      # Ruta absoluta (no `%h`): asi el comando se puede probar tal cual con
+      # `systemd-run` antes de aplicar el rebuild, sin depender de especificadores.
+      ExecStart = "${pkgs.llama-cpp.override { vulkanSupport = true; }}/bin/llama-server -m ${config.home.homeDirectory}/Dev/models/Qwen3-Coder-30B-A3B-Instruct-UD-Q4_K_XL.gguf --host 127.0.0.1 --port 8090 -ngl 99 --n-cpu-moe 40 -c 24576 -ctk q8_0 -ctv q8_0 -fa on --no-warmup -np 1 --alias qwen3-coder";
+      Restart = "no";
+      TimeoutStartSec = 300;
+    };
+  };
+
+  home.file.".local/bin/coding" = lib.mkIf (hostName == "amd") {
+    source = ./dotfiles/hypr/coding.sh;
+    executable = true;
+    force = true;
+  };
+
   # Quitado todo el extra de suspend/resume de esta sesion:
 #  - la unidad systemd "caelestia-resume" (disparaba al entrar en suspend, no
 #    al resume, y mataba el shell a mitad de suspension)
