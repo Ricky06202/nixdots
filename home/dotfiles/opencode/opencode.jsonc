@@ -12,29 +12,51 @@
     },
     "buffer": 20000
   },
-  // Coder local: llama.cpp + Qwen3-Coder-30B-A3B en la RX 7600 (host amd).
-  // No arranca solo: `coding on` apara Jan (TwIL usa la misma VRAM de 8 GB).
-  // Elegirlo en /models como `local/qwen3-coder`. Coste: $0/token.
+  // Modelo local: llama.cpp + Spark-X2.6-4B en la RX 7600 (host amd).
+  // NO arranca solo: `local-ai chat` apara Jan (TwIL usa la misma VRAM de 8 GB).
+  // OJO con el microbatch: el service usa -ub 256 porque con 512 el prefill de
+  // 8k+ cuelga la GPU (timeout del anillo de computo, ver MEMORY.md).
   "providers": {
     "local": {
-      "name": "Coder local (RX 7600)",
+      "name": "Local (RX 7600)",
       "package": "@opencode/ai/providers/openai-compatible",
       "settings": {
-        "baseURL": "http://127.0.0.1:8090/v1"
+        "baseURL": "http://127.0.0.1:8091/v1"
       },
       "models": {
-        "qwen3-coder": {
-          "name": "Qwen3-Coder 30B-A3B (local)",
+        // Mismo servidor y mismos pesos: solo cambia si razona antes de responder.
+        "spark-4b": {
+          "name": "Spark-X2.6 4B (rápido, sin pensar)",
           "capabilities": {
             "tools": true,
             "input": ["text"],
             "output": ["text"]
           },
-          // temperatura baja: con 0.7 el modelo repite el mismo tool-call.
-          "body": { "temperature": 0.3 },
+          "body": {
+            "temperature": 0.7,
+            "top_p": 0.95,
+            "chat_template_kwargs": { "enable_thinking": false }
+          },
           "limit": {
-            "context": 24576,
+            "context": 131072,
             "output": 8192
+          }
+        },
+        "spark-4b-think": {
+          "name": "Spark-X2.6 4B (razonando)",
+          "capabilities": {
+            "tools": true,
+            "input": ["text"],
+            "output": ["text"]
+          },
+          "body": {
+            "temperature": 0.7,
+            "top_p": 0.95,
+            "chat_template_kwargs": { "reasoning_effort": "high" }
+          },
+          "limit": {
+            "context": 131072,
+            "output": 16384
           }
         }
       }

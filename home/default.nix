@@ -1,5 +1,16 @@
 { config, pkgs, lib, hostName ? "laptop", cliAw, ... }:
 
+let
+  # Modelo local (host amd). Spark-X2.6 4B Q4_K_M entra completo en la GPU.
+  # Medido en la RX 7600 (2026-11-16, thinking apagado): 54 tok/s a ctx corto,
+  # 29 a 2k, 19-25 de 8k a 31k. Cambiar aqui para probar otro GGUF (debe
+  # existir en ~/Dev/models) y aplicar rebuild.
+  # Se probaron y se borraron gemma-3-4b-it y granite-4.1-3b: Granite era mas
+  # rapido (70/62/47) pero este razona, hace tool calling y es el unico que
+  # queda descargado. Qwen3-Coder 30B tambien se borro (MoE a 20 tok/s).
+  chatModel = "Spark-X2.6-4B-Q4_K_M.gguf";
+  chatAlias = "spark-4b";
+in
 {
   # Caelestia: usar ~/Imágenes/wallpapers como carpeta de fondos
   home.sessionVariables = {
@@ -665,26 +676,34 @@ EOF
     };
   };
 
-  # --- Coder local (solo host amd) ---------------------------------------
-  # La RX 7600 tiene 8 GB: TwIL (ctx 131072) usa ~7.4 y el coder MoE ~7. Son
-  # excluyentes, por eso el servicio NO arranca solo (sin Install) y el swap lo
-  # hace `coding on|off` (home/dotfiles/hypr/coding.sh).
-  # Calibrado 2026-11: --n-cpu-moe 40 = 6.6 GB VRAM y 18 tok/s; 38 sube a 18.6
-  # pero deja la GPU sin margen; 36 se ahoga (7.6 tok/s).
-  systemd.user.services."llama-coder" = lib.mkIf (hostName == "amd") {
-    Unit.Description = "llama.cpp con Qwen3-Coder-30B-A3B (expertos MoE en RAM)";
+  # --- Modelo local (solo host amd) --------------------------------------
+  # La RX 7600 tiene 8 GB y TwIL (ctx 131072) usa ~7.4: son excluyentes, por eso
+  # el servicio NO arranca solo (sin Install) y el swap lo hace `local-ai`
+  # (home/dotfiles/hypr/local-ai.sh).
+  # 128k de contexto (el maximo fisico en esta GPU). El modelo declara 1M, pero
+  # el KV de esta arquitectura cuesta 36 KiB/token en f16 (9 capas de atencion
+  # completa x 4 KV heads x 256 head_dim x K+V x 2 bytes): 1M serian 36 GiB
+  # (18 GiB en q8_0) y la tarjeta tiene 8. Con KV q8_0 y ctx 131072 queda en
+  # 7.5 G de VRAM, igual que TwIL. Si el escritorio se queja, bajar a 65536.
+  # OJO con -ub: 256 es OBLIGATORIO (con 512 el prefill de 8k+ cuelga la GPU:
+  # "ring comp_1.1.1 timeout" + vk::DeviceLostError); -c es el tope de contexto,
+  # -ub el microbatch de prefill, no lo confundas.
+  # --jinja activa el template del GGUF y es REQUISITO para el tool calling.
+  systemd.user.services."llama-chat" = lib.mkIf (hostName == "amd") {
+    Unit.Description = "llama.cpp con ${chatAlias} (modelo local, GPU completa)";
     Service = {
       Type = "simple";
       # Ruta absoluta (no `%h`): asi el comando se puede probar tal cual con
       # `systemd-run` antes de aplicar el rebuild, sin depender de especificadores.
-      ExecStart = "${pkgs.llama-cpp.override { vulkanSupport = true; }}/bin/llama-server -m ${config.home.homeDirectory}/Dev/models/Qwen3-Coder-30B-A3B-Instruct-UD-Q4_K_XL.gguf --host 127.0.0.1 --port 8090 -ngl 99 --n-cpu-moe 40 -c 24576 -ctk q8_0 -ctv q8_0 -fa on --no-warmup -np 1 --alias qwen3-coder";
+      ExecStart = "${pkgs.llama-cpp.override { vulkanSupport = true; }}/bin/llama-server -m ${config.home.homeDirectory}/Dev/models/${chatModel} --host 127.0.0.1 --port 8091 -ngl 99 -c 131072 -fa on -ub 256 -ctk q8_0 -ctv q8_0 --no-warmup -np 1 --alias ${chatAlias} --jinja";
       Restart = "no";
-      TimeoutStartSec = 300;
+      TimeoutStartSec = 180;
     };
   };
 
-  home.file.".local/bin/coding" = lib.mkIf (hostName == "amd") {
-    source = ./dotfiles/hypr/coding.sh;
+  # `local-ai chat|off|status` = el que reparte la GPU entre Jan y el modelo.
+  home.file.".local/bin/local-ai" = lib.mkIf (hostName == "amd") {
+    source = ./dotfiles/hypr/local-ai.sh;
     executable = true;
     force = true;
   };
