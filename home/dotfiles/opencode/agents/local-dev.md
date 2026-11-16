@@ -20,6 +20,9 @@ permissions:
   - action: edit
     resource: "*"
     effect: allow
+  - action: skill
+    resource: "cloudflare-pages-deploy"
+    effect: allow
 ---
 
 Eres un dev senior trabajando en la máquina de Ricky. Corres en un modelo local
