@@ -21,17 +21,12 @@ if ! systemctl --user is-active --quiet llama-chat; then
   "$HOME/.local/bin/local-ai" chat || exit 1
 fi
 
-# 2. Servidor web de opencode con password fija.
-running=no
-curl -sf -m 2 -u "opencode:$PASSWORD" "$URL" >/dev/null 2>&1 && running=yes
-if [ "$running" = no ]; then
-  # Si hay otra instancia con password aleatoria, se reemplaza por la nuestra.
-  systemctl --user stop opencode-web.service >/dev/null 2>&1 || true
-  systemctl --user reset-failed opencode-web.service >/dev/null 2>&1 || true
-  systemd-run --user --unit=opencode-web --collect \
-    --setenv="OPENCODE_SERVER_PASSWORD=$PASSWORD" \
-    opencode serve --hostname 127.0.0.1 --port "$PORT" >/dev/null || {
-    echo "no se pudo arrancar opencode serve"
+# 2. Servidor web de opencode: lo declara nixdots como opencode-serve (queda
+#    siempre arriba desde el login, con OPENCODE_SERVER_PASSWORD fija).
+if ! curl -sf -m 2 -u "opencode:$PASSWORD" "$URL" >/dev/null 2>&1; then
+  systemctl --user start opencode-serve.service >/dev/null 2>&1 || {
+    echo "no existe el servicio opencode-serve."
+    echo "aplica el rebuild: sudo nixos-rebuild switch --flake ~/Dev/nixdots#amd"
     exit 1
   }
   for _ in $(seq 1 40); do
@@ -41,7 +36,7 @@ if [ "$running" = no ]; then
 fi
 
 if ! curl -sf -m 2 -u "opencode:$PASSWORD" "$URL" >/dev/null 2>&1; then
-  echo "la web de opencode no respondio. Revisa: journalctl --user -u opencode-web -n 40"
+  echo "la web de opencode no respondio. Revisa: journalctl --user -u opencode-serve -n 40"
   exit 1
 fi
 

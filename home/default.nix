@@ -670,9 +670,10 @@ EOF
   };
 
   # --- Modelo local (solo host amd) --------------------------------------
-  # La RX 7600 tiene 8 GB y TwIL (ctx 131072) usa ~7.4: son excluyentes, por eso
-  # el servicio NO arranca solo (sin Install) y el swap lo hace `local-ai`
-  # (home/dotfiles/hypr/local-ai.sh).
+  # Decision del usuario (2026-11-16): el modelo queda SIEMPRE cargado, desde el
+  # login, para que opencode (escritorio y web/celular) funcione sin comandos.
+  # Coste: ~7.5 de los 8 GB de VRAM quedan tomados; para jugar/streaming hay que
+  # liberar la GPU con `local-ai off` y volver con `local-ai chat`.
   # 128k de contexto (el maximo fisico en esta GPU). El modelo declara 1M, pero
   # el KV de esta arquitectura cuesta 36 KiB/token en f16 (9 capas de atencion
   # completa x 4 KV heads x 256 head_dim x K+V x 2 bytes): 1M serian 36 GiB
@@ -691,6 +692,26 @@ EOF
       ExecStart = "${pkgs.llama-cpp.override { vulkanSupport = true; }}/bin/llama-server -m ${config.home.homeDirectory}/Dev/models/${chatModel} --host 127.0.0.1 --port 8091 -ngl 99 -c 131072 -fa on -ub 256 -ctk q8_0 -ctv q8_0 --no-warmup -np 1 --alias ${chatAlias} --jinja";
       Restart = "no";
       TimeoutStartSec = 180;
+    };
+    Install = {
+      WantedBy = [ "default.target" ];
+    };
+  };
+
+  # Servidor web de opencode (UI de escritorio via navegador + PWA del celular).
+  # Corre siempre para que el celular tenga el agente apenas prende la PC; el
+  # puerto es fijo porque Tailscale Serve apunta a 127.0.0.1:4096. La password
+  # va por entorno (sin ella `serve` inventa una aleatoria por arranque).
+  systemd.user.services."opencode-serve" = lib.mkIf (hostName == "amd") {
+    Unit.Description = "opencode serve (web + PWA del celular)";
+    Service = {
+      ExecStart = "${pkgs.opencode}/bin/opencode serve --hostname 127.0.0.1 --port 4096";
+      Environment = [ "OPENCODE_SERVER_PASSWORD=spark" ];
+      Restart = "on-failure";
+      RestartSec = "3s";
+    };
+    Install = {
+      WantedBy = [ "default.target" ];
     };
   };
 
