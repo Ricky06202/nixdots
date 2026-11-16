@@ -126,8 +126,7 @@
       caelestiaShellAW =
         let
           qsAw = qsPrebuilt.withModules [ pkgs.qt6.qtmultimedia ];
-        in
-          (pkgs.callPackage "${caelestia-aw}/nix" {
+          base = (pkgs.callPackage "${caelestia-aw}/nix" {
             stdenv = pkgs.clangStdenv;
             m3shapes = m3shapesPkg;
             quickshell = qsAw;
@@ -138,6 +137,44 @@
             # lo añade por defecto).
             extraRuntimeDeps = [ pkgs.ffmpeg ];
           }).override { withCli = true; };
+        in
+          base.overrideAttrs (old: {
+            # Botón "IA local" en la zona de estado (internet/batería/bluetooth).
+            # El shell no admite entradas custom por config: sus elementos salen
+            # de un DelegateChooser con ids fijos, así que hay que inyectar el
+            # componente y su DelegateChoice en el QML instalado.
+            # Si Caelestia cambia StatusIcons.qml, el substituteInPlace falla en
+            # el build (no rompe en runtime): se ve enseguida.
+            postInstall = (old.postInstall or "") + ''
+              root=$out/share/caelestia-shell
+              install -Dm644 ${./home/dotfiles/caelestia/AiToggle.qml} \
+                "$root/modules/bar/components/AiToggle.qml"
+              f="$root/modules/bar/components/StatusIcons.qml"
+              # La lista de elementos cambió de nombre entre versiones
+              # (`statusIcons.values` vs `.elements`): sed acepta las dos y el
+              # grep de control hace fallar el build si ninguna matchea.
+              sed -i -E \
+                's/values: root\.Config\.bar\.statusIcons\.(values|elements)\.filter\(e => e\.enabled\)/values: [{ id: "ai", enabled: true }].concat(root.Config.bar.statusIcons.\1.filter(e => e.enabled))/' \
+                "$f"
+              grep -q 'id: "ai"' "$f" || {
+                echo "AiToggle: no encontre la linea de valores en StatusIcons.qml" >&2
+                exit 1
+              }
+              substituteInPlace "$f" --replace-fail '                    roleValue: "network"' '                    roleValue: "ai"
+                    delegate: EntryWrapper {
+                        AiToggle {
+                            colour: root.colour
+                        }
+                    }
+                }
+                DelegateChoice {
+                    roleValue: "network"'
+              grep -q 'roleValue: "ai"' "$f" || {
+                echo "AiToggle: no pude insertar el DelegateChoice ai" >&2
+                exit 1
+              }
+            '';
+          });
 
 
       mkHost = name: nixpkgs.lib.nixosSystem {
