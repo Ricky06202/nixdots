@@ -715,6 +715,35 @@ EOF
     };
   };
 
+  # Guardia: cada 10 min mira GTT (buffers caidos a RAM del sistema) y reinicia
+  # el servidor solo si esta degradado y sin trabajo en curso. Asi no hay que
+  # correr `local-ai restart` a mano (home/dotfiles/hypr/llama-guard.sh).
+  home.file.".local/bin/llama-guard" = lib.mkIf (hostName == "amd") {
+    source = ./dotfiles/hypr/llama-guard.sh;
+    executable = true;
+    force = true;
+  };
+
+  systemd.user.services."llama-guard" = lib.mkIf (hostName == "amd") {
+    Unit.Description = "Vigila el modelo local y lo reinicia si cayo a GTT";
+    Service = {
+      Type = "oneshot";
+      ExecStart = "${config.home.homeDirectory}/.local/bin/llama-guard";
+    };
+  };
+
+  systemd.user.timers."llama-guard" = lib.mkIf (hostName == "amd") {
+    Unit.Description = "Timer del guardia del modelo local";
+    Timer = {
+      OnCalendar = "*:0/10";
+      AccuracySec = "1min";
+      Persistent = false;
+    };
+    Install = {
+      WantedBy = [ "timers.target" ];
+    };
+  };
+
   # `local-ai chat|off|status` = el que reparte la GPU entre Jan y el modelo.
   home.file.".local/bin/local-ai" = lib.mkIf (hostName == "amd") {
     source = ./dotfiles/hypr/local-ai.sh;
