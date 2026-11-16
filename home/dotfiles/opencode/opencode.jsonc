@@ -3,8 +3,8 @@
   "instructions": [
     "/home/ricky/.config/opencode/INSTRUCTIONS.md"
   ],
-  // Modelo por defecto: Spark local (sin razonar = mas rapido). Para tareas
-  // duras cambiar a local/spark-4b-think, o volver a deepseek/deepseek-flash.
+  // Modelo local por defecto; usa local/spark-4b-think para tareas que
+  // necesiten razonamiento. Ambos apuntan al alias spark-4b de llama.cpp.
   "model": "local/spark-4b",
   // Tareas cortas (titulos de sesion, resumenes): tambien local, $0.
   "small_model": "local/spark-4b",
@@ -16,13 +16,11 @@
     },
     "buffer": 20000
   },
-  // Modelo local: llama.cpp + Spark-X2.6-4B en la RX 7600 (host amd).
-  // NO arranca solo: `local-ai chat` apara Jan (TwIL usa la misma VRAM de 8 GB).
-  // OJO con el microbatch: el service usa -ub 256 porque con 512 el prefill de
-  // 8k+ cuelga la GPU (timeout del anillo de computo, ver MEMORY.md).
+  // llama.cpp sirve Spark-X2.6-4B en 127.0.0.1:8091. Iniciar con `local-ai chat`.
+  // El servicio usa -ub 256; no subirlo a 512, puede colgar la GPU durante el prefill.
   "providers": {
     "local": {
-      "name": "Local (RX 7600)",
+      "name": "LocalSpark (RX 7600)",
       "package": "@opencode/ai/providers/openai-compatible",
       "settings": {
         "baseURL": "http://127.0.0.1:8091/v1"
@@ -31,6 +29,7 @@
         // Mismo servidor y mismos pesos: solo cambia si razona antes de responder.
         "spark-4b": {
           "name": "Spark-X2.6 4B (rápido, sin pensar)",
+          "modelID": "spark-4b",
           "capabilities": {
             "tools": true,
             "input": ["text"],
@@ -48,6 +47,7 @@
         },
         "spark-4b-think": {
           "name": "Spark-X2.6 4B (razonando)",
+          "modelID": "spark-4b",
           "capabilities": {
             "tools": true,
             "input": ["text"],

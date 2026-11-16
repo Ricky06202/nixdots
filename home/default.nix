@@ -716,8 +716,8 @@ EOF
   };
 
   # Toggle de la IA local: un toque prende/apaga Spark y avisa por notificacion.
-  # Se usa desde el lanzador de Caelestia (entrada .desktop), el atajo SUPER+I
-  # o a mano. OJO: apagado deja sin modelo a opencode, nini y el celular.
+  # Se usa desde el lanzador de Caelestia (entrada .desktop), el botón de la barra
+  # o a mano. SUPER+I queda reservado al bloqueo de pantalla.
   home.file.".local/bin/ia-toggle" = lib.mkIf (hostName == "amd") {
     source = ./dotfiles/hypr/ia-toggle.sh;
     executable = true;

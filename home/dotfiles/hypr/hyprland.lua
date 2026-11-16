@@ -336,6 +336,7 @@ bind_physical(mainMod .. " + SHIFT", "R", hl.dsp.exec_cmd("hyprctl reload; caele
 bind_physical(mainMod .. " + CONTROL", "S", hl.dsp.exec_cmd("systemctl hibernate"))
 hl.bind(mainMod .. " + CONTROL + ESCAPE", hl.dsp.exec_cmd("$HOME/.config/hypr/session-action.sh poweroff"))
 bind_physical(mainMod .. " + CONTROL", "R", hl.dsp.exec_cmd("$HOME/.config/hypr/session-action.sh reboot"))
+-- En Colemak-DH, SUPER+I corresponde a la posición física L: reservarla para bloquear.
 bind_physical(mainMod, "L", hl.dsp.exec_cmd("$HOME/.config/hypr/lock-screen.sh"))
 bind_physical(mainMod .. " + SHIFT", "P", hl.dsp.exec_cmd("hyprpicker"))
 bind_physical(mainMod, "R", hl.dsp.global("caelestia:launcher"), { release = true })
@@ -374,9 +375,8 @@ hl.bind(mainMod .. " + SHIFT + right", hl.dsp.window.move({ direction = "right" 
 hl.bind(mainMod .. " + SHIFT + up", hl.dsp.window.move({ direction = "up" }))
 hl.bind(mainMod .. " + SHIFT + down", hl.dsp.window.move({ direction = "down" }))
 
--- navegacion con vim (HJKL -> MNEI en Colemak-DH)
+-- Navegacion con vim: HJK -> MNE en Colemak; derecha usa SUPER+Right para reservar SUPER+I al bloqueo.
 bind_physical(mainMod, "H", hl.dsp.focus({ direction = "left" }))
-bind_physical(mainMod, "L", hl.dsp.focus({ direction = "right" }))
 bind_physical(mainMod, "K", hl.dsp.focus({ direction = "up" }))
 bind_physical(mainMod, "J", hl.dsp.focus({ direction = "down" }))
 

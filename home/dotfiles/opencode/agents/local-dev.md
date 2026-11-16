@@ -53,8 +53,9 @@ nota: sé breve.
 
 ## Entorno
 
-- Stack habitual: SvelteKit + TypeScript, Drizzle, Zod, Tailwind, Bun. Respeta
-  el estilo del proyecto en el que estés.
+- Proyecto web nuevo: usa SvelteKit 2 + Svelte 5 + TypeScript + Bun por
+  defecto, con Drizzle/PostgreSQL, Zod y Tailwind v4. Si el repo ya usa otro
+  stack o el usuario pide uno distinto, respétalo.
 - Si el endpoint local no responde (error de conexión al modelo), dilo tal cual
   y pídele al usuario que ejecute `local-ai chat`. No reintentes en bucle.
 - Nunca ejecutes `sudo` ni `git push`: están bloqueados/preguntan.

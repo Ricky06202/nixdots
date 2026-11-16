@@ -41,14 +41,21 @@ Instrucciones globales para asistir en este equipo. Léelas siempre que trabajes
 
 ## Memoria persistente (IMPORTANTE)
 - Datos en `~/.config/opencode/memory/` (locales, NUNCA al repo). Al iniciar
-  cualquier sesión, leer `MEMORY.md` y `reminders.md` ANTES de lo demás: lo que
-  hay ahí es contexto válido sin que el usuario lo repita.
-- Si aparece información duradera en la charla (preferencias, personas,
-  proyectos, fechas, acuerdos): actualizar `MEMORY.md` de inmediato con la
-  skill `memory`, sin pedir permiso.
+  cualquier sesión, leer `MEMORY.md` y `reminders.md` ANTES de lo demás.
+- Mantener `MEMORY.md` breve y vigente: guardar solo preferencias y decisiones
+  que afecten trabajos futuros; actualizar o borrar hechos obsoletos y no usarlo
+  como diario cronológico de tareas o experimentos.
+- Si aparece información duradera en la charla, actualizar la nota existente o
+  añadirla con fecha ISO usando la skill `memory`; nunca guardar claves, tokens
+  ni otros secretos.
 - Recordatorios con hora: usar la skill `memory` (timers systemd user +
   `~/.local/bin/reminder-fire.sh`). JAMÁS decir "te lo recordaré" sin haber
   creado y verificado el timer (`systemctl --user list-timers 'remind-*'`).
+
+## Proyectos web
+- Para proyectos web nuevos, usar por defecto SvelteKit 2 + Svelte 5 +
+  TypeScript + Bun, con Drizzle/PostgreSQL, Zod y Tailwind v4. Si el usuario
+  pide otro stack o el repo ya usa uno, respetarlo.
 
 ## Caelestia (IMPORTANTE)
 - Se arma en `flake.nix` (`caelestiaShell`) usando el **quickshell precompilado de
@@ -57,7 +64,9 @@ Instrucciones globales para asistir en este equipo. Léelas siempre que trabajes
 - **NUNCA usar `caelestia.packages.*`**: eso compila quickshell-git desde fuente
   (~1h local; no existe caché binaria pública para ese input).
 - El CLI va incluido vía `withCli = true` — no instalar `caelestia-cli.packages` aparte.
-- Launcher: SUPER+R. Lock: SUPER+L. Arranque: `caelestia-shell -d` en hyprland.lua.
+- Launcher: SUPER+R. En Colemak-DH, SUPER+I bloquea la pantalla (posición física L);
+  reservarlo solo para bloqueo. El toggle de IA queda en el botón de la barra y el
+  lanzador, nunca en SUPER+I. Arranque: `caelestia-shell -d` en hyprland.lua.
 
 ## Hyprland
 - La config real es `~/.config/hypr/hyprland.lua` (formato Lua de Hyprland 0.56);
