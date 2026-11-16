@@ -30,6 +30,8 @@
             "input": ["text"],
             "output": ["text"]
           },
+          // temperatura baja: con 0.7 el modelo repite el mismo tool-call.
+          "body": { "temperature": 0.3 },
           "limit": {
             "context": 24576,
             "output": 8192

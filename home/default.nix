@@ -611,6 +611,12 @@ EOF
     source = ./dotfiles/opencode/agent/nixos.md;
     force = true;
   };
+  # Agente para el coder local (Qwen3-Coder). Va en `agents/` (plural): la ruta
+  # canónica de V2; `agent/` (singular, arriba) es la de V1 y sigue leyéndose.
+  home.file.".config/opencode/agents/local-dev.md" = {
+    source = ./dotfiles/opencode/agents/local-dev.md;
+    force = true;
+  };
   home.file.".config/opencode/command/rebuild.md" = {
     source = ./dotfiles/opencode/command/rebuild.md;
     force = true;
