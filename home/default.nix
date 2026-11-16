@@ -708,6 +708,13 @@ EOF
     force = true;
   };
 
+  # `oc-web` = la misma config de opencode pero en la interfaz web (v2).
+  home.file.".local/bin/oc-web" = lib.mkIf (hostName == "amd") {
+    source = ./dotfiles/hypr/oc-web.sh;
+    executable = true;
+    force = true;
+  };
+
   # Quitado todo el extra de suspend/resume de esta sesion:
 #  - la unidad systemd "caelestia-resume" (disparaba al entrar en suspend, no
 #    al resume, y mataba el shell a mitad de suspension)
