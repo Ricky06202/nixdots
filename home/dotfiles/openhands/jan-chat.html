@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#121019" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Jan" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/jan-remoto-icon-192.png" />
+    <link rel="apple-touch-icon" href="/jan-remoto-icon-192.png" />
+    <link rel="stylesheet" href="/jan-chat.css" />
+    <title>Jan</title>
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" id="sidebar" aria-label="Conversaciones">
+        <a class="brand" href="/chat" aria-label="Jan, inicio">
+          <img src="/jan-remoto-icon-192.png" alt="" />
+          <span class="brand-copy"><strong>Jan</strong><small>LOCAL · AMD</small></span>
+        </a>
+        <button class="new-chat" id="new-chat" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+          <span>Nuevo chat</span>
+        </button>
+        <div class="history-label">Recientes</div>
+        <nav class="chat-history" id="chat-history"></nav>
+        <div class="sidebar-bottom">
+          <span class="status-dot" id="status-dot"></span>
+          <span id="status-text">Conectando con Jan…</span>
+        </div>
+      </aside>
+
+      <button class="backdrop" id="backdrop" type="button" aria-label="Cerrar menú"></button>
+
+      <main class="main-pane">
+        <header class="topbar">
+          <button class="icon-button menu-button" id="menu-button" type="button" aria-label="Abrir conversaciones">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
+          </button>
+          <div class="mobile-brand">
+            <img src="/jan-remoto-icon-192.png" alt="" />
+            <strong>Jan</strong>
+          </div>
+          <div class="topbar-spacer"></div>
+          <label class="model-picker" for="model-select">
+            <span class="model-glyph" aria-hidden="true"></span>
+            <select id="model-select" aria-label="Modelo local">
+              <option value="twil-8b">TwIL 8B · Razonamiento</option>
+              <option value="qwen3-vl-4b">Qwen3 VL · Fotos</option>
+            </select>
+            <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5" /></svg>
+          </label>
+          <a class="workspace-link" href="/" title="Abrir el agente de programación">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 8-4 4 4 4M16 8l4 4-4 4M14 5l-4 14" /></svg>
+            <span>Código</span>
+          </a>
+        </header>
+
+        <section class="conversation" aria-label="Chat con Jan">
+          <div class="messages" id="messages" aria-live="polite" aria-relevant="additions text"></div>
+          <div class="welcome" id="welcome">
+            <img class="welcome-mark" src="/jan-remoto-icon-512.png" alt="" />
+            <p class="eyebrow">Tu IA, en tu PC</p>
+            <h1>¿Qué tienes en mente?</h1>
+            <p class="welcome-copy">Chat directo con Jan local. Para programar con archivos y herramientas, abre el workspace de código.</p>
+            <div class="suggestions">
+              <button type="button" data-prompt="Explícame esto de forma sencilla: ">Explícame un concepto</button>
+              <button type="button" data-prompt="Ayúdame a pensar en ideas para ">Dame ideas</button>
+              <button type="button" data-prompt="Resume en pocas palabras: ">Resume algo</button>
+            </div>
+            <button class="retry-link" id="retry-models" type="button">Comprobar conexión con Jan</button>
+          </div>
+        </section>
+
+        <footer class="composer-area">
+          <div class="attachment" id="attachment" hidden>
+            <img id="attachment-image" alt="Vista previa de la foto adjunta" />
+            <div class="attachment-copy"><strong id="attachment-name"></strong><small>Qwen3 VL la analizará</small></div>
+            <button class="remove-attachment" id="remove-attachment" type="button" aria-label="Quitar foto">×</button>
+          </div>
+          <form class="composer" id="composer">
+            <input id="photo-input" type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden />
+            <button class="icon-button attach-button" id="attach-button" type="button" aria-label="Adjuntar foto" title="Adjuntar foto">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m20.5 11.5-8.8 8.8a5.2 5.2 0 0 1-7.4-7.4l9.2-9.2a3.5 3.5 0 0 1 5 5l-9.2 9.2a1.8 1.8 0 0 1-2.6-2.6l8.1-8.1" /></svg>
+            </button>
+            <textarea id="prompt-input" rows="1" maxlength="12000" placeholder="Escríbele a Jan…" aria-label="Mensaje para Jan"></textarea>
+            <button class="send-button" id="send-button" type="submit" aria-label="Enviar mensaje">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5m-7 7 7-7 7 7" /></svg>
+            </button>
+          </form>
+          <div class="composer-footnote"><span>Enter para enviar · Shift+Enter para saltar de línea</span><span>Se procesa en tu PC</span></div>
+        </footer>
+      </main>
+    </div>
+    <script src="/jan-chat.js" defer></script>
+    <script src="/pwa-register.js" defer></script>
+  </body>
+</html>

@@ -13,15 +13,18 @@ let
   guiUser = "ricky";
   janRemoteIcon192 = ../../home/dotfiles/openhands/icons/jan-remoto-icon-192.png;
   janRemoteIcon512 = ../../home/dotfiles/openhands/icons/jan-remoto-icon-512.png;
+  janRemoteChatPage = ../../home/dotfiles/openhands/jan-chat.html;
+  janRemoteChatCss = ../../home/dotfiles/openhands/jan-chat.css;
+  janRemoteChatJs = ../../home/dotfiles/openhands/jan-chat.js;
 
   # Manifest propio para que Canvas se pueda instalar como PWA desde el
   # teléfono. Las imágenes las sirve el frontend oficial de Agent Canvas.
   janRemoteManifest = pkgs.writeText "jan-remoto.webmanifest" (builtins.toJSON {
-    id = "/";
+    id = "/chat";
     name = "Jan Remoto";
     short_name = "Jan";
     description = "Jan local en la PC de Ricky";
-    start_url = "/";
+    start_url = "/chat";
     scope = "/";
     display = "standalone";
     orientation = "any";
@@ -259,6 +262,42 @@ in
           default_type application/javascript;
           add_header Service-Worker-Allowed "/" always;
           add_header Cache-Control "no-cache";
+        '';
+      };
+      locations."= /chat" = {
+        alias = "${janRemoteChatPage}";
+        extraConfig = ''
+          default_type text/html;
+          add_header Cache-Control "no-store";
+        '';
+      };
+      locations."= /jan-chat.css" = {
+        alias = "${janRemoteChatCss}";
+        extraConfig = ''
+          default_type text/css;
+          add_header Cache-Control "no-cache";
+        '';
+      };
+      locations."= /jan-chat.js" = {
+        alias = "${janRemoteChatJs}";
+        extraConfig = ''
+          default_type application/javascript;
+          add_header Cache-Control "no-cache";
+        '';
+      };
+      locations."/jan-api/" = {
+        proxyPass = "http://127.0.0.1:14040/";
+        extraConfig = ''
+          proxy_http_version 1.1;
+          proxy_set_header Host $host;
+          proxy_set_header X-Real-IP $remote_addr;
+          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+          proxy_set_header Authorization $http_authorization;
+          proxy_set_header Accept-Encoding "";
+          proxy_buffering off;
+          proxy_request_buffering off;
+          proxy_read_timeout 900s;
+          proxy_send_timeout 900s;
         '';
       };
       locations."/assets/" = {
