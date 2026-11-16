@@ -151,6 +151,8 @@ local function toggle_kb_layout()
 end
 
 hl.bind(mainMod .. " + Return", hl.dsp.exec_cmd("wezterm"))
+-- SUPER+I: prende/apaga el modelo local (libera la GPU para juegos).
+hl.bind(mainMod .. " + I", hl.dsp.exec_cmd("ia-toggle"))
 bind_physical(mainMod, "E", hl.dsp.exec_cmd("nemo"))
 bind_physical(mainMod, "Q", hl.dsp.window.close())
 -- ===== FULLSCREEN (percepcion por niveles) =====

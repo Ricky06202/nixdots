@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=IA local (encender/apagar)
+Comment=Prende o apaga Spark-X2.6 en la GPU: apagada deja la VRAM libre para juegos
+Exec=ia-toggle
+Icon=applications-science
+Terminal=false
+Categories=Utility;System;
+Keywords=ia;ai;spark;modelo;opencode;gpu;
+StartupNotify=false

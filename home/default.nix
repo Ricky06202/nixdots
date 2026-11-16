@@ -715,6 +715,48 @@ EOF
     };
   };
 
+  # Toggle de la IA local: un toque prende/apaga Spark y avisa por notificacion.
+  # Se usa desde el lanzador de Caelestia (entrada .desktop), el atajo SUPER+I
+  # o a mano. OJO: apagado deja sin modelo a opencode, nini y el celular.
+  home.file.".local/bin/ia-toggle" = lib.mkIf (hostName == "amd") {
+    source = ./dotfiles/hypr/ia-toggle.sh;
+    executable = true;
+    force = true;
+  };
+
+  home.file.".local/share/applications/ia-local.desktop" = lib.mkIf (hostName == "amd") {
+    source = ./dotfiles/desktop/ia-local.desktop;
+    force = true;
+  };
+
+  # Modo oscuro a la fuerza: la GUI de Caelestia usa el modo "smart" al cambiar
+  # el wallpaper y con fondos claros pasa la interfaz a light. Este path unit
+  # reacciona a cada reescritura del esquema y lo devuelve a dark.
+  home.file.".local/bin/caelestia-dark-guard" = lib.mkIf (hostName == "amd") {
+    source = ./dotfiles/hypr/caelestia-dark-guard.sh;
+    executable = true;
+    force = true;
+  };
+
+  systemd.user.services."caelestia-dark-guard" = lib.mkIf (hostName == "amd") {
+    Unit.Description = "Devuelve Caelestia a modo oscuro si algo lo pasa a claro";
+    Service = {
+      Type = "oneshot";
+      ExecStart = "${config.home.homeDirectory}/.local/bin/caelestia-dark-guard";
+    };
+  };
+
+  systemd.user.paths."caelestia-dark-guard" = lib.mkIf (hostName == "amd") {
+    Unit.Description = "Vigila el esquema de Caelestia (modo dark/light)";
+    Path = {
+      PathChanged = "${config.home.homeDirectory}/.local/state/caelestia/scheme.json";
+      Unit = "caelestia-dark-guard.service";
+    };
+    Install = {
+      WantedBy = [ "default.target" ];
+    };
+  };
+
   # Guardia: cada 10 min mira GTT (buffers caidos a RAM del sistema) y reinicia
   # el servidor solo si esta degradado y sin trabajo en curso. Asi no hay que
   # correr `local-ai restart` a mano (home/dotfiles/hypr/llama-guard.sh).
