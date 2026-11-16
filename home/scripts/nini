@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
-"""nini — asistente de terminal: Ollama local primero, DeepSeek como respaldo (v4 mini-opencode)."""
+"""nini — asistente de terminal: Spark local primero, DeepSeek como respaldo (v4 mini-opencode)."""
 import json, os, re, sys, subprocess, urllib.request, urllib.error, time, uuid
 from pathlib import Path
 
 # ── Providers ──
 DEEPSEEK_URL  = "https://api.deepseek.com/chat/completions"
 DEEPSEEK_MODEL = "deepseek-chat"
-OLLAMA_URL    = "http://127.0.0.1:11434/api/chat"
-OLLAMA_TAGS   = "http://127.0.0.1:11434/api/tags"
-OLLAMA_MODEL  = "qwen3:8b"
-THINK_MODE    = True  # qwen3 razona antes de responder (más completo; ver --nothink)
+SPARK_URL     = "http://127.0.0.1:8091/v1/chat/completions"
+SPARK_MODELS  = "http://127.0.0.1:8091/v1/models"
+SPARK_MODEL   = "spark-4b"
+THINK_MODE    = False  # Spark razona por defecto y se come los tokens; --think lo prende
 
 API_KEY = Path.home() / ".config" / "nini" / "api.key"
 HISTORY = Path.home() / ".config" / "nini" / "history.jsonl"
@@ -280,18 +280,14 @@ def build_chain_prompt(user_text, steps_log):
 
 
 # ── Providers ───────────────────────────────────────────────────────────────────
-def ollama_available():
+def spark_available():
     try:
-        with urllib.request.urlopen(OLLAMA_TAGS, timeout=2) as r:
+        with urllib.request.urlopen(SPARK_MODELS, timeout=2) as r:
             data = json.loads(r.read())
     except Exception:
         return False
-    models = {m.get("name") or m.get("model") for m in data.get("models", [])}
-    if models and OLLAMA_MODEL not in models:
-        print(f"{YELLOW}Ollama activo pero no tiene {OLLAMA_MODEL}.{RESET}")
-        print(f"  Descárgalo: ollama pull {OLLAMA_MODEL}")
-        return False
-    return bool(models)
+    models = {m.get("id") for m in data.get("data", [])}
+    return SPARK_MODEL in models
 
 def detect_provider(forced=None):
     global PROVIDER
@@ -299,45 +295,48 @@ def detect_provider(forced=None):
         PROVIDER = forced.lower()
         print(f"{DIM}Backend: {PROVIDER}{RESET}")
         return
-    if ollama_available():
-        PROVIDER = "ollama"
-        print(f"{DIM}Backend: Ollama local ({OLLAMA_MODEL}){RESET}")
+    if spark_available():
+        PROVIDER = "spark"
+        print(f"{DIM}Backend: Spark local ({SPARK_MODEL}){RESET}")
     elif API_KEY.is_file():
         PROVIDER = "deepseek"
-        print(f"{DIM}Backend: DeepSeek (sin ollama local){RESET}")
+        print(f"{DIM}Backend: DeepSeek (Spark apagado){RESET}")
     else:
-        print(f"{RED}Error:{RESET} sin Ollama local ni API key de DeepSeek.")
-        print(f"  - levanta ollama y baja el modelo: ollama pull {OLLAMA_MODEL}")
-        print(f"  - o crea {API_KEY} con tu key de DeepSeek (una línea)")
+        print(f"{RED}Error:{RESET} Spark no esta levantado y no hay API key de DeepSeek.")
+        print(f"  - levanta el modelo local: local-ai chat")
+        print(f"  - o crea {API_KEY} con tu key de DeepSeek (una linea)")
         sys.exit(1)
 
-def ask_ollama(system_prompt, user_prompt, max_tokens=150, temperature=0.0):
+def ask_spark(system_prompt, user_prompt, max_tokens=150, temperature=0.0):
     for attempt in range(2):
         eff_prompt = user_prompt
         if attempt > 0:
             eff_prompt = user_prompt[:400] + "\n\n(No dejaste contenido visible en tu respuesta. Responde directamente ahora, sin pensar en voz alta.)"
         payload = json.dumps({
-            "model": OLLAMA_MODEL,
+            "model": SPARK_MODEL,
             "messages": [
                 {"role": "system", "content": system_prompt},
                 {"role": "user",   "content": eff_prompt},
             ],
-            "stream": False,
-            "think": THINK_MODE,
-            "options": {"temperature": temperature},
+            "max_tokens": max_tokens,
+            "temperature": temperature,
+            "chat_template_kwargs": {"enable_thinking": THINK_MODE},
         }).encode()
-        req = urllib.request.Request(OLLAMA_URL, data=payload, headers={"Content-Type": "application/json"})
+        req = urllib.request.Request(SPARK_URL, data=payload, headers={"Content-Type": "application/json"})
         try:
-            with urllib.request.urlopen(req, timeout=120) as resp:
+            with urllib.request.urlopen(req, timeout=300) as resp:
                 data = json.loads(resp.read())
         except urllib.error.HTTPError as e:
-            raise RuntimeError(f"Ollama error {e.code}: {e.read().decode(errors='replace')[:200]}")
+            raise RuntimeError(f"Spark error {e.code}: {e.read().decode(errors='replace')[:200]}")
         except Exception as e:
-            raise RuntimeError(f"Ollama sin conexión: {e}")
-        content = (data.get("message") or {}).get("content", "").strip()
+            raise RuntimeError(f"Spark sin conexion (levanta el modelo con: local-ai chat): {e}")
+        msg = data["choices"][0]["message"]
+        content = (msg.get("content") or "").strip()
+        if not content and (msg.get("reasoning_content") or "").strip():
+            content = msg["reasoning_content"].strip()
         if content:
             return content
-    raise RuntimeError(f"Ollama devolvió respuesta vacía tras 2 intentos ({OLLAMA_MODEL})")
+    raise RuntimeError(f"Spark devolvio respuesta vacia tras 2 intentos ({SPARK_MODEL})")
 
 def ask_deepseek(system_prompt, user_prompt, max_tokens=150, temperature=0.0):
     with open(API_KEY) as f:
@@ -374,20 +373,20 @@ def ask_deepseek(system_prompt, user_prompt, max_tokens=150, temperature=0.0):
 
 def ask(system_prompt, user_prompt, max_tokens=150, temperature=0.0):
     """Intenta el provider activo; si falla, hace fallback al otro (offline = local)."""
-    order = [PROVIDER] + [p for p in ("ollama", "deepseek") if p != PROVIDER]
+    order = [PROVIDER] + [p for p in ("spark", "deepseek") if p != PROVIDER]
     last_err = ""
     for attempt, p in enumerate(order):
         try:
-            if p == "ollama":
-                return ask_ollama(system_prompt, user_prompt, max_tokens, temperature)
+            if p == "spark":
+                return ask_spark(system_prompt, user_prompt, max_tokens, temperature)
             return ask_deepseek(system_prompt, user_prompt, max_tokens, temperature)
         except RuntimeError as e:
             last_err = str(e)
             print(f"{YELLOW}⚠ {last_err}{RESET}")
             if p == "deepseek":
-                print(f"  Sin internet?→ pasando a Ollama local (offline OK)...")
+                print(f"  Sin internet?→ pasando a Spark local (offline OK)...")
             else:
-                print(f"  Ollama caído → pasando a DeepSeek...")
+                print(f"  Spark caído (¿local-ai chat?) → pasando a DeepSeek...")
     print(f"{RED}Error:{RESET} ambos backends fallaron.")
     print(f"  {last_err}")
     sys.exit(1)
@@ -804,15 +803,15 @@ def auto_chain(user_text, system_prompt, max_steps=MAX_STEPS):
 
 
 # ── Main ──────────────────────────────────────────────────────────────────────
-HELP_TEXT = f"""{BOLD}nini{RESET} v4 — asistente terminal (Ollama local + DeepSeek respaldo)
+HELP_TEXT = f"""{BOLD}nini{RESET} v4 — asistente terminal (Spark local + DeepSeek respaldo)
 
 {BOLD}Backend (automático):{RESET}
-  - Si Ollama local responde  -> usa qwen3:8b (offline, gratis, sin key)
+  - Si Spark (llama.cpp :8091) responde -> usa spark-4b (offline, gratis, sin key)
+    Levantalo con: local-ai chat
   - Si no -> usa DeepSeek (key en {API_KEY.name})
-  - Si DeepSeek falla (sin internet) -> cae automatico a Ollama local
-  Fuerza uno: --api ollama | --api deepseek
-  Razonamiento (pensamiento) activado SIEMPRE; --nothink para respuestas
-  rápidas y directas (útil para comandos simples).
+  - Si DeepSeek falla (sin internet) -> cae automatico a Spark local
+  Fuerza uno: --api spark | --api deepseek
+  Spark razona solo con --smart; por defecto responde directo (mas rapido).
 
 {BOLD}Uso:{RESET}
   nini <pregunta u orden>            consulta sistema / comando (auto-chain)
@@ -840,7 +839,7 @@ HELP_TEXT = f"""{BOLD}nini{RESET} v4 — asistente terminal (Ollama local + Deep
 
 
 def main():
-    global THINK_MODE, OLLAMA_MODEL, YES_MODE
+    global THINK_MODE, SPARK_MODEL, YES_MODE
     # --help
     if len(sys.argv) < 2 or sys.argv[1] in ("--help", "-h", "help"):
         print(HELP_TEXT)
@@ -891,8 +890,8 @@ def main():
             args.pop(idx)
 
     if model_override:
-        global OLLAMA_MODEL
-        OLLAMA_MODEL = model_override
+        global SPARK_MODEL
+        SPARK_MODEL = model_override
 
     # Pipe support
     pipe_input = ""
@@ -907,7 +906,7 @@ def main():
     if pipe_input:
         user_text = f"Input from pipe:\n{pipe_input}\n\nUser request: {user_text}"
 
-    # Detect backend provider (ollama / deepseek)
+    # Detect backend provider (spark / deepseek)
     detect_provider(api_forced)
 
     # File context (-f / --file)
@@ -923,8 +922,8 @@ def main():
         is_dev = True
         task_text = re.sub(r'--dev\s*', '', user_text)
     if is_dev:
-        if PROVIDER == "ollama":
-            print(f"{DIM}Ojo: el modelo local es limitado como agente. Para tareas de código reales usa --api deepseek.{RESET}")
+        if PROVIDER == "spark":
+            print(f"{DIM}Modo dev con Spark local: 4B, lento en prompts largos. Para código pesado: --api deepseek.{RESET}")
         step, summary = dev_agent(task_text, files_ctx, dev_steps, dry_run)
         return
 

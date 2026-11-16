@@ -591,6 +591,7 @@ in
     zed-editor        # editor PRINCIPAL (default en mimeApps text/* + $EDITOR + git core.editor)
     nodejs_24         # Node.js + npm
     bun               # runtime JS rapido
+    python3           # nini (~/.local/bin/nini) es un script python3
     prismlauncher     # launcher de Minecraft
     wofi              # lanzador de apps (wayland)
     winetricks        # utilidades wine (complemento de Lutris)
