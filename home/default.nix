@@ -690,7 +690,10 @@ EOF
       # Ruta absoluta (no `%h`): asi el comando se puede probar tal cual con
       # `systemd-run` antes de aplicar el rebuild, sin depender de especificadores.
       ExecStart = "${pkgs.llama-cpp.override { vulkanSupport = true; }}/bin/llama-server -m ${config.home.homeDirectory}/Dev/models/${chatModel} --host 127.0.0.1 --port 8091 -ngl 99 -c 131072 -fa on -ub 256 -ctk q8_0 -ctv q8_0 --no-warmup -np 1 --alias ${chatAlias} --jinja";
-      Restart = "no";
+      # Recupera cualquier salida inesperada; systemctl stop (Caelestia/local-ai off)
+      # sigue siendo manual y no provoca un reinicio automático.
+      Restart = "always";
+      RestartSec = "15s";
       TimeoutStartSec = 180;
     };
     Install = {
