@@ -135,6 +135,8 @@ in
     # la CLI y mismo config/agentes/provider `local`. Empaqueta el binario de
     # `opencode`, así que hereda el override de bun 1.3.13 (ver shared/default.nix).
     pkgs.opencode-desktop
+    # Plugin `docker compose` (el daemon/CLI lo trae virtualisation.docker).
+    pkgs.docker-compose
   ];
 
   # Canvas web privado para programar desde el celular. El agente corre como
@@ -406,7 +408,11 @@ in
 
   # uinput: ricky (dueno del user-unit sunshine) crea el mando xone virtual.
   # hardware.uinput.enable lo trae el propio modulo de sunshine.
-  users.users.ricky.extraGroups = [ "uinput" "dialout" ];
+  # docker: acceso al socket /run/docker.sock (equivalente a root en el host).
+  users.users.ricky.extraGroups = [ "uinput" "dialout" "docker" ];
+
+  # Docker daemon + CLI. docker compose se instala arriba en systemPackages.
+  virtualisation.docker.enable = true;
 
   # Blacklistear nouveau: si hay una NVIDIA físicamente presente, no se usa y
   # nouveau solo gasta RAM/CPU.

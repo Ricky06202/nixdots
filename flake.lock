@@ -175,25 +175,6 @@
         "type": "github"
       }
     },
-    "impresiones": {
-      "inputs": {
-        "nixpkgs": "nixpkgs_3"
-      },
-      "locked": {
-        "lastModified": 1793755532,
-        "narHash": "sha256-4n0A9zx7ALLLHWTFrNuc1rvJsjznTdcrVdE07vUQa8o=",
-        "ref": "letta/impresiones-online-pi-4ace7e4e",
-        "rev": "288021d75bceb2a7937976d200a15dec2ef4af93",
-        "revCount": 73,
-        "type": "git",
-        "url": "file:///home/ricky/Dev/impresiones-online"
-      },
-      "original": {
-        "ref": "letta/impresiones-online-pi-4ace7e4e",
-        "type": "git",
-        "url": "file:///home/ricky/Dev/impresiones-online"
-      }
-    },
     "m3shapes": {
       "inputs": {
         "nixpkgs": [
@@ -267,22 +248,6 @@
     },
     "nixpkgs_3": {
       "locked": {
-        "lastModified": 1790578696,
-        "narHash": "sha256-ZoxIApko70jCdbH3l20HWXOBaT2HZd87orzd2yJ9dVE=",
-        "owner": "NixOS",
-        "repo": "nixpkgs",
-        "rev": "7a0f122f5090cf4c2ade2a13a0e229d4e19ba71f",
-        "type": "github"
-      },
-      "original": {
-        "owner": "NixOS",
-        "ref": "nixos-unstable",
-        "repo": "nixpkgs",
-        "type": "github"
-      }
-    },
-    "nixpkgs_4": {
-      "locked": {
         "lastModified": 1794042290,
         "narHash": "sha256-ziZn2PvCJE5JEEpqTdxXwJpPB+L3YqoCpTAMCzyaP3U=",
         "owner": "NixOS",
@@ -297,7 +262,7 @@
         "type": "github"
       }
     },
-    "nixpkgs_5": {
+    "nixpkgs_4": {
       "locked": {
         "lastModified": 1794042290,
         "narHash": "sha256-ziZn2PvCJE5JEEpqTdxXwJpPB+L3YqoCpTAMCzyaP3U=",
@@ -363,9 +328,8 @@
         "caelestia-cli": "caelestia-cli_2",
         "caelestia-cli-aw": "caelestia-cli-aw",
         "home-manager": "home-manager",
-        "impresiones": "impresiones",
         "m3shapes": "m3shapes_2",
-        "nixpkgs": "nixpkgs_4",
+        "nixpkgs": "nixpkgs_3",
         "spotx-nix": "spotx-nix"
       }
     },
@@ -388,7 +352,7 @@
     "spotx-nix": {
       "inputs": {
         "flake-compat": "flake-compat",
-        "nixpkgs": "nixpkgs_5",
+        "nixpkgs": "nixpkgs_4",
         "spotx-bash": "spotx-bash"
       },
       "locked": {
