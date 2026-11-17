@@ -21,7 +21,7 @@ permissions:
     resource: "*"
     effect: allow
   - action: skill
-    resource: "cloudflare-pages-deploy"
+    resource: "cloudflare-deploy"
     effect: allow
 ---
 
