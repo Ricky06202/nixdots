@@ -670,10 +670,10 @@ EOF
   };
 
   # --- Modelo local (solo host amd) --------------------------------------
-  # Decision del usuario (2026-11-16): el modelo queda SIEMPRE cargado, desde el
-  # login, para que opencode (escritorio y web/celular) funcione sin comandos.
-  # Coste: ~7.5 de los 8 GB de VRAM quedan tomados; para jugar/streaming hay que
-  # liberar la GPU con `local-ai off` y volver con `local-ai chat`.
+  # Decision del usuario (2026-11-17): el modelo arranca APAGADO. Se prende a
+  # mano con `local-ai chat` o el toggle de Caelestia (`ia-toggle`), y se apaga
+  # con `local-ai off`. Asi la GPU queda libre para jugar/streaming por defecto.
+  # Coste si esta prendido: ~7.5 de los 8 GB de VRAM tomados.
   # 128k de contexto (el maximo fisico en esta GPU). El modelo declara 1M, pero
   # el KV de esta arquitectura cuesta 36 KiB/token en f16 (9 capas de atencion
   # completa x 4 KV heads x 256 head_dim x K+V x 2 bytes): 1M serian 36 GiB
@@ -696,9 +696,9 @@ EOF
       RestartSec = "15s";
       TimeoutStartSec = 180;
     };
-    Install = {
-      WantedBy = [ "default.target" ];
-    };
+    # SIN Install/WantedBy: no se habilita al login. `local-ai chat` (o el
+    # toggle) lo arranca manualmente y Restart=always lo mantiene vivo mientras
+    # este prendido; `local-ai off` lo detiene hasta el proximo arranque manual.
   };
 
   # Servidor web de opencode (UI de escritorio via navegador + PWA del celular).
