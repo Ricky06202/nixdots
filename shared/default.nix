@@ -588,7 +588,8 @@ in
     blueman           # gestor de bluetooth (applet en bandeja + interfaz)
     nerd-fonts.iosevka-term # fuente Iosevka Term (Nerd Font) para terminal/wofi (también en fonts.packages)
     blender           # modelado 3D
-    zed-editor        # editor PRINCIPAL (default en mimeApps text/* + $EDITOR + git core.editor)
+    vscode            # editor PRINCIPAL (default en mimeApps text/* + $EDITOR + git core.editor)
+    github-copilot-app # app de escritorio de GitHub Copilot (agente-native, binario github-copilot-app)
     nodejs_24         # Node.js + npm
     bun               # runtime JS rapido
     python3           # nini (~/.local/bin/nini) es un script python3

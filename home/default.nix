@@ -19,17 +19,17 @@ in
     QT_IM_MODULE = "xim";
     XMODIFIERS = "@im=none";
     GTK_IM_MODULE = "xim";
-    # Editor por defecto = Zed (GUI). --wait lo hace síncrono para git commit.
+    # Editor por defecto = VS Code (GUI). --wait lo hace síncrono para git commit.
     # OJO: requiere sesión gráfica; en TTY puro exportate EDITOR=nvim a mano.
-    EDITOR = "zed --wait";
-    VISUAL = "zed --wait";
+    EDITOR = "code --wait";
+    VISUAL = "code --wait";
   };
 
   # core.editor manda sobre EDITOR para todo lo que pase por git.
   programs.git = {
     enable = true;
     settings = {
-      core.editor = "zed --wait";
+      core.editor = "code --wait";
     };
   };
 
@@ -260,9 +260,9 @@ EOF
 
   # Aplicaciones predeterminadas: sin esto, xdg-open agarra al primer .desktop
   # que se registra (VSCode abre carpetas, PrismLauncher los zip, Librewolf las imágenes).
-  # Zed es el editor por defecto: el comodin text/* lo elige para TODO texto/código
-  # (Zed solo declara text/plain en su .desktop; sin comodin los .py/.nix/.md caían
-  # en VSCode por orden de registro). Las claves exactas (text/html=Librewolf)
+  # VS Code es el editor por defecto: el comodin text/* lo elige para TODO texto/código
+  # (VS Code solo declara text/plain en su .desktop; sin comodin los .py/.nix/.md
+  # caían en otra app por orden de registro). Las claves exactas (text/html=Librewolf)
   # ganan al comodin, asi el navegador no se ve afectado.
   xdg.mimeApps = {
     enable = true;
@@ -275,9 +275,9 @@ EOF
       "text/html" = [ "librewolf.desktop" ];
       # Archivos/carpetas
       "inode/directory" = [ "nemo.desktop" ];
-      # Texto y código → Zed (comodin: cubre .py .js .md .nix .toml, etc)
-      "text/*" = [ "dev.zed.Zed.desktop" ];
-      "application/json" = [ "dev.zed.Zed.desktop" ];
+      # Texto y código → VS Code (comodin: cubre .py .js .md .nix .toml, etc)
+      "text/*" = [ "code.desktop" ];
+      "application/json" = [ "code.desktop" ];
       # Imágenes → Loupe
       "image/png" = [ "org.gnome.Loupe.desktop" ];
       "image/jpeg" = [ "org.gnome.Loupe.desktop" ];
