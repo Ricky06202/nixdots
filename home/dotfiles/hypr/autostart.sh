@@ -10,12 +10,10 @@ blueman-applet &
 sleep 8
 vesktop &
 zapzap &
-# opencode (agente de codigo): ventana propia, siempre en el ws 5 por la regla de
-# hyprland.lua. OJO: el MODELO no arranca solo — Spark ocupa 7.5 de los 8 GB de
-# VRAM y compite con juegos/Sunshine; se levanta con `local-ai chat` cuando se va
-# a programar (sin eso la app abre pero el modelo local da error de conexión).
-if command -v opencode-desktop >/dev/null 2>&1; then
-  setsid nohup opencode-desktop >/dev/null 2>&1 &
+# VS Code (editor principal): ventana propia, siempre en el ws 5 por la regla de
+# hyprland.lua. opencode ya NO auto-arranca; se abre manualmente cuando se quiera.
+if command -v code >/dev/null 2>&1; then
+  setsid nohup code >/dev/null 2>&1 &
 fi
 disown -a
 

@@ -396,9 +396,9 @@ hl.window_rule({ match = { class = "io.github.tobagin.karere" }, workspace = 2 }
 hl.window_rule({ match = { class = "^(steam|steamwebhelper)$" }, workspace = 3 })
 hl.window_rule({ match = { class = "^(feishin|Feishin)$" }, workspace = 4 })
 hl.window_rule({ match = { class = "^(motrix-next|MOTRIX|Motrix)$" }, workspace = 7 })
--- ws 5: opencode (app de escritorio). Es el agente que reemplaza a Jan; la
--- clase la define el .desktop de Electron (startupWMClass = ai.opencode.desktop).
-hl.window_rule({ match = { class = "^(ai\\.opencode\\.desktop|opencode-desktop|OpenCode)$" }, workspace = 5 })
+-- ws 5: VS Code (editor principal, se abre al inicio). La clase es "code"
+-- (verificada en hyprctl clients). opencode, si se abre a mano, cae aquí también.
+hl.window_rule({ match = { class = "^(code|ai\\.opencode\\.desktop|opencode-desktop|OpenCode)$" }, workspace = 5 })
 hl.window_rule({ match = { class = "^com.obsproject.Studio$" }, workspace = 5 })
 hl.window_rule({ match = { class = "^com\\.rtosta\\.zapzap$" }, workspace = 2 })
 
