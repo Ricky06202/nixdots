@@ -592,6 +592,7 @@ in
     winetricks        # instala complementos de wine (DirectX, VC++, etc.)
     wezterm           # terminal
     git
+    gh                # GitHub CLI (PRs, repos e issues)
     grim              # captura de pantalla (wayland)
     slurp             # selector de región para grim
     wl-clipboard      # portapapeles wayland (wl-copy / wl-paste)
@@ -612,6 +613,7 @@ in
     blender           # modelado 3D
     vscode            # editor PRINCIPAL (default en mimeApps text/* + $EDITOR + git core.editor)
                       # Copilot se usa DENTRO de VS Code (Agent Mode), no app standalone
+    obsidian          # Vault visual para RS Brain (memoria compartida local)
     nodejs_24         # Node.js + npm
     bun               # runtime JS rapido
     python3           # nini (~/.local/bin/nini) es un script python3
