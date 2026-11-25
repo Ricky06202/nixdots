@@ -158,6 +158,34 @@ in
     "d /srv/agent-canvas 2770 ricky users - -"
   ];
 
+  # --- Salud btrfs de forma permanente (host amd, único con este NVMe) ---
+  # Scrub mensual detecta corrupción antes de que se convierta en un problema
+  # de arranque. No balancea: el módulo de nixpkgs avisa que eso no hace falta
+  # en uso normal mientras el filesystem no esté cerca de su capacidad.
+  services.btrfs.autoScrub = {
+    enable = true;
+    fileSystems = [ "/" ];
+    interval = "monthly";
+  };
+
+  # Balance ligero mensual como red de seguridad: solo mueve block groups con
+  # menos del 5% de uso y devuelve el espacio al pool sin asignar. Con el
+  # swapfile de 18 GB, btrfs omite esos block groups automáticamente.
+  systemd.services.btrfs-balance = {
+    description = "Btrfs light balance (salud de metadatos)";
+    serviceConfig.Type = "oneshot";
+    script = "${pkgs.btrfs-progs}/bin/btrfs balance start -dusage=5 -musage=5 /";
+  };
+  systemd.timers.btrfs-balance = {
+    description = "Btrfs light balance mensual";
+    wantedBy = [ "timers.target" ];
+    timerConfig = {
+      OnCalendar = "monthly";
+      RandomizedDelaySec = "1h";
+      Persistent = true;
+    };
+  };
+
   systemd.services.agent-canvas = {
     description = "OpenHands Agent Canvas (Jan Remoto)";
     wantedBy = [ "multi-user.target" ];

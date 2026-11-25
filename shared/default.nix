@@ -14,6 +14,28 @@ in
   # Nix con flakes y nix-command habilitados (necesario para home-manager y caelestia)
   nix.settings = {
     experimental-features = [ "nix-command" "flakes" ];
+    # Red de seguridad: si baja de 16 GiB libres, Nix dispara su propio GC y
+    # para cuando vuelve a haber 32 GiB. Evita llegar a ENOSPC en btrfs.
+    min-free = "17179869184"; # 16 GiB, en bytes
+    max-free = "32212254720"; # 32 GiB, en bytes
+  };
+
+  # --- Mantenimiento automático (solución permanente a la saturación) ---
+  # Antes se acumularon 45 generaciones y 954 MB de journal hasta que btrfs
+  # se quedó sin chunks para metadatos y Nix falló con "No space left" pese a
+  # tener 83 GB libres. Con esto Nix nunca vuelve a acumular generaciones.
+  nix.gc = {
+    automatic = true;
+    dates = "weekly";
+    randomizedDelaySec = "30min";
+    options = "--delete-older-than 14d";
+  };
+
+  # Journal con techo duro: 200 MB y 7 días de retención.
+  # (services.journald.extraConfig fue eliminado; se usa settings.Journal.)
+  services.journald.settings.Journal = {
+    SystemMaxUse = "200M";
+    MaxRetentionSec = "7day";
   };
 
   # Bootloader: GRUB con tema Himeko-Nova.
