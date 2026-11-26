@@ -612,7 +612,7 @@ in
     nerd-fonts.iosevka-term # fuente Iosevka Term (Nerd Font) para terminal/wofi (también en fonts.packages)
     blender           # modelado 3D
     vscode            # editor PRINCIPAL (default en mimeApps text/* + $EDITOR + git core.editor)
-                      # Copilot se usa DENTRO de VS Code (Agent Mode), no app standalone
+                      # Copilot NO se usa: VS Code queda solo como editor
     obsidian          # Vault visual para RS Brain (memoria compartida local)
     nodejs_24         # Node.js + npm
     bun               # runtime JS rapido
